@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.005
+// @version			2.010
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -54,39 +54,51 @@
 	/** Чекбоксы */
 	let checkboxes = {
 		passBattle: {
-			label: 'passBattle',
+			label: 'Пропуск боев',
 			cbox: null,
 			title: 'Пропуск боев в запределье и арене титанов',
 			default: false
 		},
 		skipTower: {
-			label: 'skipTower',
+			label: 'Пропуск в башне',
 			cbox: null,
 			title: 'Автопропуск боев в башне',
 			default: false
 		},
 		skipMisson: {
-			label: 'skipMisson',
+			label: 'Пропуск в компании',
 			cbox: null,
 			title: 'Автопропуск боев в кампании',
 			default: false
 		},
 		endlessCards: {
-			label: 'endlessCards',
+			label: 'Бесконечные карты',
 			cbox: null,
 			title: 'Бесконечные карты предсказаний',
 			default: false
 		},
 		sendExpedition: {
-			label: 'sendExpedition',
+			label: 'Автоэкспедиции',
 			cbox: null,
 			title: 'Автоотправка экспедиций',
 			default: false
 		},
 	};
+	/** Инпуты */
+	let inputs = {
+		countTitanit: {
+			input: null,
+			title: 'Сколько фармим титанита',
+			default: 150,
+		}
+	}
 	/** Проверяет чекбокс */
 	function isChecked(checkBox) {
 		return checkboxes[checkBox].cbox.checked;
+	}
+	/** Проверяет чекбокс */
+	function getInput(inputName) {
+		return inputs[inputName].input.value;
 	}
 	/**
 	 * Копирует тест в буфер обмена
@@ -445,35 +457,62 @@
 				storage.set(this.dataset['name'], this.checked);
 			})
 		}
+
+		for (let name in inputs) {
+			inputs[name].input = scriptMenu.addInputText(inputs[name].title);
+			/** Получаем состояние inputText из localStorage */
+			let val = storage.get(name, null);
+			if (val != null) {
+				inputs[name].input.value = val;
+			} else {
+				storage.set(name, inputs[name].default);
+				inputs[name].input.value = inputs[name].default;
+			}
+			/** Отсеживание события изменения поля для записи в localStorage */
+			inputs[name].input.dataset['name'] = name;
+			inputs[name].input.addEventListener('input', function () {
+				storage.set(this.dataset['name'], this.value);
+			})
+		}
 	}
 	/** Список кнопочек */
 	const buttons = {
 		testTitanArena: {
-			name: 'testTitanArena',
+			name: 'Турнир Стихий',
 			title: 'Пройти титан арену',
 			func: function () {
-				confShow('Запустить скрипт?', testTitanArena);
+				confShow('Запустить скрипт Турнир Стихий?', testTitanArena);
 			},
 		},
 		testDungeon: {
-			name: 'testDungeon',
+			name: 'Подземелье',
 			title: 'Пройти подземелье',
 			func: function () {
-				confShow('Запустить скрипт?', testDungeon);
+				confShow('Запустить скрипт Подземелье?', () => {
+					let titanit = getInput('countTitanit');
+					testDungeon(titanit);
+				});
 			},
 		},
 		testTower: {
-			name: 'testTower',
+			name: 'Башня',
 			title: 'Пройти башню',
 			func: function () {
-				confShow('Запустить скрипт?', testTower);
+				confShow('Запустить скрипт Башня?', testTower);
 			},
 		},
 		sendExpedition: {
-			name: 'sendExpedition',
+			name: 'Экспедиции',
 			title: 'Отправка и сбор экспедиций',
 			func: function () {
-				confShow('Запустить скрипт?', checkExpedition);
+				confShow('Запустить скрипт Экспедиции?', checkExpedition);
+			},
+		},
+		newDay: {
+			name: 'test Новый день',
+			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
+			func: function () {
+				confShow('Запустить скрипт Новый день?', cheats.refreshGame);
 			},
 		},
 	}
@@ -680,7 +719,7 @@
 		.scriptMenu_status {
 			position: absolute;
 			z-index: 10001;
-			max-height: 30px;
+			/* max-height: 30px; */
 			top: -1px;
 			left: 30%;
 			cursor: pointer;
@@ -699,6 +738,8 @@
 		}
 		.scriptMenu_statusHide {
 			top: -35px;
+			height: 30px;
+			overflow: hidden;
 		}
 		.scriptMenu_label {
 			position: absolute;
@@ -737,7 +778,7 @@
 			border: 1px solid white;
 			left: 0px;
 			z-index: 9999;
-			top: 25%;
+			top: 17%;
 			background: #190e08e6;
 			border: 3px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
@@ -752,6 +793,9 @@
 			color: #fce1ac;
 			text-shadow: 0px 0px 1px;
 			transition: 1s;
+			display: flex;
+			flex-direction: column;
+			flex-wrap: nowrap;
 		}
 		.scriptMenu_showMenu {
 			display: none;
@@ -762,8 +806,12 @@
 		.scriptMenu_showMenu:not(:checked)~.scriptMenu_main {
 			left: -300px;
 		}
-		.scriptMenu_divCheckbox {
+		.scriptMenu_divInput {
 			margin: 5px;
+		}
+		.scriptMenu_divInputText {
+			margin: 5px;
+			align-self: center;
 		}
 		.scriptMenu_checkbox {
 			position: absolute;
@@ -817,7 +865,7 @@
 			border-radius: 5px;
 			cursor: pointer;
 			padding: 5px 14px 8px;
-			margin: 10px;
+			margin: 5px;
 			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
 			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
 		}
@@ -831,7 +879,22 @@
 		}
 		.scriptMenu_header {
 			text-align: center;
+			align-self: center;
 			font-size: 15px;
+		}
+		.scriptMenu_InputText {
+			width: 130px;
+			height: 27px;
+			border: 1px solid #cf9250;
+			border-radius: 9px;
+			background: transparent;
+			color: #fce1ac;
+			padding: 0px 10px;
+			box-sizing: border-box;
+		}
+		.scriptMenu_InputText:focus {
+			filter: brightness(1.2);
+			outline: 0;
 		}
 	`;
 			document.head.appendChild(style);
@@ -878,9 +941,10 @@
 		this.setStatus = (text, onclick) => {
 			if (!text) {
 				this.status.classList.add('scriptMenu_statusHide');
+				this.status.innerHTML = '';
 			} else {
 				this.status.classList.remove('scriptMenu_statusHide');
-				this.status.innerText = text;
+				this.status.innerHTML = text;
 			}
 
 			if (typeof onclick == 'function') {
@@ -890,10 +954,13 @@
 			}
 		}
 
-		this.addHeader = (text) => {
+		this.addHeader = (text, func) => {
 			header = document.createElement('div');
 			header.classList.add('scriptMenu_header');
 			header.innerText = text;
+			if (typeof func == 'function') {
+				header.addEventListener('click', func);
+			}
 			this.mainMenu.appendChild(header);
 		}
 
@@ -913,7 +980,7 @@
 
 		this.addCheckbox = (label, title) => {
 			divCheckbox = document.createElement('div');
-			divCheckbox.classList.add('scriptMenu_divCheckbox');
+			divCheckbox.classList.add('scriptMenu_divInput');
 			divCheckbox.title = title;
 			this.mainMenu.appendChild(divCheckbox);
 
@@ -930,6 +997,19 @@
 
 			this.checkboxes.push(newCheckbox);
 			return newCheckbox;
+		}
+
+		this.addInputText = (title) => {
+			divInputText = document.createElement('div');
+			divInputText.classList.add('scriptMenu_divInputText');
+			divInputText.title = title;
+			this.mainMenu.appendChild(divInputText);
+
+			newInputText = document.createElement('input');
+			newInputText.type = 'text';
+			newInputText.classList.add('scriptMenu_InputText');
+			divInputText.appendChild(newInputText)
+			return newInputText;
 		}
 	});
 	/** Хранилище данных (только для числовых и булевых значений) */
@@ -1076,17 +1156,18 @@
 	this.SendRequest = send;
 
 
-	function testDungeon() {
+	function testDungeon(titanit) {
 		return new Promise((resolve, reject) => {
 			popup.showBack();
 			dung = new executeDungeon(resolve, reject);
-			dung.start();
+			dung.start(titanit);
 		});
 	}
 
 	/** Прохождение подземелья */
 	function executeDungeon(resolve, reject) {
 		dungeonActivity = 0;
+		maxDungeonActivity = 150;
 
 		titanGetAll = [];
 
@@ -1126,7 +1207,8 @@
 			}]
 		}
 
-		this.start = function() {
+		this.start = function(titanit) {
+			maxDungeonActivity = titanit || 75;
 			send(JSON.stringify(callsExecuteDungeon), startDungeon);
 		}
 
@@ -1203,8 +1285,8 @@
 				return;
 			}
 			// console.log(dungeonInfo, dungeonActivity);
-			setProgress('Dungeon: Титанит ' + dungeonActivity);
-			if (dungeonActivity >= 150) {
+			setProgress('Dungeon: Титанит ' + dungeonActivity + '/' + maxDungeonActivity);
+			if (dungeonActivity >= maxDungeonActivity) {
 				endDungeon('endDungeon');
 				return;
 			}
@@ -2004,6 +2086,8 @@
 			{name:"ClipButtonLabeledCentered", prop:"game.view.gui.components.ClipButtonLabeledCentered"},
 			{name:"BattlePausePopupMediator", prop:"game.mediator.gui.popup.battle.BattlePausePopupMediator"},
 			{name:"SettingToggleButton", prop:"game.view.popup.settings.SettingToggleButton"},
+			{name:"PlayerDungeonData", prop:"game.mechanics.dungeon.model.PlayerDungeonData"},
+			{name:"NextDayUpdatedManager", prop:"game.model.user.NextDayUpdatedManager"},
 		];
 		/** Содержит классы игры необходимые для написания и подмены методов игры */
 		Game = {
@@ -2058,11 +2142,12 @@
 		 * "get_invasion", "get_titanPvpManual", "get_titanPvp",
 		 * "get_titanClanPvp","get_clanPvp","get_titan","get_boss",
 		 * "get_tower","get_pve","get_pvpManual","get_pvp","get_core"
+		 * Можно уточнить в классе game.assets.storage.BattleAssetStorage функция xYc
 		 * @param {*} callback функция в которую вернуться результаты боя
 		 */
 		this.BattleCalc = function (battleData, battleConfig, callback) {
 			if (!Game.BattlePresets) throw Error('Use connectGame');
-			battlePresets = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 27)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+			battlePresets = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 			battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
 			battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
 				battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
@@ -2082,7 +2167,7 @@
 		 * @returns 
 		 */
 		function getF(classF, nameF) {
-			prop = Object.entries(classF.prototype.__properties__)
+			let prop = Object.entries(classF.prototype.__properties__)
 			return prop.filter((e) => e[1] == nameF).pop()[0];
 		}
 
@@ -2093,7 +2178,12 @@
 		 * @returns 
 		 */
 		function getFn(classF, nF) {
-			prop = Object.getOwnPropertyNames(classF)
+			// let prop = Object.getOwnPropertyNames(classF);
+			let prop = Object.keys(classF);
+			// let nan = Object.keys(classF).indexOf(prop[nF]);
+			// if (nan != nF) {
+			// 	console.log(nan, prop[nF], nF);
+			// }
 			return prop[nF];
 		}
 
@@ -2104,18 +2194,24 @@
 		 * @returns 
 		 */
 		function getProtoFn(classF, nF) {
-			prop = Object.getOwnPropertyNames(classF.prototype)
+			// let prop = Object.getOwnPropertyNames(classF.prototype);
+			let prop = Object.keys(classF.prototype);
+			// let nan = Object.keys(classF.prototype).indexOf(prop[nF]);
+			// if (nan != nF) {
+			// 	console.log(nan, prop[nF], nF);
+			// }
 			return prop[nF];
 		}
 		/** Описание подменяемых функций */
 		replaceFunction = {
 			company: function() {
-				let oldSkipMisson = Game.PlayerMissionData.prototype[getProtoFn(Game.PlayerMissionData, 12)];
-				Game.PlayerMissionData.prototype[getProtoFn(Game.PlayerMissionData, 12)] = function (a, b, c) {
+				let PMD_12 = getProtoFn(Game.PlayerMissionData, 12);
+				let oldSkipMisson = Game.PlayerMissionData.prototype[PMD_12];
+				Game.PlayerMissionData.prototype[PMD_12] = function (a, b, c) {
 					if (isChecked('skipMisson')) {
 						this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
-						var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 27)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
+						var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
 						a = new Game.BattleInstantPlay(c, a);
 						a[getProtoFn(Game.BattleInstantPlay, 8)].add(Game.bindFunc(this, this.P$h));
 						a.start()
@@ -2125,21 +2221,22 @@
 				}
 
 				Game.PlayerMissionData.prototype.P$h = function (a) {
-					let GM_7 = getFn(Game.GameModel, 7);
-					let GM_2 = getProtoFn(Game.GameModel, 2);
+					let GM_2 = getFn(Game.GameModel, 2);
+					let GM_P2 = getProtoFn(Game.GameModel, 2);
 					let CM_20 = getProtoFn(Game.CommandManager, 20);
 					let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
 					let MBR_15 = getProtoFn(Game.MultiBattleResult, 15);
 					let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 15);
 					let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
-					Game.GameModel[GM_7]()[GM_2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]))
+					Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]))
 				}
 			},
 			tower: function() {
-				let oldSkipTower = Game.PlayerTowerData.prototype[getProtoFn(Game.PlayerTowerData, 67)];
-				Game.PlayerTowerData.prototype[getProtoFn(Game.PlayerTowerData, 67)] = function (a) {
+				let PTD_67 = getProtoFn(Game.PlayerTowerData, 67);
+				let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
+				Game.PlayerTowerData.prototype[PTD_67] = function (a) {
 					if (isChecked('skipTower')) {
-						var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 27)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
+						var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 						a = new Game.BattleInstantPlay(a, p);
 						a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
 						a.start()
@@ -2149,14 +2246,14 @@
 				}
 
 				Game.PlayerTowerData.prototype.P$h = function (a) {
-					let GM_7 = getFn(Game.GameModel, 7);
-					let GM_2 = getProtoFn(Game.GameModel, 2);
+					let GM_2 = getFn(Game.GameModel, 2);
+					let GM_P2 = getProtoFn(Game.GameModel, 2);
 					let CM_29 = getProtoFn(Game.CommandManager, 29);
 					let TCL_5 = getProtoFn(Game.TowerCommandList, 5);
 					let MBR_15 = getProtoFn(Game.MultiBattleResult, 15);
 					let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 15);
 					let PTD_78 = getProtoFn(Game.PlayerTowerData, 78);
-					Game.GameModel[GM_7]()[GM_2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]))
+					Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]))
 				}
 			},
 			// skipSelectHero: function() {
@@ -2164,8 +2261,9 @@
 			// 	Game.PlayerHeroTeamResolver.prototype[getProtoFn(Game.PlayerHeroTeamResolver, 3)] = () => false;
 			// },
 			passBattle: function() {
-				let oldPassBattle = Game.BattlePausePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)];
-				Game.BattlePausePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)] = function(a) {
+				let BPP_4 = getProtoFn(Game.BattlePausePopup, 4);
+				let oldPassBattle = Game.BattlePausePopup.prototype[BPP_4];
+				Game.BattlePausePopup.prototype[BPP_4] = function (a) {
 					if (isChecked('passBattle')) {
 						Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
 						this[getProtoFn(Game.BattlePausePopup, 3)]();
@@ -2188,6 +2286,17 @@
 					}
 				}
 			},
+			endlessCards: function() {
+				let PDD_15 = getProtoFn(Game.PlayerDungeonData, 15);
+				let oldEndlessCards = Game.PlayerDungeonData.prototype[PDD_15];
+				Game.PlayerDungeonData.prototype[PDD_15] = function () {
+					if (isChecked('endlessCards')) {
+						return true;
+					} else {
+						return oldEndlessCards.call(this);
+					}
+				}
+			}
 		}
 		/** Запускает замену записанных функций */
 		this.activateHacks = function () {
@@ -2195,6 +2304,14 @@
 			for (let func in replaceFunction) {
 				replaceFunction[func]();
 			}
+		}
+		/** Возвращает объект игры */
+		this.getSelfGame = function () {
+			return selfGame;
+		}
+		/** Обновляет данные игры */
+		this.refreshGame = function () {
+			(new Game.NextDayUpdatedManager)[getProtoFn(Game.NextDayUpdatedManager, 5)]();
 		}
 
 		connectGame();
