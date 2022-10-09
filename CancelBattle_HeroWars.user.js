@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.010
+// @version			2.011
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -941,7 +941,6 @@
 		this.setStatus = (text, onclick) => {
 			if (!text) {
 				this.status.classList.add('scriptMenu_statusHide');
-				this.status.innerHTML = '';
 			} else {
 				this.status.classList.remove('scriptMenu_statusHide');
 				this.status.innerHTML = text;
