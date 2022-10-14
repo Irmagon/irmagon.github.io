@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.012
+// @version			2.013
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -84,9 +84,9 @@
 			default: false
 		},
 		cancelBattle: {
-			label: 'Отмена боя СМ',
+			label: 'Отмена боя',
 			cbox: null,
-			title: 'Возможность отмены боя СМ',
+			title: 'Возможность отмены боя',
 			default: false
 		}
 	};
@@ -304,7 +304,6 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if (call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
-					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') {
