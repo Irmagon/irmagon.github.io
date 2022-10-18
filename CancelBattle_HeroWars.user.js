@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.013
+// @version			2.015
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -12,12 +12,19 @@
 // @encoding		utf-8
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
+// @match			https://www.solfors.com/
+// @match			https://t.me/s/hw_ru
 // @run-at			document-start
 // ==/UserScript==
 
 (function() {
 	/** Стартуем скрипт */
 	console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
+	/** Если находимся на странице подарков, то собираем и отправляем их на сервер */
+	if (['www.solfors.com', 't.me'].includes(location.host)) {
+		setTimeout(sendCodes, 2000);
+		return;
+	}
 	/** Загружены ли данные игры */
 	let isLoadGame = false;
 	/** Заголовки последнего запроса */
@@ -26,6 +33,8 @@
 	let lastBossBattle = {}
 	/** Идет бой с боссом */
 	let isStartBossBattle = false;
+	/** Данные пользователя */
+	let userInfo;
 	/** Оригинальные методы для работы с AJAX */
 	const original = {
 		open: XMLHttpRequest.prototype.open,
@@ -88,7 +97,13 @@
 			cbox: null,
 			title: 'Возможность отмены боя',
 			default: false
-		}
+		},
+		getAutoGifts: {
+			label: 'Подарки',
+			cbox: null,
+			title: 'Собирать подарки автоматически',
+			default: true
+		},
 	};
 	/** Инпуты */
 	let inputs = {
@@ -141,6 +156,37 @@
 	document.addEventListener("DOMContentLoaded", () => {
 		createInterface();
 	});
+	/** Сбор и отправка кодов подарков */
+	function sendCodes() {
+		let codes = [], count = 0;
+		localStorage['giftSendIds'] = localStorage['giftSendIds'] ?? '';
+		document.querySelectorAll('a[target="_blank"]').forEach(e => {
+			let giftId = (code = /gift_id=(.+)/.exec(e?.href)) ? code[1] : 0;
+			if (!giftId || localStorage['giftSendIds'].includes(giftId)) return;
+			localStorage['giftSendIds'] += ';' + giftId;
+			codes.push(giftId);
+			count++;
+		});
+
+		if (codes.length) {
+			fetch('https://zingery.ru/heroes/gifts.php',{
+				method: 'POST',
+				body: JSON.stringify(codes)
+			}).then(
+				response => response.json()
+			).then(
+				data => {
+					if (data.result) {
+						console.log('Подарки отправлены!');
+					}
+				}
+			)
+		}
+
+		if (!count) {
+			setTimeout(sendCodes, 2000);
+		}
+	}
 	/** Подключение к коду игры */
 	const cheats = new hackGame();
 	this.BattleCalc = cheats.BattleCalc;
@@ -235,6 +281,9 @@
 				isLoadGame = true;
 				if (isChecked('sendExpedition')) {
 					checkExpedition();
+				}
+				if (isChecked('getAutoGifts')) {
+					getAutoGifts();
 				}
 				cheats.activateHacks();
 				addControlButtons();
@@ -418,6 +467,11 @@
 					let quest = call.result.response;
 					copyText(quest.question);
 					console.log(quest.question);
+				}
+				/** Получить даныне пользователя */
+				if (call.ident == callsIdent['userGetInfo']) {
+					let user = call.result.response;
+					userInfo = Object.assign({}, user);
 				}
 			}
 		} catch(err) {
@@ -2361,5 +2415,49 @@
 				console.log(e);
 			});
 		}
+	}
+	/** Автосбор подарков */
+	function getAutoGifts() {
+		let valName = 'giftSendIds_' + userInfo.id;
+		localStorage[valName] = localStorage[valName] ?? '';
+		let url = 'https://zingery.ru/heroes/gifts.php';
+		if (localStorage[valName].length > 0) {
+			url = 'https://zingery.ru/heroes/gifts.php?count=10';
+		}
+		/** Отправка запроса для получения кодов подарков */
+		fetch(url).then(
+			response => response.json()
+		).then(
+			data => {
+				let freebieCheckCalls = {
+					calls: []
+				}
+				data.forEach( (giftId, n) => {
+					if (localStorage[valName].includes(giftId)) return;
+					localStorage[valName] += ';' + giftId;
+					freebieCheckCalls.calls.push({
+						name: "freebieCheck",
+						args: {
+							giftId
+						},
+						ident: "freebieCheck_" + n
+					});
+				});
+
+				if (!freebieCheckCalls.calls.length) {
+					return;
+				}
+
+				send(JSON.stringify(freebieCheckCalls), e => {
+					let countGetGifts = 0;
+					for(check of e.results) {
+						if (check.result.response != null) {
+							countGetGifts++;
+						}
+					}
+					console.log('Подарки: ' + countGetGifts);
+				});
+			}
+		)
 	}
 })();
