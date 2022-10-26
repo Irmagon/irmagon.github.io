@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.016
+// @version			2.017
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -95,7 +95,7 @@
 		cancelBattle: {
 			label: 'Отмена боя',
 			cbox: null,
-			title: 'Возможность отмены боя',
+			title: 'Возможность отмены боя на ВГ',
 			default: false
 		},
 		getAutoGifts: {
@@ -104,18 +104,24 @@
 			title: 'Собирать подарки автоматически',
 			default: true
 		},
+		preCalcBattle: {
+			label: 'Прерасчет боя',
+			cbox: null,
+			title: 'Предварительный расчет боя',
+			default: false
+		}
 	};
 	/** Инпуты */
 	let inputs = {
 		countTitanit: {
 			input: null,
 			title: 'Сколько фармим титанита',
-			default: 150,
+			default: 300,
 		}
 	}
 	/** Проверяет чекбокс */
 	function isChecked(checkBox) {
-		return checkboxes[checkBox].cbox.checked;
+		return checkboxes[checkBox].cbox?.checked;
 	}
 	/** Проверяет чекбокс */
 	function getInput(inputName) {
@@ -353,6 +359,8 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if (call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
+/**					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') || */
+/**					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') || */
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') {
@@ -473,6 +481,34 @@
 					let user = call.result.response;
 					userInfo = Object.assign({}, user);
 				}
+				/** Начало боя для прерасчета */
+				if ((call.ident == callsIdent['clanWarAttack'] ||
+					call.ident == callsIdent['crossClanWar_startBattle'] ||
+					call.ident == callsIdent['adventure_turnStartBattle']) && 
+					isChecked('preCalcBattle')) {
+					setProgress('Идет прерасчет боя');
+					let battle = call.result.response.battle;
+					console.log(battle.type);
+					function getBattleInfo(battle, isRandSeed) {
+						return new Promise(function (resolve) {
+							if (isRandSeed) {
+								battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
+							}
+							BattleCalc(battle, getBattleType(battle.type), e => resolve(e.result.win));
+						});
+					}
+					let actions = [getBattleInfo(battle, false)]
+					let countBattleCalc = 10;
+					for (let i = 0; i < countBattleCalc; i++) {
+						actions.push(getBattleInfo(battle, true));
+					}
+					Promise.all(actions)
+						.then(e => {
+							let firstBattle = e.shift();
+							let countWin = e.reduce((w, s) => w + s);
+							setProgress((firstBattle ? 'Победа' : 'Поражение') + ' ' + countWin + '/' + e.length + ' X', false, hideProgress)
+						});
+				}
 			}
 		} catch(err) {
 			console.log("Request(response, " + this.uniqid + "):\n", "Error:\n", response, err);
@@ -483,6 +519,40 @@
 				writable: true
 			});
 			this.responseText = JSON.stringify(respond);
+		}
+	}
+	/** Возвращает тип боя по типу пресета */
+	function getBattleType(strBattleType) {
+		switch (strBattleType) {
+			case "invasion":
+				return "get_invasion";
+			case "titan_pvp_manual":
+				return "get_titanPvpManual";
+			case "titan_pvp":
+				return "get_titanPvp";
+			case "titan_clan_pvp":
+			case "clan_pvp_titan":
+			case "clan_global_pvp_titan":
+				return "get_titanClanPvp";
+			case "clan_raid": // Босс асгарда
+			case "adventure": // Приключения
+			case "clan_global_pvp":
+			case "clan_pvp":
+				return "get_clanPvp";
+			case "titan_tower":
+				return "get_titan";
+			case "tower":
+				return "get_tower";
+			case "pve":
+				return "get_pve";
+			case "pvp_manual":
+				return "get_pvpManual";
+			case "pvp":
+				return "get_pvp";
+			case "core":
+				return "get_core";
+			default:
+				break;
 		}
 	}
 	/** Возвращает название класса переданного объекта */
@@ -569,7 +639,7 @@
 		},
 		newDay: {
 			name: 'test Новый день',
-			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
+			title: 'Частичная синхонизация данных игры без перезагрузки страницы',
 			func: function () {
 				confShow('Запустить скрипт Новый день?', cheats.refreshGame);
 			},
@@ -2100,18 +2170,19 @@
 		}
 	}	
 	/** Скрыть прогресс */
-	function hideProgress() {
+	function hideProgress(timeout) {
+		timeout = timeout || 0;
 		setTimeout(function () {
 			scriptMenu.setStatus('');
 			popup.hideBack();
-		}, 3000);
+		}, timeout);
 	}
 	/** Отображение прогресса */
 	function setProgress(text, hide, onclick) {
 		scriptMenu.setStatus(text, onclick);
 		hide = hide || false;
 		if (hide) {
-			hideProgress();
+			hideProgress(3000);
 		}
 	}
 	function hackGame() {
@@ -2124,7 +2195,6 @@
 			{name:"BattleConfigStorage", prop:"game.data.storage.battle.BattleConfigStorage"},
 			{name:"BattleInstantPlay", prop:"game.battle.controller.instant.BattleInstantPlay"},
 			{name:"MultiBattleResult", prop:"game.battle.controller.MultiBattleResult"},
-			
 			{name:"PlayerMissionData", prop:"game.model.user.mission.PlayerMissionData"},
 			{name:"PlayerMissionBattle", prop:"game.model.user.mission.PlayerMissionBattle"},
 			{name:"GameModel", prop:"game.model.GameModel"},
