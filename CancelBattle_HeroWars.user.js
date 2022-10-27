@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.017
+// @version			2.019
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -31,6 +31,8 @@
 	let lastHeaders = {};
 	/** Данные о прошедшей атаке на босса */
 	let lastBossBattle = {}
+	/** Информация об отправленных подарках */
+	let freebieCheckInfo = null;
 	/** Идет бой с боссом */
 	let isStartBossBattle = false;
 	/** Данные пользователя */
@@ -116,7 +118,7 @@
 		countTitanit: {
 			input: null,
 			title: 'Сколько фармим титанита',
-			default: 300,
+			default: 150,
 		}
 	}
 	/** Проверяет чекбокс */
@@ -167,7 +169,10 @@
 		let codes = [], count = 0;
 		localStorage['giftSendIds'] = localStorage['giftSendIds'] ?? '';
 		document.querySelectorAll('a[target="_blank"]').forEach(e => {
-			let giftId = (code = /gift_id=(.+)/.exec(e?.href)) ? code[1] : 0;
+			let url = e?.href;
+			if (!url) return;
+			url = new URL(url);
+			let giftId = url.searchParams.get('gift_id');
 			if (!giftId || localStorage['giftSendIds'].includes(giftId)) return;
 			localStorage['giftSendIds'] += ';' + giftId;
 			codes.push(giftId);
@@ -175,23 +180,41 @@
 		});
 
 		if (codes.length) {
-			fetch('https://zingery.ru/heroes/gifts.php',{
-				method: 'POST',
-				body: JSON.stringify(codes)
-			}).then(
-				response => response.json()
-			).then(
-				data => {
-					if (data.result) {
-						console.log('Подарки отправлены!');
-					}
-				}
-			)
+			sendGiftsCodes(codes);
 		}
 
 		if (!count) {
 			setTimeout(sendCodes, 2000);
 		}
+	}
+	/** Проверка отправленных кодов */
+	function checkSendGifts() {
+		if (!freebieCheckInfo) {
+			return;
+		}
+
+		let giftId = freebieCheckInfo.args.giftId;
+		let valName = 'giftSendIds_' + userInfo.id;
+		localStorage[valName] = localStorage[valName] ?? '';
+		if (!localStorage[valName].includes(giftId)) {
+			localStorage[valName] += ';' + giftId;
+			sendGiftsCodes([giftId]);
+		}
+	}
+	/** Отправка кодов */
+	function sendGiftsCodes(codes) {
+		fetch('https://zingery.ru/heroes/gifts.php', {
+			method: 'POST',
+			body: JSON.stringify(codes)
+		}).then(
+			response => response.json()
+		).then(
+			data => {
+				if (data.result) {
+					console.log('Подарки отправлены!');
+				}
+			}
+		)
 	}
 	/** Подключение к коду игры */
 	const cheats = new hackGame();
@@ -289,6 +312,7 @@
 					checkExpedition();
 				}
 				if (isChecked('getAutoGifts')) {
+					checkSendGifts();
 					getAutoGifts();
 				}
 				cheats.activateHacks();
@@ -402,6 +426,10 @@
 						delete call.args.isRaid;
 						changeRequest = true;
 					}
+				}
+				/** Подарки */
+				if (call.name == 'freebieCheck' && isChecked('getAutoGifts')) {
+					freebieCheckInfo = call;
 				}
 			}
 
@@ -637,9 +665,23 @@
 		},
 		newDay: {
 			name: 'test Новый день',
-			title: 'Частичная синхонизация данных игры без перезагрузки страницы',
+			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
 			func: function () {
 				confShow('Запустить скрипт Новый день?', cheats.refreshGame);
+			},
+		},
+		bossRatingEvent: {
+			name: 'Горнило душ',
+			title: 'Набивает килы и собрает награду',
+			func: function () {
+				confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
+			},
+		},
+		offerFarmAllReward: {
+			name: 'Пасхалки',
+			title: 'Собрать все пасхалки или награды',
+			func: function () {
+				confShow('Запустить скрипт Пасхалки?', offerFarmAllReward);
 			},
 		},
 	}
@@ -2193,6 +2235,7 @@
 			{name:"BattleConfigStorage", prop:"game.data.storage.battle.BattleConfigStorage"},
 			{name:"BattleInstantPlay", prop:"game.battle.controller.instant.BattleInstantPlay"},
 			{name:"MultiBattleResult", prop:"game.battle.controller.MultiBattleResult"},
+			
 			{name:"PlayerMissionData", prop:"game.model.user.mission.PlayerMissionData"},
 			{name:"PlayerMissionBattle", prop:"game.model.user.mission.PlayerMissionBattle"},
 			{name:"GameModel", prop:"game.model.GameModel"},
@@ -2537,5 +2580,124 @@
 				});
 			}
 		)
+	}
+	/** Набить килов в горниле душк */
+	function bossRatingEvent() {
+		let heroGetAllCall = '{"calls":[{"name":"heroGetAll","args":{},"ident":"teamGetAll"},{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
+		send(heroGetAllCall, function (data) {
+			let bossEventInfo = data.results[1].result.response.find(e => e.id == 633);
+			if (!bossEventInfo) {
+				setProgress('Эвент завершен', true);
+				return;
+			}
+			let heroGetAllList = data.results[0].result.response;
+			let usedHeroes = bossEventInfo.progress.usedHeroes;
+			let heroList = [];
+
+			for (let heroId in heroGetAllList) {
+				let hero = heroGetAllList[heroId];
+				if (usedHeroes.includes(hero.id)) {
+					continue;
+				}
+				if (hero.xp > 0) {
+					heroList.push(hero.id);
+				}
+				if (heroList.length > 6) {
+					break;
+				}
+			}
+
+			if (!heroList.length) {
+				setProgress('Нет героев', true);
+				return;
+			}
+
+			let calls = heroList
+				.map(e => '{"name":"bossRatingEvent_startBattle","args":{"heroes":[' + e + ']},"ident":"body_' + e + '"}')
+				.join(',');
+
+			send('{"calls":[' + calls + ']}', e => {
+				console.log(e);
+				setProgress('Собрано ' + e?.result?.length + ' наград', true);
+				rewardBossRatingEvent();
+			});
+		});
+	}
+	/** Сбор награды из Горнила Душ */
+	function rewardBossRatingEvent() {
+		let rewardBossRatingCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
+		send(rewardBossRatingCall, function (data) {
+			let bossEventInfo = data.results[0].result.response.find(e => e.id == 633);
+			if (!bossEventInfo) {
+				setProgress('Эвент завершен', true);
+				return;
+			}
+
+			let farmedChests = bossEventInfo.progress.farmedChests;
+			let score = bossEventInfo.progress.score;
+			setProgress('Количество убитых врагов: ' + score);
+			let revard = bossEventInfo.reward;
+
+			let getRewardCall = {
+				calls: []
+			}
+
+			let count = 0;
+			for (let i = 1; i < 10; i++) {
+				if (farmedChests.includes(i)) {
+					continue;
+				}
+				if (score < revard[i].score) {
+					break;
+				}
+				getRewardCall.calls.push({
+					name: "bossRatingEvent_getReward",
+					args: {
+						rewardId: i
+					},
+					ident: "body_" + i
+				});
+				count++;
+			}
+			if (!count) {
+				setProgress('Нечего собирать', true);
+				return;
+			}
+
+			send(JSON.stringify(getRewardCall), e => {
+				console.log(e);
+				setProgress('Награда собрана', true);
+			});
+		});
+	}
+	/** Собрать пасхалки и награды событий */
+	function offerFarmAllReward() {
+		let offerGetAllCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
+		send(offerGetAllCall, function (data) {
+			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward");
+			if (!offerGetAll.length) {
+				setProgress('Нечего собирать', true);
+				return;
+			}
+
+			let rewardListCall = {
+				calls: []
+			};
+			for (let n in offerGetAll) {
+				let reward = offerGetAll[n];
+				rewardListCall.calls.push({
+					name: "offerFarmReward",
+					args: {
+						offerId: reward.id
+					},
+					ident: "offerFarmReward_" + reward.id
+				});
+			}
+
+			send(JSON.stringify(rewardListCall), e => {
+				console.log(e);
+				setProgress('Собрано ' + e?.result?.length + ' наград', true);
+			});
+		});
 	}
 })();
