@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.019
+// @version			2.023
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -510,10 +510,11 @@
 				/** Начало боя для прерасчета */
 				if ((call.ident == callsIdent['clanWarAttack'] ||
 					call.ident == callsIdent['crossClanWar_startBattle'] ||
+					call.ident == callsIdent['battleGetReplay'] ||
 					call.ident == callsIdent['adventure_turnStartBattle']) && 
 					isChecked('preCalcBattle')) {
 					setProgress('Идет прерасчет боя');
-					let battle = call.result.response.battle;
+					let battle = call.result.response.battle || call.result.response.replay;
 					console.log(battle.type);
 					function getBattleInfo(battle, isRandSeed) {
 						return new Promise(function (resolve) {
@@ -559,11 +560,13 @@
 			case "titan_clan_pvp":
 			case "clan_pvp_titan":
 			case "clan_global_pvp_titan":
+			case "challenge_titan":
 				return "get_titanClanPvp";
 			case "clan_raid": // Босс асгарда
 			case "adventure": // Приключения
 			case "clan_global_pvp":
 			case "clan_pvp":
+			case "challenge":
 				return "get_clanPvp";
 			case "titan_tower":
 				return "get_titan";
@@ -632,6 +635,13 @@
 	}
 	/** Список кнопочек */
 	const buttons = {
+		getOutland: {
+			name: 'Запределье',
+			title: 'Собрать Запределье',
+			func: function () {
+				confShow('Запустить скрипт Запределье?', getOutland);
+			},
+		},
 		testTitanArena: {
 			name: 'Турнир Стихий',
 			title: 'Пройти титан арену',
@@ -670,18 +680,25 @@
 				confShow('Запустить скрипт Новый день?', cheats.refreshGame);
 			},
 		},
-		bossRatingEvent: {
-			name: 'Горнило душ',
-			title: 'Набивает килы и собрает награду',
-			func: function () {
-				confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
-			},
-		},
+		// bossRatingEvent: {
+		// 	name: 'Горнило душ',
+		// 	title: 'Набивает килы и собрает награду',
+		// 	func: function () {
+		// 		confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
+		// 	},
+		// },
 		offerFarmAllReward: {
 			name: 'Пасхалки',
 			title: 'Собрать все пасхалки или награды',
 			func: function () {
 				confShow('Запустить скрипт Пасхалки?', offerFarmAllReward);
+			},
+		},
+		questAllFarm: {
+			name: 'Награды',
+			title: 'Собрать все награды за задания',
+			func: function () {
+				confShow('Запустить скрипт Награды?', questAllFarm);
 			},
 		},
 	}
@@ -947,7 +964,7 @@
 			border: 1px solid white;
 			left: 0px;
 			z-index: 9999;
-			top: 17%;
+			top: 10%;
 			background: #190e08e6;
 			border: 3px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
@@ -2599,9 +2616,7 @@
 				if (usedHeroes.includes(hero.id)) {
 					continue;
 				}
-				if (hero.xp > 0) {
-					heroList.push(hero.id);
-				}
+				heroList.push(hero.id);
 				if (heroList.length > 6) {
 					break;
 				}
@@ -2618,7 +2633,7 @@
 
 			send('{"calls":[' + calls + ']}', e => {
 				console.log(e);
-				setProgress('Собрано ' + e?.result?.length + ' наград', true);
+				setProgress('Использовано ' + e?.results?.length + ' героев', true);
 				rewardBossRatingEvent();
 			});
 		});
@@ -2666,7 +2681,7 @@
 
 			send(JSON.stringify(getRewardCall), e => {
 				console.log(e);
-				setProgress('Награда собрана', true);
+				setProgress('Собрано ' + e?.results?.length + ' наград', true);
 			});
 		});
 	}
@@ -2674,7 +2689,7 @@
 	function offerFarmAllReward() {
 		let offerGetAllCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
 		send(offerGetAllCall, function (data) {
-			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward");
+			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward" && !e?.freeRewardObtained);
 			if (!offerGetAll.length) {
 				setProgress('Нечего собирать', true);
 				return;
@@ -2696,8 +2711,114 @@
 
 			send(JSON.stringify(rewardListCall), e => {
 				console.log(e);
-				setProgress('Собрано ' + e?.result?.length + ' наград', true);
+				setProgress('Собрано ' + e?.results?.length + ' наград', true);
 			});
 		});
 	}
+	/** Собрать запределье */
+	function getOutland() {
+		return new Promise(function (resolve, reject) {
+			send('{"calls":[{"name":"bossGetAll","args":{},"ident":"bossGetAll"}]}', e => {
+				let bosses = e.results[0].result.response;
+
+				let bossRaidOpenChestCall = {
+					calls: []
+				};
+
+				for (let boss of bosses) {
+					if (boss.mayRaid) {
+						bossRaidOpenChestCall.calls.push({
+							name: "bossRaid",
+							args: {
+								bossId: boss.id
+							},
+							ident: "bossRaid_" + boss.id
+						});
+						bossRaidOpenChestCall.calls.push({
+							name: "bossOpenChest",
+							args: {
+								bossId: boss.id,
+								amount: 1,
+								starmoney: 0
+							},
+							ident: "bossOpenChest_" + boss.id
+						});
+					} else if (boss.chestId == 1) {
+						bossRaidOpenChestCall.calls.push({
+							name: "bossOpenChest",
+							args: {
+								bossId: boss.id,
+								amount: 1,
+								starmoney: 0
+							},
+							ident: "bossOpenChest_" + boss.id
+						});
+					}
+				}
+
+				if (!bossRaidOpenChestCall.calls.length) {
+					setProgress('Запределье уже было собрано', true);
+					resolve();
+					return;
+				}
+
+				send(JSON.stringify(bossRaidOpenChestCall), e => {
+					setProgress('Запределье собрано', true);
+					resolve();
+				});
+			});
+		});
+	}
+	/** Собрать все награды */
+	function questAllFarm() {
+		return new Promise(function (resolve, reject) {
+			let questGetAllCall = {
+				calls: [{
+					name: "questGetAll",
+					args: {},
+					ident: "body"
+				}]
+			}
+			send(JSON.stringify(questGetAllCall), function (data) {
+				let questGetAll = data.results[0].result.response;
+				const questAllFarmCall = {
+					calls: []
+				}
+				let number = 0;
+				for (let quest of questGetAll) {
+					if (quest.id < 1e6 && quest.state == 2) {
+						questAllFarmCall.calls.push({
+							name: "questFarm",
+							args: {
+								questId: quest.id
+							},
+							ident: `group_${number}_body`
+						});
+						number++;
+					}
+				}
+
+				if (!questAllFarmCall.calls.length) {
+					setProgress('Собрано наград: ' + number, true);
+					resolve();
+					return;
+				}
+
+				send(JSON.stringify(questAllFarmCall), function (res) {
+					console.log(res);
+					setProgress('Собрано наград: ' + number, true);
+					resolve();
+				});
+			});
+		})
+	}
 })();
+
+/**
+ * TODO:
+ * Ускорение боя больше чем x5 
+ * Автосбор запределья +
+ * Тест боя для реплея +
+ * Сбор выполненных заданий +
+ * Выравнивание по высоте или переместить кнопки
+ */
