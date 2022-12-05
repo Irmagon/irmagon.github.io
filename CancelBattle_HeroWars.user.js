@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.024
+// @version			2.025
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -111,7 +111,7 @@
 			cbox: null,
 			title: 'Предварительный расчет боя',
 			default: false
-		}
+		},
 	};
 	/** Инпуты */
 	let inputs = {
@@ -129,6 +129,20 @@
 	function getInput(inputName) {
 		return inputs[inputName].input.value;
 	}
+	/** Автоповтор миссии */
+	let isRepeatMission = false;
+	/** Вкл/Выкл автоповтор миссии */
+	this.switchRepeatMission = function() {
+		isRepeatMission = !isRepeatMission;
+		console.log(isRepeatMission);
+	}
+	/** Остановить повтор миссии */
+	let isStopSendMission = false;
+	/** Идет повтор миссии */
+	let isSendsMission = false;
+	/** Данные о прошедшей мисии */
+	let lastMissionStart = {}
+
 	/**
 	 * Копирует тест в буфер обмена
 	 * @param {*} text копируемый текст
@@ -433,6 +447,30 @@
 				/** Подарки */
 				if (call.name == 'freebieCheck' && isChecked('getAutoGifts')) {
 					freebieCheckInfo = call;
+				}
+				/** Получение данных миссии для автоповтора */
+				if (isRepeatMission &&
+					call.name == 'missionEnd') {
+					let missionInfo = {
+						id: call.args.id,
+						result: call.args.result,
+						heroes: call.args.progress[0].attackers.heroes,
+						count: 0,
+					}
+					setTimeout(async () => {
+						if (!isSendsMission && await popup.confirm('Повторить миссию?', [
+								{msg: 'Повторить', result: true},
+								{msg: 'Нет', result: false},
+							])) {
+							isStopSendMission = false;
+							isSendsMission = true;
+							sendsMission(missionInfo);
+						}
+					}, 0);
+				}
+				/** Получение данных миссии */
+				if (call.name == 'missionStart') {
+					lastMissionStart = call.args;
 				}
 			}
 
@@ -793,11 +831,8 @@
 			}
 
 			.PopUp_text {
-				font-size: 22px;
 				font-family: sans-serif;
-				font-weight: 600;
 				font-stretch: condensed;
-				letter-spacing: 1px;
 				text-align: center;
 			}
 
@@ -926,9 +961,7 @@
 			border-radius: 0px 0px 10px 10px;
 			background: #190e08e6;
 			border: 1px #ce9767 solid;
-			font-size: 18px;
 			font-family: sans-serif;
-			font-weight: 600;
 			font-stretch: condensed;
 			letter-spacing: 1px;
 			color: #fce1ac;
@@ -982,9 +1015,7 @@
 			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
-			padding: 5px 10px 5px 5px;
 			box-sizing: border-box;
-			font-size: 14px;
 			font-family: sans-serif;
 			font-stretch: condensed;
 			color: #fce1ac;
@@ -2025,9 +2056,20 @@
 
 	/** Прохождение арены титанов */
 	function executeTitanArena(resolve, reject) {
-		titan_arena = [];
+		let titan_arena = [];
+		let finishListBattle = [];
+		/** Идетификатор текущей пачки */
+		let currentRival = 0;
+		/** Колличество попыток добития пачки */
+		let attempts = 0;
+		/** Была ли попытка добития текущего тира */
+		let isCheckCurrentTier = false;
+		/** Текущий тир */
+		let currTier = 0;
+		/** Количество битв на текущем тире */
+		let countRivalsTier = 0;
 
-		callsExecuteTitanArena = {
+		let callsStart = {
 			calls: [{
 				name: "titanArenaGetStatus",
 				args: {},
@@ -2040,18 +2082,17 @@
 		}
 
 		this.start = function () {
-			send(JSON.stringify(callsExecuteTitanArena), startTitanArena);
+			send(JSON.stringify(callsStart), startTitanArena);
 		}
 
 		function startTitanArena(data) {
-			res = data.results;
-			titanArena = res[0].result.response;
+			let titanArena = data.results[0].result.response;
 			if (titanArena.status == 'disabled') {
 				endTitanArena('disabled', titanArena);
 				return;
 			}
 
-			teamGetAll = res[1].result.response;
+			let teamGetAll = data.results[1].result.response;
 			titan_arena = teamGetAll.titan_arena;
 
 			checkTier(titanArena)
@@ -2062,106 +2103,195 @@
 				endTitanArena('Peace_time', titanArena);
 				return;
 			}
-			setProgress('TitanArena: Уровень ' + titanArena.tier);
+			currTier = titanArena.tier;
+			if (currTier) {
+				setProgress('Турнир Стихий: Уровень ' + currTier);
+			}
 
 			if (titanArena.status == "completed_tier") {
 				titanArenaCompleteTier();
 				return;
 			}
-
+			/** Проверка на возможность рейда */
 			if (titanArena.canRaid) {
 				titanArenaStartRaid();
-			} else {
-				endTitanArena('Done or not canRaid', titanArena);
-				// checkRivals(titanArena.rivals);
+				return;
+			} 
+			/** Проверка была ли попытка добития текущего тира */
+			if (!isCheckCurrentTier) {
+				checkRivals(titanArena.rivals);
+				return;
 			}
 
-			
+			endTitanArena('Done or not canRaid', titanArena);
 		}
-
+		/** Отправка информации о тире на проверку */
 		function checkResultInfo(data) {
-			titanArena = data.results[0].result.response;
+			let titanArena = data.results[0].result.response;
 			checkTier(titanArena);
 		}
-
+		/** Завершить текущий тир */
 		function titanArenaCompleteTier() {
-			titanArenaCompleteTierCall = {
-				calls: [{
-					name: "titanArenaCompleteTier",
-					args: {},
-					ident: "body"
-				}]
-			}
-			send(JSON.stringify(titanArenaCompleteTierCall), checkResultInfo);
+			isCheckCurrentTier = false;
+			let calls = [{
+				name: "titanArenaCompleteTier",
+				args: {},
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), checkResultInfo);
 		}
-
-		/** TODO: Допилить добитие точек */
+		/** Собираем точки которые нужно добить */
 		function checkRivals(rivals) {
-			listBattle = [];
+			finishListBattle = [];
 			for (let n in rivals) {
 				if (rivals[n].attackScore < 250) {
-					listBattle.push(n);
+					finishListBattle.push(n);
 				}
 			}
+			console.log('checkRivals', finishListBattle);
+			countRivalsTier = finishListBattle.length;
+			roundRivals();
 		}
-
-		/** Запрос битвы арены TODO: Допилить добитие точек */
-		function titanArenaStartBattle(rivalId) {
-			titanArenaStartBattleCall = {
-				calls: [{
-					name: "titanArenaStartBattle",
-					args: {
-						rivalId: rivalId,
-						titans: titan_arena
-					},
-					ident: "body"
-				}]
+		/** Выбор следующей точки для добития */
+		function roundRivals() {
+			let countRivals = finishListBattle.length;
+			if (!countRivals) {
+				// Весь тир проверен
+				isCheckCurrentTier = true;
+				titanArenaGetStatus();
+				return;
 			}
-			send(JSON.stringify(titanArenaStartBattleCall), calcResult);
+			// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + (countRivalsTier - countRivals + 1) + '/' + countRivalsTier);
+			currentRival = finishListBattle.pop();
+			attempts = +currentRival;
+			// console.log('roundRivals', currentRival);
+			titanArenaStartBattle(currentRival);
 		}
-		/** TODO: Допилить добитие точек */
+		/** Начало одиночной битвы */
+		function titanArenaStartBattle(rivalId) {
+			let calls = [{
+				name: "titanArenaStartBattle",
+				args: {
+					rivalId: rivalId,
+					titans: titan_arena
+				},
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), calcResult);
+		}
+		/** Расчет результатов боя */
 		function calcResult(data) {
 			let battlesInfo = data.results[0].result.response.battle;
-			calcBattleResult(battlesInfo)
-				.then(info => {
-					titanArenaEndBattle({
-						progress: info.progress,
-						result: info.result,
-						rivalId: battlesInfo.typeId
-					})
-				})
-		}
-		/** TODO: Допилить добитие точек */
-		function titanArenaEndBattle(args) {
-			titanArenaEndBattleCall = {
-				calls: [{
-					name: "titanArenaEndBattle",
-					args,
-					ident: "body"
-				}]
+			/** Если попытки равны номеру текущего боя делаем прерасчет */
+			if (attempts == currentRival) {
+				preCalcBattle(battlesInfo);
+				return;
 			}
-			send(JSON.stringify(titanArenaEndBattleCall), ()=>{});
+			/** Если попытки еще есть делаем расчет нового боя*/
+			if (attempts > 0) {
+				attempts--;
+				calcBattleResult(battlesInfo)
+					.then(resultCalcBattle);
+				return;
+			}
+			/** Иначе переходим к следующему сопернику */
+			roundRivals();
+		}
+		/** Обработка результатов расчета битвы */
+		function resultCalcBattle(resultBattle) {
+			// console.log('resultCalcBattle', currentRival, attempts, resultBattle.result.win);
+			/** Если текущий расчет победа или шансов нет или попытки кончились завершаем бой */
+			if (resultBattle.result.win || !attempts) {
+				titanArenaEndBattle({
+					progress: resultBattle.progress,
+					result: resultBattle.result,
+					rivalId: resultBattle.battleData.typeId
+				});
+				return;
+			}
+			/** Если не победа и есть попытки начинаем новый бой */
+			titanArenaStartBattle(resultBattle.battleData.typeId);
+		}
+		/** Возращает промис расчета результатов битвы */
+		function getBattleInfo(battle, isRandSeed) {
+			return new Promise(function (resolve) {
+				if (isRandSeed) {
+					battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
+				}
+				// console.log(battle.seed);
+				BattleCalc(battle, "get_titanClanPvp", e => resolve(e));
+			});
+		}
+		/** Прерасчтет битвы */
+		function preCalcBattle(battle) {
+			let actions = [getBattleInfo(battle, false)];
+			for (let i = 0; i < 10; i++) {
+				actions.push(getBattleInfo(battle, true));
+			}
+			Promise.all(actions)
+				.then(resultPreCalcBattle);
+		}
+		/** Обработка результатов прерасчета битвы */
+		function resultPreCalcBattle(e) {
+			let wins = e.map(n => n.result.win);
+			let firstBattle = e.shift();
+			let countWin = wins.reduce((w, s) => w + s);
+			let numReval = countRivalsTier - finishListBattle.length;
+			// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + numReval + '/' + countRivalsTier + ' - ' + countWin + '/11');
+			console.log('resultPreCalcBattle', countWin + '/11' )
+			if (countWin > 0) {
+				attempts = 10;
+			} else {
+				attempts = 0;
+			}
+			resultCalcBattle(firstBattle);
 		}
 
+		/** Завершить битву на арене */
+		function titanArenaEndBattle(args) {
+			let calls = [{
+				name: "titanArenaEndBattle",
+				args,
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), resultTitanArenaEndBattle);
+		}
+
+		function resultTitanArenaEndBattle(e) {
+			let attackScore = e.results[0].result.response.attackScore;
+			let numReval = countRivalsTier - finishListBattle.length;
+			setProgress('Турнир Стихий: Уровень ' + currTier + '</br>Бои: ' + numReval + '/' + countRivalsTier + ' - ' + attackScore);
+			/** TODO: Возможно стоит сделать улучшение результатов */
+			// console.log('resultTitanArenaEndBattle', e)
+			console.log('resultTitanArenaEndBattle', numReval + '/' + countRivalsTier, attempts)
+			roundRivals();
+		}
+		/** Состояние арены */
+		function titanArenaGetStatus() {
+			let calls = [{
+				name: "titanArenaGetStatus",
+				args: {},
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), checkResultInfo);
+		}
 		/** Запрос рейда арены */
 		function titanArenaStartRaid() {
-			titanArenaStartRaidCall = {
-				calls: [{
-					name: "titanArenaStartRaid",
-					args: {
-						titans: titan_arena
-					},
-					ident: "body"
-				}]
-			}
-			send(JSON.stringify(titanArenaStartRaidCall), calcResults);
+			let calls = [{
+				name: "titanArenaStartRaid",
+				args: {
+					titans: titan_arena
+				},
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), calcResults);
 		}
 
 		function calcResults(data) {
 			let battlesInfo = data.results[0].result.response;
 			let {attackers, rivals} = battlesInfo;
 			
-			promises = [];
+			let promises = [];
 			for (let n in rivals) {
 				rival = rivals[n];
 				promises.push(calcBattleResult({
@@ -2216,7 +2346,7 @@
 			if (isSucsesRaid) {
 				titanArenaCompleteTier();
 			} else {
-				endTitanArena('No sucsesRaid', results);
+				titanArenaGetStatus();
 			}
 		}
 		
@@ -2239,7 +2369,7 @@
 			setProgress('TitanArena completed!', true);
 			resolve();
 		}
-	}	
+	}
 	/** Скрыть прогресс */
 	function hideProgress(timeout) {
 		timeout = timeout || 0;
@@ -3074,13 +3204,93 @@
 			resolve();
 		}
 	}
+	/**
+	 * Автоповтор миссии
+	 * isStopSendMission = false;
+	 * isSendsMission = true; 
+	 **/
+	this.sendsMission = async function (param) {
+		if (isStopSendMission) {
+			isSendsMission = false;
+			console.log('Остановлено');
+			setProgress('');
+			await popup.confirm('Остановлено<br>Повторений: ' + param.count, [{
+				msg: 'Ok',
+				result: true
+			}, ])
+			return;
+		}
+
+		let missionStartCall = {
+			"calls": [{
+				"name": "missionStart",
+				"args": lastMissionStart,
+				"ident": "body"
+			}]
+		}
+		// Запрос на выполнение мисии
+		SendRequest(JSON.stringify(missionStartCall), async e => {
+			if (e['error']) {
+				isSendsMission = false;
+				console.log(e['error']);
+				setProgress('');
+				let msg = e['error'].name + ' ' + e['error'].description + '<br>Повторений: ' + param.count;
+				await popup.confirm(msg, [
+					{msg: 'Ok', result: true},
+				])
+				return;
+			}
+			// Расчет данных мисии
+			BattleCalc(e.results[0].result.response, 'get_tower', async r => {
+
+				let missionEndCall = {
+					"calls": [{
+						"name": "missionEnd",
+						"args": {
+							"id": param.id,
+							"result": r.result,
+							"progress": r.progress
+						},
+						"ident": "body"
+					}]
+				}
+				// Запрос на завершение миссии
+				SendRequest(JSON.stringify(missionEndCall), async (e) => {
+					if (e['error']) {
+						isSendsMission = false;
+						console.log(e['error']);
+						setProgress('');
+						let msg = e['error'].name + ' ' + e['error'].description + '<br>Повторений: ' + param.count;
+						await popup.confirm(msg, [
+							{msg: 'Ok', result: true},
+						])
+						return;
+					}
+					r = e.results[0].result.response;
+					if (r['error']) {
+						isSendsMission = false;
+						console.log(r['error']);
+						setProgress('');
+						await popup.confirm('Повторений: ' + param.count + ' 3 ' + r['error'], [
+							{msg: 'Ok', result: true},
+						])
+						return;
+					}
+
+					param.count++;
+					setProgress('Миссий пройдено: ' + param.count, false, () => {
+						isStopSendMission = true;
+					});
+					setTimeout(sendsMission, 1, param);
+				});
+			})
+		});
+	}
 })();
 
 /**
  * TODO:
  * Ускорение боя больше чем x5 
- * Автосбор запределья +
- * Тест боя для реплея +
- * Сбор выполненных заданий +
- * Выравнивание по высоте или переместить кнопки
+ * Автоотмена боев на СМ ВГ и Астгарде
+ * Добивание на арене титанов
  */
