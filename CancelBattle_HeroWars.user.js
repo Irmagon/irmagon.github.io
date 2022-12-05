@@ -384,6 +384,8 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if (call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
+					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
+					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') {
@@ -639,9 +641,7 @@
 		getOutland: {
 			name: 'Запределье',
 			title: 'Собрать Запределье',
-			func: function () {
-				confShow('Запустить скрипт Запределье?', getOutland);
-			},
+			func: getOutland,
 		},
 		testTitanArena: {
 			name: 'Турнир Стихий',
@@ -670,16 +670,12 @@
 		sendExpedition: {
 			name: 'Экспедиции',
 			title: 'Отправка и сбор экспедиций',
-			func: function () {
-				confShow('Запустить скрипт Экспедиции?', checkExpedition);
-			},
+			func: checkExpedition,
 		},
 		newDay: {
 			name: 'test Новый день',
 			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
-			func: function () {
-				confShow('Запустить скрипт Новый день?', cheats.refreshGame);
-			},
+			func: cheats.refreshGame,
 		},
 		// bossRatingEvent: {
 		// 	name: 'Горнило душ',
@@ -691,16 +687,12 @@
 		offerFarmAllReward: {
 			name: 'Пасхалки',
 			title: 'Собрать все пасхалки или награды',
-			func: function () {
-				confShow('Запустить скрипт Пасхалки?', offerFarmAllReward);
-			},
+			func: offerFarmAllReward,
 		},
 		questAllFarm: {
 			name: 'Награды',
 			title: 'Собрать все награды за задания',
-			func: function () {
-				confShow('Запустить скрипт Награды?', questAllFarm);
-			},
+			func: questAllFarm,
 		},
 		testRaidNodes: {
 			name: 'Прислужники',
@@ -708,6 +700,16 @@
 			func: function () {
 				confShow('Запустить скрипт Прислужники?', testRaidNodes);
 			},
+		},
+		goToSanctuary: {
+			name: 'Святилище',
+			title: 'Быстрый переход к Святилищу',
+			func: cheats.goSanctuary,
+		},
+		goToClanWar: {
+			name: 'Война гильдий',
+			title: 'Быстрый переход к Войне гильдий',
+			func: cheats.goClanWar,
 		},
 	}
 	/** Вывести кнопочки */
@@ -973,17 +975,18 @@
 		.scriptMenu_main {
 			position: absolute;
 			max-width: 285px;
-			border: 1px solid white;
-			left: 0px;
 			z-index: 9999;
-			top: 10%;
+			top: 50%;
+			transform: translateY(-50%);
 			background: #190e08e6;
+			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
+			padding: 5px 10px 5px 5px;
 			box-sizing: border-box;
+			font-size: 14px;
 			font-family: sans-serif;
 			font-stretch: condensed;
-			letter-spacing: 1px;
 			color: #fce1ac;
 			text-shadow: 0px 0px 1px;
 			transition: 1s;
@@ -2519,6 +2522,31 @@
 		/** Обновляет данные игры */
 		this.refreshGame = function () {
 			(new Game.NextDayUpdatedManager)[getProtoFn(Game.NextDayUpdatedManager, 5)]();
+		}
+
+		/**
+		 * Сменить экран игры на windowName
+		 * Возможные варианты:
+		 * MISSION, ARENA, GRAND, CHEST, SKILLS, SOCIAL_GIFT, CLAN, ENCHANT, TOWER, RATING, CHALLENGE, BOSS, CHAT, CLAN_DUNGEON, CLAN_CHEST, TITAN_GIFT, CLAN_RAID, ASGARD, HERO_ASCENSION, ROLE_ASCENSION, ASCENSION_CHEST, TITAN_MISSION, TITAN_ARENA, TITAN_ARTIFACT, TITAN_ARTIFACT_CHEST, TITAN_VALLEY, TITAN_SPIRITS, TITAN_ARTIFACT_MERCHANT, TITAN_ARENA_HALL_OF_FAME, CLAN_PVP, CLAN_PVP_MERCHANT, CLAN_GLOBAL_PVP, CLAN_GLOBAL_PVP_TITAN, ARTIFACT, ZEPPELIN, ARTIFACT_CHEST, ARTIFACT_MERCHANT, EXPEDITIONS, SUBSCRIPTION, NY2018_GIFTS, NY2018_TREE, NY2018_WELCOME, ADVENTURE, ADVENTURESOLO, SANCTUARY, PET_MERCHANT, PET_LIST, PET_SUMMON, BOSS_RATING_EVENT, BRAWL
+		 */
+		this.goNavigtor = function (windowName) {
+			let mechanicStorage = selfGame["game.data.storage.mechanic.MechanicStorage"];
+			let window = mechanicStorage[windowName];
+			let event = selfGame["game.mediator.gui.popup.PopupStashEventParams"]('');
+			let Game = selfGame['Game'];
+			let navigator = getF(Game, "get_navigator")
+			let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
+			Game.J()[navigator]()[navigate](window, event);
+		}
+		/** Переместиться в святилище cheats.goSanctuary() */
+		this.goSanctuary = () => {
+			this.goNavigtor("SANCTUARY");
+		}
+		/** Перейти к Войне Гильдий */
+		this.goClanWar = function() {
+			let player = selfGame["game.model.GameModel"].J().A;
+			let clanWarSelect = selfGame["game.mechanics.cross_clan_war.popup.selectMode.CrossClanWarSelectModeMediator"];
+			new clanWarSelect(player).open();
 		}
 
 		connectGame();
