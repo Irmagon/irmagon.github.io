@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.025
+// @version			2.026
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -2858,7 +2858,7 @@
 	function offerFarmAllReward() {
 		let offerGetAllCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
 		send(offerGetAllCall, function (data) {
-			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward" && !e?.freeRewardObtained);
+			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward" && !e?.freeRewardObtained && e.reward);
 			if (!offerGetAll.length) {
 				setProgress('Нечего собирать', true);
 				return;
