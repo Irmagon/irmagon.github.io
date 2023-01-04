@@ -684,9 +684,7 @@
 		testTitanArena: {
 			name: 'Турнир Стихий',
 			title: 'Пройти титан арену',
-			func: function () {
-				confShow('Запустить скрипт Турнир Стихий?', testTitanArena);
-			},
+			func:  testTitanArena,
 		},
 		testDungeon: {
 			name: 'Подземелье',
@@ -2061,7 +2059,7 @@
 		/** Идетификатор текущей пачки */
 		let currentRival = 0;
 		/** Колличество попыток добития пачки */
-		let attempts = 0;
+		let attempts = 100;
 		/** Была ли попытка добития текущего тира */
 		let isCheckCurrentTier = false;
 		/** Текущий тир */
@@ -2225,7 +2223,7 @@
 		/** Прерасчтет битвы */
 		function preCalcBattle(battle) {
 			let actions = [getBattleInfo(battle, false)];
-			for (let i = 0; i < 10; i++) {
+			for (let i = 0; i < 50; i++) {
 				actions.push(getBattleInfo(battle, true));
 			}
 			Promise.all(actions)
@@ -2240,7 +2238,7 @@
 			// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + numReval + '/' + countRivalsTier + ' - ' + countWin + '/11');
 			console.log('resultPreCalcBattle', countWin + '/11' )
 			if (countWin > 0) {
-				attempts = 10;
+				attempts = 50;
 			} else {
 				attempts = 0;
 			}
@@ -2383,7 +2381,7 @@
 		scriptMenu.setStatus(text, onclick);
 		hide = hide || false;
 		if (hide) {
-			hideProgress(3000);
+			hideProgress(1000);
 		}
 	}
 	function hackGame() {
