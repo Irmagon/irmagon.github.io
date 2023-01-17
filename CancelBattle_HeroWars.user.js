@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.026
+// @version			2.027
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -67,19 +67,13 @@
 		passBattle: {
 			label: 'Пропуск боев',
 			cbox: null,
-			title: 'Пропуск боев в запределье и арене титанов',
+			title: 'Пропуск боев в запределье и арене титанов, автопропуск в башне и кампании',
 			default: false
 		},
-		skipTower: {
-			label: 'Пропуск в башне',
+		fixBanError: {
+			label: 'fixBanError',
 			cbox: null,
-			title: 'Автопропуск боев в башне',
-			default: false
-		},
-		skipMisson: {
-			label: 'Пропуск в компании',
-			cbox: null,
-			title: 'Автопропуск боев в кампании',
+			title: 'Убирает ошибку возникающую из за бана, но сам бан не убирает все дейстия будут по прежнему не доступны',
 			default: false
 		},
 		endlessCards: {
@@ -393,6 +387,22 @@
 
 			let changeRequest = false;
 			testData = JSON.parse(tempData);
+			if (isChecked('fixBanError')) {
+				testData.calls.forEach((call, i) => {
+					const banFunc = [
+						'crossClanWar_getAvailableHistory',
+						'crossClanWar_getDefencePlan',
+						'crossClanWar_getAttackMap',
+						'clanWarAttack',
+						'crossClanWar_setDefenceTeam',
+						'crossClanWar_getDefenceMap',
+					]
+					if (banFunc.includes(call.name)) {
+						testData.calls.splice(i, 1);
+						changeRequest = true;
+					}
+				});
+			}
 			for (const call of testData.calls) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
@@ -1051,11 +1061,11 @@
 		.scriptMenu_checkbox+label::before {
 			content: '';
 			display: inline-block;
-			width: 25px;
-			height: 25px;
+			width: 20px;
+			height: 20px;
 			border: 1px solid #cf9250;
-			border-radius: 9px;
-			margin-right: 8px;
+			border-radius: 7px;
+			margin-right: 7px;
 		}
 		.scriptMenu_checkbox:checked+label::before {
 			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
@@ -1113,7 +1123,7 @@
 		}
 		.scriptMenu_InputText {
 			width: 130px;
-			height: 27px;
+			height: 24px;
 			border: 1px solid #cf9250;
 			border-radius: 9px;
 			background: transparent;
@@ -2059,7 +2069,7 @@
 		/** Идетификатор текущей пачки */
 		let currentRival = 0;
 		/** Колличество попыток добития пачки */
-		let attempts = 100;
+		let attempts = 0;
 		/** Была ли попытка добития текущего тира */
 		let isCheckCurrentTier = false;
 		/** Текущий тир */
@@ -2223,7 +2233,7 @@
 		/** Прерасчтет битвы */
 		function preCalcBattle(battle) {
 			let actions = [getBattleInfo(battle, false)];
-			for (let i = 0; i < 50; i++) {
+			for (let i = 0; i < 10; i++) {
 				actions.push(getBattleInfo(battle, true));
 			}
 			Promise.all(actions)
@@ -2238,7 +2248,7 @@
 			// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + numReval + '/' + countRivalsTier + ' - ' + countWin + '/11');
 			console.log('resultPreCalcBattle', countWin + '/11' )
 			if (countWin > 0) {
-				attempts = 50;
+				attempts = 10;
 			} else {
 				attempts = 0;
 			}
@@ -2381,7 +2391,7 @@
 		scriptMenu.setStatus(text, onclick);
 		hide = hide || false;
 		if (hide) {
-			hideProgress(1000);
+			hideProgress(800);
 		}
 	}
 	function hackGame() {
@@ -2536,7 +2546,7 @@
 				let PMD_12 = getProtoFn(Game.PlayerMissionData, 12);
 				let oldSkipMisson = Game.PlayerMissionData.prototype[PMD_12];
 				Game.PlayerMissionData.prototype[PMD_12] = function (a, b, c) {
-					if (isChecked('skipMisson')) {
+					if (isChecked('passBattle')) {
 						this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
 						var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
@@ -2563,7 +2573,7 @@
 				let PTD_67 = getProtoFn(Game.PlayerTowerData, 67);
 				let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
 				Game.PlayerTowerData.prototype[PTD_67] = function (a) {
-					if (isChecked('skipTower')) {
+					if (isChecked('passBattle')) {
 						var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 						a = new Game.BattleInstantPlay(a, p);
 						a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
