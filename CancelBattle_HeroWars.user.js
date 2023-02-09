@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.027
+// @version			2.029
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -29,12 +29,8 @@
 	let isLoadGame = false;
 	/** Заголовки последнего запроса */
 	let lastHeaders = {};
-	/** Данные о прошедшей атаке на босса */
-	let lastBossBattle = {}
 	/** Информация об отправленных подарках */
 	let freebieCheckInfo = null;
-	/** Идет бой с боссом */
-	let isStartBossBattle = false;
 	/** Данные пользователя */
 	let userInfo;
 	/** Оригинальные методы для работы с AJAX */
@@ -106,6 +102,18 @@
 			title: 'Предварительный расчет боя',
 			default: false
 		},
+		countControl: {
+			label: 'Контроль кол-ва',
+			cbox: null,
+			title: 'Возможность указывать колличество открываемых "лутбоксов"',
+			default: false
+		},
+		repeatMission: {
+			label: 'Повтор в компании',
+			cbox: null,
+			title: 'Автоповтор боев в кампании',
+			default: false
+		},
 	};
 	/** Инпуты */
 	let inputs = {
@@ -123,19 +131,34 @@
 	function getInput(inputName) {
 		return inputs[inputName].input.value;
 	}
-	/** Автоповтор миссии */
-	let isRepeatMission = false;
-	/** Вкл/Выкл автоповтор миссии */
-	this.switchRepeatMission = function() {
-		isRepeatMission = !isRepeatMission;
-		console.log(isRepeatMission);
-	}
 	/** Остановить повтор миссии */
 	let isStopSendMission = false;
 	/** Идет повтор миссии */
 	let isSendsMission = false;
 	/** Данные о прошедшей мисии */
 	let lastMissionStart = {}
+
+	/** Данные о прошедшей атаке на босса */
+	let lastBossBattle = {}
+	/** Данные для расчете последнего боя с боссом */
+	let lastBossBattleInfo = null;
+	/** Возможность отменить бой в Астгарде */
+	this.isCancalBossBattle = true;
+	/** Данные о прошедшей битве */
+	let lastBattleArg = {}
+	/** Имя функции начала боя */
+	let nameFuncStartBattle = '';
+	/** Имя функции конца боя */
+	let nameFuncEndBattle = '';
+	/** Данные для расчете последнего боя */
+	let lastBattleInfo = null;
+	/** Возможность отменить бой */
+	this.isCancalBattle = true;
+
+	/** Идетификатор последней открытой матрешки */
+	let lastRussianDollId = null;
+	/** Отменить обучающее руководство */
+	this.isCanceledTutorial = false;
 
 	/**
 	 * Копирует тест в буфер обмена
@@ -225,7 +248,8 @@
 		)
 	}
 	/** Подключение к коду игры */
-	const cheats = new hackGame();
+	this.cheats = new hackGame();
+	/** Функция расчета результатов боя */
 	this.BattleCalc = cheats.BattleCalc;
 	/** Возвращает объект если переданный парамет строка */
 	function getJson(result) {
@@ -396,6 +420,7 @@
 						'clanWarAttack',
 						'crossClanWar_setDefenceTeam',
 						'crossClanWar_getDefenceMap',
+						'crossClanWar_startBattle',
 					]
 					if (banFunc.includes(call.name)) {
 						testData.calls.splice(i, 1);
@@ -406,46 +431,64 @@
 			for (const call of testData.calls) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
-				if (call.name == 'adventure_endBattle' ||
+				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
 					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
 					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
-					call.name == 'clanRaid_endNodeBattle') {
+					call.name == 'clanRaid_endNodeBattle') &&
+					isCancalBattle) {
+					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
-						if (await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить бой')) {
+						let resultPopup = false;
+						if (call.name == 'crossClanWar_endBattle' ||
+							call.name == 'clanWarEndBattle' ||
+							call.name == 'adventure_endBattle' ||
+							call.name == 'adventureSolo_endBattle') {
+							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
+						} else {
+							resultPopup = await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить');
+						}
+						if (resultPopup) {
 							fixBattle(call.args.progress[0].attackers.heroes);
 							fixBattle(call.args.progress[0].defenders.heroes);
 							changeRequest = true;
+							if (resultPopup > 1) {
+								this.onReadySuccess = testAutoBattle;
+								// setTimeout(bossBattle, 1000);
+							}
 						}
 					}
 				}
 				/** Отмена боя в Асгарде */
-				if (call.name == 'clanRaid_endBossBattle') {
+				if (call.name == 'clanRaid_endBossBattle' &&
+					isCancalBossBattle) {
 					bossDamage = call.args.progress[0].defenders.heroes[1].extra;
 					sumDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
-					let resultPopup = await showMsg(
+					let resultPopup = await showMsgs(
 						'Вы нанесли ' + sumDamage.toLocaleString() + ' урона.',
-						'Хорошо',
-						'Отменить',
-						'Повторить')
+						'Хорошо', 'Отменить', 'Авто')
 					if (resultPopup) {
 						fixBattle(call.args.progress[0].attackers.heroes);
 						fixBattle(call.args.progress[0].defenders.heroes);
 						changeRequest = true;
 						if (resultPopup > 1) {
-							this.onReadySuccess = bossBattle;
-							isStartBossBattle = true;
+							this.onReadySuccess = testBossBattle;
 							// setTimeout(bossBattle, 1000);
 						}
-					} else {
-						isStartBossBattle = false;
 					}
 				}
 				/** Сохраняем пачку для атаки босса Асгарда */
 				if (call.name == 'clanRaid_startBossBattle') {
 					lastBossBattle = call.args;
+				}
+				/** Сохранение запроса начала последнего боя  */
+				if (call.name == 'clanWarAttack' ||
+					call.name == 'crossClanWar_startBattle' ||
+					call.name == 'adventure_turnStartBattle') {
+					nameFuncStartBattle = call.name;
+					lastBattleArg = call.args;
 				}
 				/** Отключить трату карт предсказаний */
 				if (call.name == 'dungeonEndBattle') {
@@ -459,7 +502,7 @@
 					freebieCheckInfo = call;
 				}
 				/** Получение данных миссии для автоповтора */
-				if (isRepeatMission &&
+				if (isChecked('repeatMission') &&
 					call.name == 'missionEnd') {
 					let missionInfo = {
 						id: call.args.id,
@@ -482,6 +525,59 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
+				/** Указать колличество для сфер титанов и яиц петов */
+				if (isChecked('countControl') &&
+					(call.name == 'pet_chestOpen' ||
+					call.name == 'titanUseSummonCircle') &&
+					call.args.amount > 1) {
+					const result = await popup.confirm('Указать колличество:', [
+							{msg: 'Открыть', isInput: true, default: call.args.amount},
+						]);
+					if (result) {
+						call.args.amount = result;
+						changeRequest = true;
+					}
+				}
+				/** Указать колличество для сфер артефактов титанов */
+				if (isChecked('countControl') &&
+					call.name == 'titanArtifactChestOpen' &&
+					call.args.amount > 1) {
+					const result = await popup.confirm('Указать колличество:', [
+							{msg: 'Открыть 1', result: 1},
+							{msg: 'Открыть 10', result: 10},
+							{msg: 'Открыть 100', result: 100},
+						]);
+					if (result) {
+						call.args.amount = result;
+						changeRequest = true;
+					}
+				}
+				/** Указать колличество для артефактных сундуков */
+				if (isChecked('countControl') &&
+					call.name == 'artifactChestOpen' &&
+					call.args.amount > 1) {
+					const result = await popup.confirm('Указать колличество:', [
+							{msg: 'Открыть 1', result: 1},
+							{msg: 'Открыть 10', result: 10},
+						]);
+					if (result) {
+						call.args.amount = result;
+						changeRequest = true;
+					}
+				}
+				if (call.name == 'consumableUseLootBox') {
+					lastRussianDollId = call.args.libId;
+					/** Указать колличество для золотых шкатулок */
+					if (isChecked('countControl') && 
+						call.args.libId == 148 && 
+						call.args.count > 1) {
+						const result = await popup.confirm('Указать колличество:', [
+							{msg: 'Открыть', isInput: true, default: call.args.amount},
+						]);
+						call.args.amount = result;
+						changeRequest = true;
+					}
+				}
 			}
 
 			let headers = requestHistory[this.uniqid].headers;
@@ -500,7 +596,7 @@
 		return sourceData;
 	}
 	/** Обработка и подмена входящих данных */
-	function checkChangeResponse(response) {
+	async function checkChangeResponse(response) {
 		try {
 			isChange = false;
 			let nowTime = Math.round(Date.now() / 1000);
@@ -566,6 +662,7 @@
 					isChecked('preCalcBattle')) {
 					setProgress('Идет прерасчет боя');
 					let battle = call.result.response.battle || call.result.response.replay;
+					lastBattleInfo = battle;
 					console.log(battle.type);
 					function getBattleInfo(battle, isRandSeed) {
 						return new Promise(function (resolve) {
@@ -586,6 +683,34 @@
 							let countWin = e.reduce((w, s) => w + s);
 							setProgress((firstBattle ? 'Победа' : 'Поражение') + ' ' + countWin + '/' + e.length + ' X', false, hideProgress)
 						});
+				}
+				/** Начало боя с боссом Асгарда */
+				if (call.ident == callsIdent['clanRaid_startBossBattle'] && isChecked('preCalcBattle')) {
+					lastBossBattleInfo = call.result.response.battle;
+				}
+				/** Отмена туториала */
+				if (isCanceledTutorial && call.ident == callsIdent['tutorialGetInfo']) {
+					let chains = call.result.response.chains;
+					for (let n in chains) {
+						chains[n] = 9999;
+					}
+					isChange = true;
+				}
+				/** АвтоПовтор открытия матрешек */
+				if (isChecked('countControl') && call.ident == callsIdent['consumableUseLootBox']) {
+					let lootBox = call.result.response;
+					let newCount = 0;
+					for (let n of lootBox) {
+						if (n?.consumable && n.consumable[lastRussianDollId]) {
+							newCount += n.consumable[lastRussianDollId]
+						}
+					}
+					if (newCount && await popup.confirm('Открыть ' + newCount + ' матрешек рекурсивно?', [
+							{msg: 'Повторить', result: true},
+							{msg: 'Нет', result: false},
+						])) {
+						openRussianDoll(lastRussianDollId, newCount);
+					}
 				}
 			}
 		} catch(err) {
@@ -650,8 +775,9 @@
 		scriptMenu.addHeader(GM_info.script.name);
 		scriptMenu.addHeader('v' + GM_info.script.version);
 
+		const details = scriptMenu.addDetails('Настройки')
 		for (let name in checkboxes) {
-			checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title);
+			checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title, details);
 			/** Получаем состояние чекбоксов из localStorage */
 			let val = storage.get(name, null);
 			if (val != null) {
@@ -825,13 +951,44 @@
 				margin-top: 25px;
 			}
 
+			.PopUp_buttons {
+				display: flex;
+				margin: 10px 12px;
+				flex-direction: column;
+			}
+
 			.PopUp_button {
 				background-color: #52A81C;
 				border-radius: 5px;
 				box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
 				cursor: pointer;
 				padding: 5px 18px 8px;
-				margin: 10px 12px;
+			}
+
+			.PopUp_input {
+				width: 150px;
+				font-size: 16px;
+				height: 27px;
+				border: 1px solid #cf9250;
+				border-radius: 9px 9px 0px 0px;
+				background: transparent;
+				color: #fce1ac;
+				padding: 1px 10px;
+				box-sizing: border-box;
+				box-shadow: 0px 0px 4px, 0px 0px 0px 3px #ce9767;
+			}
+
+			.PopUp_input::placeholder {
+				color: #fce1ac75;
+			}
+
+			.PopUp_input:focus {
+				outline: 0;
+			}
+
+			.PopUp_input + .PopUp_button {
+				border-radius: 0px 0px 5px 5px;
+				padding: 2px 18px 5px;
 			}
 
 			.PopUp_button:hover {
@@ -900,19 +1057,45 @@
 			this.popUp.style.display = 'none';
 		}
 
-		this.addButton = (text, func) => {
-			let button = document.createElement('div');
+		this.addButton = (option, buttonClick) => {
+			const contButton = document.createElement('div');
+			contButton.classList.add('PopUp_buttons');
+			this.downer.append(contButton);
+
+			let inputField = {
+				value: option.result || option.default
+			}
+			if (option.isInput) {
+				inputField = document.createElement('input');
+				inputField.type = 'text';
+				if (option.placeholder) {
+					inputField.placeholder = option.placeholder;
+				}
+				if (option.default) {
+					inputField.value = option.default;
+				}
+				inputField.classList.add('PopUp_input');
+				contButton.append(inputField);
+			}
+
+			const button = document.createElement('div');
 			button.classList.add('PopUp_button');
-			this.downer.append(button);
+			contButton.append(button);
 
-			button.addEventListener('click', func);
+			button.addEventListener('click', () => {
+				let result = '';
+				if (option.isInput) {
+					result = inputField.value;
+				}
+				buttonClick(result);
+			});
 
-			let buttonText = document.createElement('div');
+			const buttonText = document.createElement('div');
 			buttonText.classList.add('PopUp_text', 'PopUp_buttonText');
+			buttonText.innerText = option.msg;
 			button.append(buttonText);
 
-			buttonText.innerText = text;
-			this.buttons.push(button);
+			this.buttons.push(contButton);
 		}
 
 		this.clearButtons = () => {
@@ -930,11 +1113,12 @@
 			return new Promise((complete, failed) => {
 				this.setMsgText(msg);
 				if (!buttOpt) {
-					buttOpt = [{msg:'Ок', result: true}];
+					buttOpt = [{msg:'Ок', result: true, isInput: false}];
 				}
 				for (let butt of buttOpt) {
-					this.addButton(butt.msg, () => {
-						complete(butt.result);
+					this.addButton(butt, (result) => {
+						result = result || butt.result;
+						complete(result);
 						popup.hide();
 					});
 				}
@@ -950,6 +1134,10 @@
 		this.mainMenu,
 		this.buttons = [],
 		this.checkboxes = [];
+		this.option = {
+			showMenu: false,
+			showDetails: {}
+		};
 
 		this.init = function () {
 			addStyle();
@@ -1135,12 +1323,19 @@
 			filter: brightness(1.2);
 			outline: 0;
 		}
+		.scriptMenu_InputText::placeholder {
+			color: #fce1ac75;
+		}
+		.scriptMenu_Summary {
+			cursor: pointer;
+			margin-left: 7px;
+		}
 	`;
 			document.head.appendChild(style);
 		}
 
 		const addBlocks = () => {
-			main = document.createElement('div');
+			const main = document.createElement('div');
 			document.body.appendChild(main);
 
 			this.status = document.createElement('div');
@@ -1148,18 +1343,19 @@
 			this.setStatus('');
 			main.appendChild(this.status);
 
-			let label = document.createElement('label');
+			const label = document.createElement('label');
 			label.classList.add('scriptMenu_label');
 			label.setAttribute('for', 'checkbox_showMenu');
 			main.appendChild(label);
 
-			let arrowLabel = document.createElement('div');
+			const arrowLabel = document.createElement('div');
 			arrowLabel.classList.add('scriptMenu_arrowLabel');
 			label.appendChild(arrowLabel);
 
-			let checkbox = document.createElement('input');
+			const checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.id = 'checkbox_showMenu';
+			checkbox.checked = this.option.showMenu;
 			checkbox.classList.add('scriptMenu_showMenu');
 			main.appendChild(checkbox);
 
@@ -1167,12 +1363,12 @@
 			this.mainMenu.classList.add('scriptMenu_main');
 			main.appendChild(this.mainMenu);
 
-			let closeButton = document.createElement('label');
+			const closeButton = document.createElement('label');
 			closeButton.classList.add('scriptMenu_close');
 			closeButton.setAttribute('for', 'checkbox_showMenu');
 			this.mainMenu.appendChild(closeButton);
 
-			let crossClose = document.createElement('div');
+			const crossClose = document.createElement('div');
 			crossClose.classList.add('scriptMenu_crossClose');
 			closeButton.appendChild(crossClose);
 		}
@@ -1192,43 +1388,66 @@
 			}
 		}
 
-		this.addHeader = (text, func) => {
-			header = document.createElement('div');
+		/**
+		 * Добавление текстового элемента
+		 * @param {String} text текст
+		 * @param {Function} func функция по клику
+		 * @param {HTMLDivElement} main родитель
+		 */
+		this.addHeader = (text, func, main) => {
+			main = main || this.mainMenu;
+			const header = document.createElement('div');
 			header.classList.add('scriptMenu_header');
 			header.innerHTML = text;
 			if (typeof func == 'function') {
 				header.addEventListener('click', func);
 			}
-			this.mainMenu.appendChild(header);
+			main.appendChild(header);
 		}
 
-		this.addButton = (text, func, title) => {
-			button = document.createElement('div');
+		/**
+		 * Добавление кнопки
+		 * @param {String} text 
+		 * @param {Function} func 
+		 * @param {String} title 
+		 * @param {HTMLDivElement} main родитель
+		 */
+		this.addButton = (text, func, title, main) => {
+			main = main || this.mainMenu;
+			const button = document.createElement('div');
 			button.classList.add('scriptMenu_button');
 			button.title = title;
 			button.addEventListener('click', func);
-			this.mainMenu.appendChild(button);
+			main.appendChild(button);
 
-			buttonText = document.createElement('div');
+			const buttonText = document.createElement('div');
 			buttonText.classList.add('scriptMenu_buttonText');
 			buttonText.innerText = text;
 			button.appendChild(buttonText);
 			this.buttons.push(button);
 		}
 
-		this.addCheckbox = (label, title) => {
-			divCheckbox = document.createElement('div');
+		/**
+		 * Добавление чекбокса
+		 * @param {String} label 
+		 * @param {String} title 
+		 * @param {HTMLDivElement} main родитель
+		 * @returns 
+		 */
+		this.addCheckbox = (label, title, main) => {
+			main = main || this.mainMenu;
+			const divCheckbox = document.createElement('div');
 			divCheckbox.classList.add('scriptMenu_divInput');
 			divCheckbox.title = title;
-			this.mainMenu.appendChild(divCheckbox);
+			main.appendChild(divCheckbox);
 
-			newCheckbox = document.createElement('input');
+			const newCheckbox = document.createElement('input');
 			newCheckbox.type = 'checkbox';
 			newCheckbox.id = 'newCheckbox' + this.checkboxes.length;
 			newCheckbox.classList.add('scriptMenu_checkbox');
 			divCheckbox.appendChild(newCheckbox)
 
-			newCheckboxLabel = document.createElement('label');
+			const newCheckboxLabel = document.createElement('label');
 			newCheckboxLabel.innerText = label;
 			newCheckboxLabel.setAttribute('for', newCheckbox.id);
 			divCheckbox.appendChild(newCheckboxLabel);
@@ -1237,17 +1456,49 @@
 			return newCheckbox;
 		}
 
-		this.addInputText = (title) => {
-			divInputText = document.createElement('div');
+		/**
+		 * Добавление поля ввода
+		 * @param {String} title 
+		 * @param {String} placeholder 
+		 * @param {HTMLDivElement} main родитель
+		 * @returns 
+		 */
+		this.addInputText = (title, placeholder, main) => {
+			main = main || this.mainMenu;
+			const divInputText = document.createElement('div');
 			divInputText.classList.add('scriptMenu_divInputText');
 			divInputText.title = title;
-			this.mainMenu.appendChild(divInputText);
+			main.appendChild(divInputText);
 
-			newInputText = document.createElement('input');
+			const newInputText = document.createElement('input');
 			newInputText.type = 'text';
+			if (placeholder) {
+				newInputText.placeholder = placeholder;
+			}
 			newInputText.classList.add('scriptMenu_InputText');
 			divInputText.appendChild(newInputText)
 			return newInputText;
+		}
+
+		/**
+		 * Добавляет раскрывающийся блок
+		 * @param {String} summary 
+		 * @param {String} name 
+		 * @returns 
+		 */
+		this.addDetails = (summaryText, name) => {
+			const details = document.createElement('details');
+			if (this.option.showDetails[name]) {
+				details.open = this.option.showDetails[name];
+			}
+			this.mainMenu.appendChild(details);
+
+			const summary = document.createElement('summary');
+			summary.classList.add('scriptMenu_Summary');
+			summary.innerText = summaryText;
+			details.appendChild(summary);
+
+			return details;
 		}
 	});
 	/** Хранилище данных (только для числовых и булевых значений) */
@@ -2689,48 +2940,6 @@
 
 		connectGame();
 	}
-
-	/** Повтор атаки босса Асгарда */
-	function bossBattle() {
-		scriptMenu.setStatus('Бой с боссом идет!');
-		startBossBattle();
-
-		function startBossBattle() {
-			let startBossBattleCall = {
-				calls: [{
-					name: "clanRaid_startBossBattle",
-					args: lastBossBattle,
-					ident: "body"
-				}]
-			}
-			send(JSON.stringify(startBossBattleCall), calcResultBattle);
-		}
-
-		function calcResultBattle(e) {
-			// console.log(e);
-			BattleCalc(e.results[0].result.response.battle, "get_tower", endBossBattle);
-		}
-
-		function endBossBattle(battleResult) {
-			let endBossBattleCall = {
-				calls: [{
-					name: "clanRaid_endBossBattle",
-					args: {
-						result: battleResult.result,
-						progress: battleResult.progress
-					},
-					ident: "body"
-				}]
-			}
-			scriptMenu.setStatus('Бой с боссом завершен!');
-			setTimeout(() => {
-				scriptMenu.setStatus('');
-			}, 3000)
-			send(JSON.stringify(endBossBattleCall), e => {
-				console.log(e);
-			});
-		}
-	}
 	/** Автосбор подарков */
 	function getAutoGifts() {
 		let valName = 'giftSendIds_' + userInfo.id;
@@ -3051,6 +3260,7 @@
 
 			raidData.nodes = clanRaidInfo.nodes;
 			raidData.attempts = clanRaidInfo.attempts;
+			isCancalBattle = false;
 
 			checkNodes();
 		}
@@ -3206,6 +3416,7 @@
 		}
 		/** Завершение задачи */
 		function endRaidNodes(reason, info) {
+			isCancalBattle = true;
 			let textCancel = raidData.cancelBattle ? ' Битв отменено: ' + raidData.cancelBattle : '';
 			setProgress('Рейд прислужников завершен!' + textCancel, true);
 			console.log(reason, info);
@@ -3286,13 +3497,326 @@
 					}
 
 					param.count++;
-					setProgress('Миссий пройдено: ' + param.count, false, () => {
+					setProgress('Миссий пройдено: ' + param.count + ' (остановить)', false, () => {
 						isStopSendMission = true;
 					});
 					setTimeout(sendsMission, 1, param);
 				});
 			})
 		});
+	}
+	/** Рекурсивное открытие матрешек */
+	function openRussianDoll(id, count, sum) {
+		sum = sum || 0;
+		sum += count;
+		send('{"calls":[{"name":"consumableUseLootBox","args":{"libId":'+id+',"amount":'+count+'},"ident":"body"}]}', e => {
+			setProgress('Открыто ' + count, true);
+			let result = e.results[0].result.response;
+			let newCount = 0;
+			for(let n of result) {
+				if (n?.consumable && n.consumable[id]) {
+					newCount += n.consumable[id]
+				}
+			}
+			if (newCount) {
+				openRussianDoll(id, newCount, sum);
+			} else {
+				popup.confirm('Всего открыто ' + sum);
+			}
+		})
+	}
+	
+	function testBossBattle() {
+		return new Promise((resolve, reject) => {
+			const bossBattle = new executeBossBattle(resolve, reject);
+			bossBattle.start(lastBossBattle, lastBossBattleInfo);
+		});
+	}
+
+	/** Повтор атаки босса Асгарда */
+	function executeBossBattle(resolve, reject) {
+		let lastBossBattleArgs = {};
+		let reachDamage = 0;
+		let countBattle = 0;
+		let countMaxBattle = 10;
+		let lastDamage = 0;
+
+		this.start = function (battleArg, battleInfo) {
+			lastBossBattleArgs = battleArg;
+			preCalcBattle(battleInfo);
+		}
+
+		function getBattleInfo(battle) {
+			return new Promise(function (resolve) {
+				battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
+				BattleCalc(battle, getBattleType(battle.type), e => {
+					let extra = e.progress[0].defenders.heroes[1].extra;
+					resolve(extra.damageTaken + extra.damageTakenNextLevel);
+				});
+			});
+		}
+
+		function preCalcBattle(battle) {
+			let actions = [];
+			let countCalcBattle = 10;
+			for (let i = 0; i < countCalcBattle; i++) {
+				actions.push(getBattleInfo(battle, true));
+			}
+			Promise.all(actions)
+				.then(resultPreCalcBattle);
+		}
+
+		function fixDamage(damage) {
+			for (let i = 1e6; i > 1; i /= 10) {
+				if (damage > i) {
+					let n = i / 10;
+					damage = Math.ceil(damage / n) * n;
+					break;
+				}
+			}
+			return damage;
+		}
+
+		async function resultPreCalcBattle(damages) {
+			let maxDamage = 0;
+			let minDamage = 1e10;
+			let avgDamage = 0;
+			for (let damage of damages) {
+				avgDamage += damage
+				if (damage > maxDamage) {
+					maxDamage = damage;
+				}
+				if (damage < minDamage) {
+					minDamage = damage;
+				}
+			}
+			avgDamage /= damages.length;
+			console.log(damages.map(e => e.toLocaleString()).join('\n'), avgDamage, maxDamage);
+
+			reachDamage = fixDamage(avgDamage);
+			const result = await popup.confirm(
+				'Статистика урона:' +
+				'<br>Минимальный: ' + minDamage.toLocaleString() +
+				'<br>Максимальный: ' + maxDamage.toLocaleString() +
+				'<br>Средний: ' + avgDamage.toLocaleString() +
+				'<br>Поиск урона больше чем ' + reachDamage.toLocaleString(), [
+				{msg: 'Отмена', result: 0},
+				{msg: 'Погнали', isInput: true, default: reachDamage},
+			])
+			if (result) {
+				reachDamage = result;
+				isCancalBossBattle = false;
+				startBossBattle();
+				return;
+			}
+			endBossBattle('Отмена');
+		}
+
+		function startBossBattle() {
+			countBattle++;
+			if (countBattle > countMaxBattle) {
+				endBossBattle('>100')
+				return;
+			}
+			let calls = [{
+				name: "clanRaid_startBossBattle",
+				args: lastBossBattleArgs,
+				ident: "body"
+			}];
+			send(JSON.stringify({calls}), calcResultBattle);
+		}
+
+		function calcResultBattle(e) {
+			BattleCalc(e.results[0].result.response.battle, "get_clanPvp", resultBattle);
+		}
+
+		async function resultBattle(e) {
+			let extra = e.progress[0].defenders.heroes[1].extra
+			resultDamage = extra.damageTaken + extra.damageTakenNextLevel
+			console.log(resultDamage);
+			scriptMenu.setStatus(countBattle + ') ' + resultDamage.toLocaleString());
+			lastDamage = resultDamage;
+			if (resultDamage > reachDamage && await popup.confirm(countBattle + ') Урон ' + resultDamage.toLocaleString(), [
+				{msg: 'Ок', result: true},
+				{msg: 'Не пойдет', result: false},
+			]))  {
+				endBattle(e, false);
+				return;
+			}
+			cancelEndBattle(e);
+		}
+
+		function cancelEndBattle (r) {
+			const fixBattle = function (heroes) {
+				for (const ids in heroes) {
+					hero = heroes[ids];
+					hero.energy = random(1, 999);
+					if (hero.hp > 0) {
+						hero.hp = random(1, hero.hp);
+					}
+				}
+			}
+			fixBattle(r.progress[0].attackers.heroes);
+			fixBattle(r.progress[0].defenders.heroes);
+			endBattle(r, true);
+		}
+
+		function endBattle(battleResult, isCancal) {
+			let calls = [{
+				name: "clanRaid_endBossBattle",
+				args: {
+					result: battleResult.result,
+					progress: battleResult.progress
+				},
+				ident: "body"
+			}];
+			
+			send(JSON.stringify({calls}), e => {
+				console.log(e);
+				if (isCancal) {
+					startBossBattle();
+					return;
+				}
+				scriptMenu.setStatus('Босс пробит нанесен урон: ' + lastDamage);
+				setTimeout(() => {
+					scriptMenu.setStatus('');
+				}, 5000);
+				endBossBattle('Узпех!');
+			});
+		}
+
+		/** Завершение задачи */
+		function endBossBattle(reason, info) {
+			isCancalBossBattle = true;
+			console.log(reason, info);
+			resolve();
+		}
+	}
+
+	function testAutoBattle() {
+		return new Promise((resolve, reject) => {
+			const bossBattle = new executeAutoBattle(resolve, reject);
+			bossBattle.start(lastBattleArg, lastBattleInfo);
+		});
+	}
+
+	/** Автоповтор атаки */
+	function executeAutoBattle(resolve, reject) {
+		let battleArg = {};
+		let countBattle = 0;
+		let countMaxBattle = 10;
+
+		this.start = function (battleArgs, battleInfo) {
+			battleArg = battleArgs;
+			preCalcBattle(battleInfo);
+		}
+		/** Возвращает промис для прерасчета боя */
+		function getBattleInfo(battle) {
+			return new Promise(function (resolve) {
+				battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
+				BattleCalc(battle, getBattleType(battle.type), e => resolve(e.result.win));
+			});
+		}
+		/** Прерасчет боя */
+		function preCalcBattle(battle) {
+			let actions = [];
+			for (let i = 0; i < 10; i++) {
+				actions.push(getBattleInfo(battle));
+			}
+			Promise.all(actions)
+				.then(resultPreCalcBattle);
+		}
+		/** Обработка результатов прерасчета боя */
+		function resultPreCalcBattle(results) {
+			let countWin = results.reduce((w, s) => w + s);
+			if (countWin > 0) {
+				isCancalBattle = false;
+				startBattle();
+				return;
+			}
+			setProgress('Не судьба, шансы 0', true);
+			endAutoBattle('Не в этот раз');
+		}
+		/** Начало боя */
+		function startBattle() {
+			countBattle++;
+			setProgress(countBattle  + '/' + countMaxBattle);
+			if (countBattle > countMaxBattle) {
+				setProgress('Превышен лимит попыток: ' + countMaxBattle, true);
+				endAutoBattle('Превышен лимит попыток: ' + countMaxBattle)
+				return;
+			}
+			let calls = [{
+				name: nameFuncStartBattle,
+				args: battleArg,
+				ident: "body"
+			}];
+			send(JSON.stringify({
+				calls
+			}), calcResultBattle);
+		}
+		/** Расчет боя */
+		function calcResultBattle(e) {
+			let battle = e.results[0].result.response.battle
+			BattleCalc(battle, getBattleType(battle.type), resultBattle);
+		}
+		/** Обработка результатов боя */
+		function resultBattle(e) {
+			let isWin = e.result.win;
+			console.log(isWin);
+			if (isWin) {
+				endBattle(e, false);
+				return;
+			}
+			cancelEndBattle(e);
+		}
+		/** Отмена боя */
+		function cancelEndBattle(r) {
+			const fixBattle = function (heroes) {
+				for (const ids in heroes) {
+					hero = heroes[ids];
+					hero.energy = random(1, 999);
+					if (hero.hp > 0) {
+						hero.hp = random(1, hero.hp);
+					}
+				}
+			}
+			fixBattle(r.progress[0].attackers.heroes);
+			fixBattle(r.progress[0].defenders.heroes);
+			endBattle(r, true);
+		}
+		/** Завершение боя */
+		function endBattle(battleResult, isCancal) {
+			let calls = [{
+				name: nameFuncEndBattle,
+				args: {
+					result: battleResult.result,
+					progress: battleResult.progress
+				},
+				ident: "body"
+			}];
+
+			send(JSON.stringify({
+				calls
+			}), e => {
+				console.log(e);
+				if (isCancal) {
+					startBattle();
+					return;
+				}
+				scriptMenu.setStatus('Победа!');
+				setTimeout(() => {
+					scriptMenu.setStatus('');
+				}, 5000)
+				endAutoBattle('Успех!')
+			});
+		}
+		/** Завершение задачи */
+		function endAutoBattle(reason, info) {
+			isCancalBattle = true;
+			console.log(reason, info);
+			resolve();
+		}
 	}
 })();
 
