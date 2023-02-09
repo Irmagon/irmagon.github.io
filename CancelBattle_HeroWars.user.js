@@ -105,7 +105,7 @@
 		countControl: {
 			label: 'Контроль кол-ва',
 			cbox: null,
-			title: 'Возможность указывать колличество открываемых "лутбоксов"',
+			title: 'Возможность указывать количество открываемых "лутбоксов"',
 			default: false
 		},
 		repeatMission: {
@@ -433,8 +433,6 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
-					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
-					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
@@ -442,9 +440,7 @@
 					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
 						let resultPopup = false;
-						if (call.name == 'crossClanWar_endBattle' ||
-							call.name == 'clanWarEndBattle' ||
-							call.name == 'adventure_endBattle' ||
+						if (call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
 							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
@@ -525,12 +521,12 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
-				/** Указать колличество для сфер титанов и яиц петов */
+				/** Указать количество для сфер титанов и яиц петов */
 				if (isChecked('countControl') &&
 					(call.name == 'pet_chestOpen' ||
 					call.name == 'titanUseSummonCircle') &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
+					const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 					if (result) {
@@ -538,11 +534,11 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать колличество для сфер артефактов титанов */
+				/** Указать количество для сфер артефактов титанов */
 				if (isChecked('countControl') &&
 					call.name == 'titanArtifactChestOpen' &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
+					const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть 1', result: 1},
 							{msg: 'Открыть 10', result: 10},
 							{msg: 'Открыть 100', result: 100},
@@ -552,11 +548,11 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать колличество для артефактных сундуков */
+				/** Указать количество для артефактных сундуков */
 				if (isChecked('countControl') &&
 					call.name == 'artifactChestOpen' &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
+					const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть 1', result: 1},
 							{msg: 'Открыть 10', result: 10},
 						]);
@@ -567,11 +563,11 @@
 				}
 				if (call.name == 'consumableUseLootBox') {
 					lastRussianDollId = call.args.libId;
-					/** Указать колличество для золотых шкатулок */
+					/** Указать количество для золотых шкатулок */
 					if (isChecked('countControl') && 
 						call.args.libId == 148 && 
 						call.args.count > 1) {
-						const result = await popup.confirm('Указать колличество:', [
+						const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 						call.args.amount = result;
@@ -1644,7 +1640,6 @@
 	// Отправка запроса доступная через консоль
 	this.SendRequest = send;
 
-
 	function testDungeon(titanit) {
 		return new Promise((resolve, reject) => {
 			popup.showBack();
@@ -1744,7 +1739,6 @@
 				heroes: getTitanTeam(titanGetAll, 'earth'),
 				teamNum: 0,
 			};
-
 
 			checkFloor(dungeonGetInfo);
 		}
