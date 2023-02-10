@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.029
+// @version			2.031
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -105,7 +105,7 @@
 		countControl: {
 			label: 'Контроль кол-ва',
 			cbox: null,
-			title: 'Возможность указывать количество открываемых "лутбоксов"',
+			title: 'Возможность указывать колличество открываемых "лутбоксов"',
 			default: false
 		},
 		repeatMission: {
@@ -433,6 +433,8 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
+					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
+					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
@@ -440,7 +442,9 @@
 					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
 						let resultPopup = false;
-						if (call.name == 'adventure_endBattle' ||
+						if (call.name == 'crossClanWar_endBattle' ||
+							call.name == 'clanWarEndBattle' ||
+							call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
 							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
@@ -521,12 +525,12 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
-				/** Указать количество для сфер титанов и яиц петов */
+				/** Указать колличество для сфер титанов и яиц петов */
 				if (isChecked('countControl') &&
 					(call.name == 'pet_chestOpen' ||
 					call.name == 'titanUseSummonCircle') &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать количество:', [
+					const result = await popup.confirm('Указать колличество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 					if (result) {
@@ -534,25 +538,12 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать количество для сфер артефактов титанов */
+				/** Указать колличество для сфер артефактов титанов или артефактных сундуков */
 				if (isChecked('countControl') &&
 					call.name == 'titanArtifactChestOpen' &&
-					call.args.amount > 1) {
-					const result = await popup.confirm('Указать количество:', [
-							{msg: 'Открыть 1', result: 1},
-							{msg: 'Открыть 10', result: 10},
-							{msg: 'Открыть 100', result: 100},
-						]);
-					if (result) {
-						call.args.amount = result;
-						changeRequest = true;
-					}
-				}
-				/** Указать количество для артефактных сундуков */
-				if (isChecked('countControl') &&
 					call.name == 'artifactChestOpen' &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать количество:', [
+					const result = await popup.confirm('Указать колличество:', [
 							{msg: 'Открыть 1', result: 1},
 							{msg: 'Открыть 10', result: 10},
 						]);
@@ -563,11 +554,11 @@
 				}
 				if (call.name == 'consumableUseLootBox') {
 					lastRussianDollId = call.args.libId;
-					/** Указать количество для золотых шкатулок */
-					if (isChecked('countControl') && 
-						call.args.libId == 148 && 
+					/** Указать колличество для золотых шкатулок */
+					if (isChecked('countControl') &&
+						call.args.libId == 148 &&
 						call.args.count > 1) {
-						const result = await popup.confirm('Указать количество:', [
+						const result = await popup.confirm('Указать колличество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 						call.args.amount = result;
@@ -599,7 +590,7 @@
 			callsIdent = requestHistory[this.uniqid].calls;
 			respond = JSON.parse(response);
 			for (const call of respond.results) {
-				if (call.ident == callsIdent['subscriptionGetInfo'] && 
+				if (call.ident == callsIdent['subscriptionGetInfo'] &&
 					(call.result.response.subscription?.status != 1 || !call.result.response.subscription)) {
 					if (!call.result.response.subscription) {
 						call.result.response.subscription = {}
@@ -654,7 +645,7 @@
 				if ((call.ident == callsIdent['clanWarAttack'] ||
 					call.ident == callsIdent['crossClanWar_startBattle'] ||
 					call.ident == callsIdent['battleGetReplay'] ||
-					call.ident == callsIdent['adventure_turnStartBattle']) && 
+					call.ident == callsIdent['adventure_turnStartBattle']) &&
 					isChecked('preCalcBattle')) {
 					setProgress('Идет прерасчет боя');
 					let battle = call.result.response.battle || call.result.response.replay;
@@ -808,10 +799,20 @@
 	}
 	/** Список кнопочек */
 	const buttons = {
-		getOutland: {
-			name: 'Запределье',
-			title: 'Собрать Запределье',
-			func: getOutland,
+		newDay: {
+			name: 'Обновить',
+			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
+			func: cheats.refreshGame,
+		},
+		questAllFarm: {
+			name: 'Награды',
+			title: 'Собрать все награды за задания',
+			func: questAllFarm,
+		},
+		sendExpedition: {
+			name: 'Экспедиции',
+			title: 'Отправка и сбор экспедиций',
+			func: checkExpedition,
 		},
 		testTitanArena: {
 			name: 'Турнир Стихий',
@@ -835,15 +836,15 @@
 				confShow('Запустить скрипт Башня?', testTower);
 			},
 		},
-		sendExpedition: {
-			name: 'Экспедиции',
-			title: 'Отправка и сбор экспедиций',
-			func: checkExpedition,
+		offerFarmAllReward: {
+			name: 'Пасхалки',
+			title: 'Собрать все пасхалки или награды',
+			func: offerFarmAllReward,
 		},
-		newDay: {
-			name: 'test Новый день',
-			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
-			func: cheats.refreshGame,
+        getOutland: {
+			name: 'Запределье',
+			title: 'Собрать Запределье',
+			func: getOutland,
 		},
 		// bossRatingEvent: {
 		// 	name: 'Горнило душ',
@@ -852,16 +853,6 @@
 		// 		confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
 		// 	},
 		// },
-		offerFarmAllReward: {
-			name: 'Пасхалки',
-			title: 'Собрать все пасхалки или награды',
-			func: offerFarmAllReward,
-		},
-		questAllFarm: {
-			name: 'Награды',
-			title: 'Собрать все награды за задания',
-			func: questAllFarm,
-		},
 		testRaidNodes: {
 			name: 'Прислужники',
 			title: 'Атакует прислужников сохраннеными пачками',
@@ -942,7 +933,7 @@
 				justify-content: space-evenly;
 				align-items: center;
 			}
-			
+
 			.PopUp_blocks:last-child {
 				margin-top: 25px;
 			}
@@ -1177,10 +1168,10 @@
 			background: radial-gradient(circle, #47a41b 0%, #1a2f04 100%);
 			border: 1px solid #1a2f04;
 			border-radius: 5px;
-			box-shadow: 
+			box-shadow:
 			inset 0px 2px 4px #83ce26,
-			inset 0px -4px 6px #1a2f04, 
-			0px 0px 2px black, 
+			inset 0px -4px 6px #1a2f04,
+			0px 0px 2px black,
 			0px 0px 0px 2px	#ce9767;
 		}
 		.scriptMenu_label:hover {
@@ -1403,9 +1394,9 @@
 
 		/**
 		 * Добавление кнопки
-		 * @param {String} text 
-		 * @param {Function} func 
-		 * @param {String} title 
+		 * @param {String} text
+		 * @param {Function} func
+		 * @param {String} title
 		 * @param {HTMLDivElement} main родитель
 		 */
 		this.addButton = (text, func, title, main) => {
@@ -1425,10 +1416,10 @@
 
 		/**
 		 * Добавление чекбокса
-		 * @param {String} label 
-		 * @param {String} title 
+		 * @param {String} label
+		 * @param {String} title
 		 * @param {HTMLDivElement} main родитель
-		 * @returns 
+		 * @returns
 		 */
 		this.addCheckbox = (label, title, main) => {
 			main = main || this.mainMenu;
@@ -1454,10 +1445,10 @@
 
 		/**
 		 * Добавление поля ввода
-		 * @param {String} title 
-		 * @param {String} placeholder 
+		 * @param {String} title
+		 * @param {String} placeholder
 		 * @param {HTMLDivElement} main родитель
-		 * @returns 
+		 * @returns
 		 */
 		this.addInputText = (title, placeholder, main) => {
 			main = main || this.mainMenu;
@@ -1478,9 +1469,9 @@
 
 		/**
 		 * Добавляет раскрывающийся блок
-		 * @param {String} summary 
-		 * @param {String} name 
-		 * @returns 
+		 * @param {String} summary
+		 * @param {String} name
+		 * @returns
 		 */
 		this.addDetails = (summaryText, name) => {
 			const details = document.createElement('details');
@@ -1529,7 +1520,7 @@
 			dataExped = {useHeroes:[], exped:[]};
 			for (var n in dataExpedition) {
 				var exped = dataExpedition[n];
-				
+
 				// console.log(exped, exped.status, dateNow, exped.endTime);
 				var dateNow = (Date.now() / 1000);
 				if (exped.status == 2 && exped.endTime != 0 && dateNow > exped.endTime) {
@@ -1640,6 +1631,7 @@
 	// Отправка запроса доступная через консоль
 	this.SendRequest = send;
 
+
 	function testDungeon(titanit) {
 		return new Promise((resolve, reject) => {
 			popup.showBack();
@@ -1697,7 +1689,7 @@
 		}
 
 		/** Получаем данные по подземелью */
-		function startDungeon(e) { 
+		function startDungeon(e) {
 			res = e.results;
 			dungeonGetInfo = res[0].result.response;
 			if (!dungeonGetInfo) {
@@ -1740,6 +1732,7 @@
 				teamNum: 0,
 			};
 
+
 			checkFloor(dungeonGetInfo);
 		}
 
@@ -1775,14 +1768,14 @@
 			}
 			titansStates = dungeonInfo.states.titans;
 			titanStats = titanObjToArray(titansStates);
-			floorСhoices = dungeonInfo.floor.userData
+			floorChoices = dungeonInfo.floor.userData;
 			floorType = dungeonInfo.floorType;
 			primeElement = dungeonInfo.elements.prime;
 			if (floorType == "battle") {
 				promises = [];
-				for (let teamNum in floorСhoices) {
-					attackerType = floorСhoices[teamNum].attackerType;
-					promises.push(startBattle(teamNum, attackerType));
+				for (let teamNum in floorChoices) {
+					attackerType = floorChoices[teamNum].attackerType;
+                    promises.push(startBattle(teamNum, attackerType));
 				}
 				Promise.all(promises)
 					.then(processingPromises);
@@ -1829,7 +1822,7 @@
 			startBattle(selectInfo.teamNum, selectInfo.attackerType)
 				.then(endBattle);
 		}
-		
+
 		/** Начинаем бой */
 		function startBattle(teamNum, attackerType) {
 			return new Promise(function (resolve, reject) {
@@ -1880,7 +1873,7 @@
 				endDungeon('dungeonEndBattle win: false\n', battleInfo);
 			}
 		}
-			
+
 		/** Получаем и обрабатываем результаты боя */
 		function resultEndBattle(e) {
 			battleResult = e.results[0].result.response;
@@ -1932,7 +1925,7 @@
 			setProgress('Dungeon completed!', true);
 			resolve();
 		}
-		
+
 	}
 
 	function testTower() {
@@ -2058,7 +2051,7 @@
 			floorNumber = +towerInfo.floorNumber;
 			heroesStates = towerInfo.states.heroes;
 
-			// 
+			//
 
 			isOpenChest = false;
 			if (towerInfo.floorType == "chest") {
@@ -2098,7 +2091,7 @@
 					break;
 			}
 		}
-		
+
 		/** Начинаем бой */
 		function startBattle() {
 			return new Promise(function (resolve, reject) {
@@ -2138,7 +2131,7 @@
 				endTower('towerEndBattle win: false\n', battleInfo);
 			}
 		}
-			
+
 		/** Получаем и обрабатываем результаты боя */
 		function resultEndBattle(e) {
 			battleResult = e.results[0].result.response;
@@ -2296,7 +2289,7 @@
 			setProgress('Tower completed!', true);
 			resolve();
 		}
-		
+
 	}
 
 	function testTitanArena() {
@@ -2369,7 +2362,7 @@
 			if (titanArena.canRaid) {
 				titanArenaStartRaid();
 				return;
-			} 
+			}
 			/** Проверка была ли попытка добития текущего тира */
 			if (!isCheckCurrentTier) {
 				checkRivals(titanArena.rivals);
@@ -2543,7 +2536,7 @@
 		function calcResults(data) {
 			let battlesInfo = data.results[0].result.response;
 			let {attackers, rivals} = battlesInfo;
-			
+
 			let promises = [];
 			for (let n in rivals) {
 				rival = rivals[n];
@@ -2602,7 +2595,7 @@
 				titanArenaGetStatus();
 			}
 		}
-		
+
 		function titanArenaFarmDailyReward() {
 			titanArenaFarmDailyRewardCall = {
 				calls: [{
@@ -2649,7 +2642,7 @@
 			{name:"BattleConfigStorage", prop:"game.data.storage.battle.BattleConfigStorage"},
 			{name:"BattleInstantPlay", prop:"game.battle.controller.instant.BattleInstantPlay"},
 			{name:"MultiBattleResult", prop:"game.battle.controller.MultiBattleResult"},
-			
+
 			{name:"PlayerMissionData", prop:"game.model.user.mission.PlayerMissionData"},
 			{name:"PlayerMissionBattle", prop:"game.model.user.mission.PlayerMissionBattle"},
 			{name:"GameModel", prop:"game.model.GameModel"},
@@ -2747,7 +2740,7 @@
 		 * Возвращает из класса функцию с указанным именем
 		 * @param {Object} classF класс
 		 * @param {String} nameF имя функции
-		 * @returns 
+		 * @returns
 		 */
 		function getF(classF, nameF) {
 			let prop = Object.entries(classF.prototype.__properties__)
@@ -2758,7 +2751,7 @@
 		 * Возвращает имя функции с указаным порядковым номером из класса
 		 * @param {Object} classF класс
 		 * @param {Number} nF порядковый номер функции
-		 * @returns 
+		 * @returns
 		 */
 		function getFn(classF, nF) {
 			// let prop = Object.getOwnPropertyNames(classF);
@@ -2774,7 +2767,7 @@
 		 * Возвращает имя функции с указаным порядковым номером из прототипа класса
 		 * @param {Object} classF класс
 		 * @param {Number} nF порядковый номер функции
-		 * @returns 
+		 * @returns
 		 */
 		function getProtoFn(classF, nF) {
 			// let prop = Object.getOwnPropertyNames(classF.prototype);
@@ -2856,7 +2849,7 @@
 						this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](Game.Translate.translate("UI_POPUP_BATTLE_RETREAT"), (q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 15)]))); /** 14 > 15 */
 						this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](
 							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 12)](),
-							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]() ? 
+							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]() ?
 							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 16)])) :
 							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 16)])) /** 15 > 16 */
 						);
@@ -3195,7 +3188,7 @@
 
 	/**
 	 * Атака прислужников Асгарда
-	 * @returns 
+	 * @returns
 	 */
 	function testRaidNodes() {
 		return new Promise((resolve, reject) => {
@@ -3420,7 +3413,7 @@
 	/**
 	 * Автоповтор миссии
 	 * isStopSendMission = false;
-	 * isSendsMission = true; 
+	 * isSendsMission = true;
 	 **/
 	this.sendsMission = async function (param) {
 		if (isStopSendMission) {
@@ -3519,7 +3512,7 @@
 			}
 		})
 	}
-	
+
 	function testBossBattle() {
 		return new Promise((resolve, reject) => {
 			const bossBattle = new executeBossBattle(resolve, reject);
@@ -3664,7 +3657,7 @@
 				},
 				ident: "body"
 			}];
-			
+
 			send(JSON.stringify({calls}), e => {
 				console.log(e);
 				if (isCancal) {
@@ -3816,7 +3809,7 @@
 
 /**
  * TODO:
- * Ускорение боя больше чем x5 
+ * Ускорение боя больше чем x5
  * Автоотмена боев на СМ ВГ и Астгарде
  * Добивание на арене титанов
  */
