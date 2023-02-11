@@ -439,8 +439,6 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
-					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
-					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
@@ -448,9 +446,7 @@
 					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
 						let resultPopup = false;
-						if (call.name == 'crossClanWar_endBattle' ||
-							call.name == 'clanWarEndBattle' ||
-							call.name == 'adventure_endBattle' ||
+						if (call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
 							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
