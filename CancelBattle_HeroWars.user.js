@@ -114,6 +114,12 @@
 			title: 'Автоповтор боев в кампании',
 			default: false
 		},
+		fastMode: {
+			label: 'Быстрый режим',
+			cbox: null,
+			title: 'Быстрый режим прохождения подземелья',
+			default: false
+		},
 	};
 	/** Инпуты */
 	let inputs = {
@@ -1632,34 +1638,38 @@
 	this.SendRequest = send;
 
 
-	function testDungeon(titanit) {
+	async function testDungeon(titanit) {
 		return new Promise((resolve, reject) => {
 			popup.showBack();
-			dung = new executeDungeon(resolve, reject);
+			let dung = new executeDungeon(resolve, reject);
 			dung.start(titanit);
 		});
 	}
 
 	/** Прохождение подземелья */
 	function executeDungeon(resolve, reject) {
-		dungeonActivity = 0;
-		maxDungeonActivity = 150;
+		let dungeonActivity = 0;
+		let startDungeonActivity = 0;
+		let maxDungeonActivity = 150;
+		let limitDungeonActivity = 30180;
+		let fastMode = isChecked('fastMode');
+		let end = false;
 
-		titanGetAll = [];
+        let timeDungeon = new Date().getTime();
 
-		teams = {
-			heroes: [],
-			earth: [],
-			fire: [],
+		let titansStates = {};
+        let bestBattle = {};
+
+		let teams = {
 			neutral: [],
 			water: [],
+			earth: [],
+			fire: [],
+			hero: []
 		}
 
-		titanStats = [];
 
-		titansStates = {};
-
-		callsExecuteDungeon = {
+		let callsExecuteDungeon = {
 			calls: [{
 				name: "dungeonGetInfo",
 				args: {},
@@ -1676,159 +1686,450 @@
 				name: "clanGetInfo",
 				args: {},
 				ident: "clanGetInfo"
-			}, {
-				name: "titanGetAll",
-				args: {},
-				ident: "titanGetAll"
 			}]
 		}
 
-		this.start = function(titanit) {
-			maxDungeonActivity = titanit || 75;
+		this.start = async function(titanit) {
+			maxDungeonActivity = titanit > limitDungeonActivity ? limitDungeonActivity : titanit;
 			send(JSON.stringify(callsExecuteDungeon), startDungeon);
 		}
 
 		/** Получаем данные по подземелью */
 		function startDungeon(e) {
-			res = e.results;
-			dungeonGetInfo = res[0].result.response;
+			let res = e.results;
+			let dungeonGetInfo = res[0].result.response;
 			if (!dungeonGetInfo) {
 				endDungeon('noDungeon', res);
 				return;
 			}
-			teamGetAll = res[1].result.response;
-			teamGetFavor = res[2].result.response;
+            console.log("Начинаем копать: ", new Date());
+			let teamGetAll = res[1].result.response;
+			let teamGetFavor = res[2].result.response;
 			dungeonActivity = res[3].result.response.stat.todayDungeonActivity;
-			titanGetAll = Object.values(res[4].result.response);
+            startDungeonActivity = res[3].result.response.stat.todayDungeonActivity;
+			titansStates = dungeonGetInfo.states.titans;
 
 			teams.hero = {
 				favor: teamGetFavor.dungeon_hero,
 				heroes: teamGetAll.dungeon_hero.filter(id => id < 6000),
 				teamNum: 0,
 			}
-			heroPet = teamGetAll.dungeon_hero.filter(id => id >= 6000).pop();
+			let heroPet = teamGetAll.dungeon_hero.filter(id => id >= 6000).pop();
 			if (heroPet) {
 				teams.hero.pet = heroPet;
 			}
 
-			teams.neutral = {
-				favor: {},
-				heroes: getTitanTeam(titanGetAll, 'neutral'),
-				teamNum: 0,
-			};
+			teams.neutral = getTitanTeam('neutral');
 			teams.water = {
 				favor: {},
-				heroes: getTitanTeam(titanGetAll, 'water'),
-				teamNum: 0,
-			};
-			teams.fire = {
-				favor: {},
-				heroes: getTitanTeam(titanGetAll, 'fire'),
+				heroes: getTitanTeam('water'),
 				teamNum: 0,
 			};
 			teams.earth = {
 				favor: {},
-				heroes: getTitanTeam(titanGetAll, 'earth'),
+				heroes: getTitanTeam('earth'),
 				teamNum: 0,
 			};
-
+			teams.fire = {
+				favor: {},
+				heroes: getTitanTeam('fire'),
+				teamNum: 0,
+			};
 
 			checkFloor(dungeonGetInfo);
 		}
 
-		function getTitanTeam(titans, type) {
+		function getTitanTeam(type) {
 			switch (type) {
 				case 'neutral':
-					return titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
+					return [4023, 4022, 4012, 4021, 4011, 4010, 4020];
 				case 'water':
-					return titans.filter(e => e.id.toString().slice(2, 3) == '0').map(e => e.id);
-				case 'fire':
-					return titans.filter(e => e.id.toString().slice(2, 3) == '1').map(e => e.id);
+					return [4000, 4001, 4002, 4003]
+                        .filter(e => !titansStates[e]?.isDead);
 				case 'earth':
-					return titans.filter(e => e.id.toString().slice(2, 3) == '2').map(e => e.id);
+					return [4020, 4022, 4021, 4023]
+                        .filter(e => !titansStates[e]?.isDead);
+				case 'fire':
+					return [4010, 4011, 4012, 4013]
+                        .filter(e => !titansStates[e]?.isDead);
 			}
 		}
 
-		function fixTitanTeam(titans) {
-			titans.heroes = titans.heroes.filter(e => !titansStates[e]?.isDead);
-			return titans;
+		/** Создать копию объекта */
+		function clone(a) {
+            return JSON.parse(JSON.stringify(a));
 		}
 
+		/** Находит стихию на этаже */
+        function findElement(floor, element) {
+            for (let i in floor) {
+                if (floor[i].attackerType === element) {
+                    return i;
+                }
+            }
+            return undefined;
+        }
+
 		/** Проверяем этаж */
-		function checkFloor(dungeonInfo) {
+		async function checkFloor(dungeonInfo) {
 			if (!('floor' in dungeonInfo) || dungeonInfo.floor?.state == 2) {
 				saveProgress();
 				return;
 			}
-			// console.log(dungeonInfo, dungeonActivity);
 			setProgress('Dungeon: Титанит ' + dungeonActivity + '/' + maxDungeonActivity);
 			if (dungeonActivity >= maxDungeonActivity) {
 				endDungeon('endDungeon');
 				return;
 			}
 			titansStates = dungeonInfo.states.titans;
-			titanStats = titanObjToArray(titansStates);
-			floorChoices = dungeonInfo.floor.userData;
-			floorType = dungeonInfo.floorType;
-			primeElement = dungeonInfo.elements.prime;
-			if (floorType == "battle") {
-				promises = [];
-				for (let teamNum in floorChoices) {
-					attackerType = floorChoices[teamNum].attackerType;
-                    promises.push(startBattle(teamNum, attackerType));
-				}
-				Promise.all(promises)
-					.then(processingPromises);
-			}
+            bestBattle = {};
+			let floorChoices = dungeonInfo.floor.userData;
+            if (floorChoices.length > 1) {
+                for (let element in teams) {
+                    let teamNum = findElement(floorChoices, element);
+                    if (!!teamNum) {
+                        if (element == 'earth') {
+                            teamNum = await chooseEarthOrFire(floorChoices);
+                            if (teamNum < 0) {
+                                endDungeon('Невозможно победить без потери Титана!', dungeonInfo);
+                                return;
+                            }
+                        }
+                        chooseElement(floorChoices[teamNum].attackerType, teamNum);
+                        return;
+                    }
+                }
+            } else {
+                chooseElement(floorChoices[0].attackerType, 0);
+            }
+        }
+
+		/** Выбираем огнем или землей атаковать */
+		async function chooseEarthOrFire(floorChoices) {
+            bestBattle.recovery = -11;
+            let selectedTeamNum = -1;
+            for (let attempt = 0; selectedTeamNum < 0 && attempt < 4; attempt++) {
+                for (let teamNum in floorChoices) {
+                    let attackerType = floorChoices[teamNum].attackerType;
+                    selectedTeamNum = await attemptAttackEarthOrFire(teamNum, attackerType, attempt);
+                }
+            }
+            console.log("Выбор команды огня или земли: ", selectedTeamNum < 0 ? "не сделан" : floorChoices[selectedTeamNum].attackerType);
+            return selectedTeamNum;
 		}
 
-		function processingPromises(results) {
-			selectInfo = results[0];
-			if (results.length < 2) {
-				// console.log(selectInfo);
-				endBattle(selectInfo);
-				return;
-			}
-
-			selectInfo = false;
-			minRes = 1e10;
-			for (let info of results) {
-				diffXP = diffTitanXP(info.progress[0].attackers.heroes);
-				diffRes = diffXP;
-				if (info.attackerType == 'neutral') {
-					diffRes /= 2;
-					diffRes -= 4;
-				}
-				if (info.attackerType == primeElement) {
-					diffRes /= 2;
-					diffRes -= 5;
-				}
-				info.diffXP = diffXP
-				info.diffRes = diffRes
-				if (!info.result.win) {
-					continue;
-				}
-				if (diffRes < minRes) {
-					selectInfo = info;
-					minRes = diffRes;
-				}
-			}
-			// console.log(selectInfo.teamNum, results);
-			if (!selectInfo) {
-				endDungeon('dungeonEndBattle\n', results);
-				return;
-			}
-
-			startBattle(selectInfo.teamNum, selectInfo.attackerType)
-				.then(endBattle);
+		/** Попытка атаки землей и огнем */
+		async function attemptAttackEarthOrFire(teamNum, attackerType, attempt) {
+            let team = clone(teams[attackerType]);
+            let startIndex = team.heroes.length + attempt - 4;
+            if (startIndex >= 0) {
+                team.heroes = team.heroes.slice(startIndex);
+                let recovery = await getBestRecovery(teamNum, attackerType, team, fastMode ? 5 : 25);
+                if (recovery > bestBattle.recovery) {
+                    bestBattle.recovery = recovery;
+                    bestBattle.selectedTeamNum = teamNum;
+                    bestBattle.team = team;
+                }
+            }
+            if (bestBattle.recovery < -10) {
+                return -1;
+            }
+            return bestBattle.selectedTeamNum;
 		}
+
+		/** Выбираем стихию для атаки */
+		async function chooseElement(attackerType, teamNum) {
+            let result;
+            switch (attackerType) {
+                case 'hero':
+                case 'water':
+                    result = await startBattle(teamNum, attackerType, teams[attackerType]);
+                    break;
+                case 'earth':
+                case 'fire':
+                    result = await attackEarthOrFire(teamNum, attackerType);
+                    break;
+                case 'neutral':
+                    result = await attackNeutral(teamNum, attackerType);
+            }
+            if (!!result && attackerType != 'hero') {
+                let recovery = (!!!bestBattle.recovery ? 10 * getRecovery(result) : bestBattle.recovery) * 100;
+                let titans = result.progress[0].attackers.heroes;
+                console.log("Проведен бой: " + attackerType +
+                            ", recovery = " + (recovery > 0 ? "+" : "") + recovery + "% \r\n", titans);
+            }
+            endBattle(result);
+        }
+
+		/** Атакуем Землей или Огнем */
+		async function attackEarthOrFire(teamNum, attackerType) {
+            if (!!!bestBattle.recovery) {
+                bestBattle.recovery = -11;
+                let selectedTeamNum = -1;
+                for (let attempt = 0; selectedTeamNum < 0 && attempt < 4; attempt++) {
+                    selectedTeamNum = await attemptAttackEarthOrFire(teamNum, attackerType, attempt);
+                }
+                if (selectedTeamNum < 0) {
+                    endDungeon('Невозможно победить без потери Титана!', attackerType);
+                    return;
+                }
+            }
+            return findAttack(teamNum, attackerType, bestBattle.team);
+		}
+
+		/** Находим подходящий результат для атаки */
+		async function findAttack(teamNum, attackerType, team) {
+            let recovery = -1000;
+            let iterations = 0;
+            let result;
+            let correction = fastMode ? 0.01 : 0.001;
+            for (let needRecovery = bestBattle.recovery; recovery < needRecovery; needRecovery -= correction, iterations++) {
+                result = await startBattle(teamNum, attackerType, team);
+                recovery = getRecovery(result);
+            }
+            bestBattle.recovery = recovery;
+            return result;
+		}
+
+		/** Атакуем Нейтральной командой */
+		async function attackNeutral(teamNum, attackerType) {
+            let factors = calcFactor();
+            bestBattle.recovery = -0.2;
+            await findBestBattleNeutral(teamNum, attackerType, factors, true)
+            if (fastMode && (bestBattle.recovery < 0 || (bestBattle.recovery < 0.2 && factors[0].value < 0.5))) {
+                let recovery = (100 * bestBattle.recovery);
+                console.log("Не удалось найти удачный бой в быстром режиме: " + attackerType +
+                            ", recovery = " + (recovery > 0 ? "+" : "") + recovery + "% \r\n", bestBattle.attackers);
+                await findBestBattleNeutral(teamNum, attackerType, factors, false)
+            }
+            if (!!bestBattle.attackers) {
+                let team = getTeam(bestBattle.attackers);
+                return findAttack(teamNum, attackerType, team);
+            }
+            endDungeon('Не удалось найти удачный бой!', attackerType);
+            return undefined;
+        }
+
+		/** Находит лучшую нейтральную команду */
+		async function findBestBattleNeutral(teamNum, attackerType, factors, mode) {
+            let countFactors = factors.length < 4 ? factors.length : 4;
+            let aradgi = !titansStates['4013']?.isDead;
+            let edem = !titansStates['4023']?.isDead;
+            let mor = !titansStates['4032']?.isDead;
+            let iyry = !titansStates['4042']?.isDead;
+            let actions = [];
+            if (fastMode && mode) {
+                for (let i = 0; i < countFactors; i++) {
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(factors[i].id)));
+                }
+                if (countFactors > 1) {
+                    let firstId = factors[0].id;
+                    let secondId = factors[1].id;
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4001, secondId)));
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4002, secondId)));
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4003, secondId)));
+                }
+                if (aradgi) {
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4013)));
+                    if (countFactors > 0) {
+                        let firstId = factors[0].id;
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4000, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4001, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4002, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4003, 4013)));
+                    }
+                    if (edem) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4023, 4000, 4013)));
+                    }
+                }
+            } else {
+                if (mode) {
+                    for (let i = 0; i < factors.length; i++) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(factors[i].id)));
+                    }
+                } else {
+                    countFactors = factors.length < 2 ? factors.length : 2;
+                }
+                for (let i = 0; i < countFactors; i++) {
+                    let mainId = factors[i].id;
+                    if (aradgi && (mode || i > 0)) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4013)));
+                    }
+                    if (mor) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4032)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4032)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4032)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4032)));
+                    }
+                    if (iyry) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4042)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4042)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4042)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4042)));
+                    }
+                    let isFull = mode || i > 0;
+                    for (let j = isFull ? i + 1 : 2; j < factors.length; j++) {
+                        let extraId = factors[j].id;
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, extraId)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, extraId)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, extraId)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, extraId)));
+                    }
+                }
+                if (aradgi) {
+                    if (mode) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4013)));
+                    }
+                    if (mor) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4000, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4001, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4002, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4003, 4013)));
+                    }
+                    if (iyry) {
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4000, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4001, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4002, 4013)));
+                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4003, 4013)));
+                    }
+                }
+                if (mor) {
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032)));
+                }
+                if (iyry) {
+                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042)));
+                }
+            }
+            for (let result of await Promise.all(actions)) {
+                let recovery = getRecovery(result);
+                if (recovery > bestBattle.recovery) {
+                    bestBattle.recovery = recovery;
+                    bestBattle.attackers = result.progress[0].attackers.heroes;
+                }
+            }
+        }
+
+		/** Получаем нейтральную команду */
+        function getNeutralTeam(id, swapId, addId) {
+            let neutralTeam = clone(teams.water);
+            let neutral = neutralTeam.heroes;
+            if (neutral.length == 4) {
+                if (!!swapId) {
+                    for (let i in neutral) {
+                        if (neutral[i] == swapId) {
+                            neutral[i] = addId;
+                        }
+                    }
+                }
+            } else if (!!addId) {
+                neutral.push(addId);
+            }
+            neutral.push(id);
+            return neutralTeam;
+		}
+
+		/** Получить команду титанов */
+        function getTeam(titans) {
+            return {
+                favor: {},
+                heroes: Object.keys(titans).map(id => parseInt(id)),
+                teamNum: 0,
+            };
+        }
+
+		/** Вычисляем фактор боеготовности титанов */
+		function calcFactor() {
+            let neutral = teams.neutral;
+            let factors = [];
+            for (let i in neutral) {
+                let titanId = neutral[i];
+                let titan = titansStates[titanId];
+                let factor = !!titan ? titan.hp / titan.maxHp + titan.energy / 10000.0 : 1;
+                if (factor > 0) {
+                    factors.push({id: titanId, value: factor});
+                }
+            }
+            factors.sort(function(a, b) {
+                return a.value - b.value;
+            });
+            return factors;
+		}
+
+		/** Возвращает наилучший результат из нескольких боев */
+		async function getBestRecovery(teamNum, attackerType, team, countBattle) {
+            let bestRecovery = -1000;
+            let actions = [];
+            for (let i = 0; i < countBattle; i++) {
+                actions.push(startBattle(teamNum, attackerType, team));
+            }
+            for (let result of await Promise.all(actions)) {
+                let recovery = getRecovery(result);
+                if (recovery > bestRecovery) {
+                    bestRecovery = recovery;
+                }
+            }
+            return bestRecovery;
+        }
+
+        /** Возвращает разницу в здоровье атакующей команды после и до битвы и проверяет здоровье титанов на необходимый минимум*/
+        function getRecovery(result) {
+            if (result.result.stars < 3) {
+                return -100;
+            }
+            let beforeSumFactor = 0;
+            let afterSumFactor = 0;
+            let beforeTitans = result.battleData.attackers;
+            let afterTitans = result.progress[0].attackers.heroes;
+            for (let i in afterTitans) {
+                let titan = afterTitans[i];
+                let percentHP = titan.hp / beforeTitans[i].hp;
+                let energy = titan.energy;
+                let factor = checkTitan(i, energy, percentHP) ? getFactor(i, energy, percentHP) : -100;
+                afterSumFactor += factor;
+            }
+            for (let i in beforeTitans) {
+                let titan = beforeTitans[i];
+                let state = titan.state;
+                beforeSumFactor += !!state ? getFactor(i, state.energy, state.hp / titan.hp) : 1;
+            }
+            return afterSumFactor - beforeSumFactor;
+        }
+
+        /** Возвращает состояние титана*/
+        function getFactor(id, energy, percentHP) {
+            let elemantId = id.slice(2, 3);
+            let isEarthOrFire = elemantId == '1' || elemantId == '2';
+            let energyBonus = id == '4020' && energy == 1000 ? 0.1 : energy / 20000.0;
+            let factor = percentHP + energyBonus;
+            return isEarthOrFire ? factor : factor / 10;
+        }
+
+        /** Проверяет состояние титана*/
+        function checkTitan(id, energy, percentHP) {
+            switch (id) {
+                case '4020':
+                    return percentHP > 0.25 || (energy == 1000 && percentHP > 0.05);
+                    break;
+                case '4010':
+                    return percentHP + energy / 2000.0 > 0.63;
+                    break;
+                case '4000':
+                    return percentHP > 0.62 || (energy < 1000 && (
+                        (percentHP > 0.45 && energy >= 400) ||
+                        (percentHP > 0.3 && energy >= 670)));
+            }
+            return true;
+        }
+
 
 		/** Начинаем бой */
-		function startBattle(teamNum, attackerType) {
+		function startBattle(teamNum, attackerType, args) {
 			return new Promise(function (resolve, reject) {
-				args = fixTitanTeam(teams[attackerType]);
 				args.teamNum = teamNum;
-				startBattleCall = {
+				let startBattleCall = {
 					calls: [{
 						name: "dungeonStartBattle",
 						args,
@@ -1842,72 +2143,61 @@
 				});
 			});
 		}
-		/** Возращает резульат боя в промис */
+
+		/** Возращает результат боя в промис */
 		function resultBattle(resultBattles, args) {
-			battleData = resultBattles.results[0].result.response;
-			battleType = "get_tower";
-			if (battleData.type == "dungeon_titan") {
-				battleType = "get_titan";
-			}
-			BattleCalc(battleData, battleType, function (result) {
-				result.teamNum = args.teamNum;
-				result.attackerType = args.attackerType;
-				args.resolve(result);
-			});
-		}
+            if (!!resultBattles && !!resultBattles.results) {
+                let battleData = resultBattles.results[0].result.response;
+                let battleType = "get_tower";
+                if (battleData.type == "dungeon_titan") {
+                    battleType = "get_titan";
+                }
+                BattleCalc(battleData, battleType, function (result) {
+                    result.teamNum = args.teamNum;
+                    result.attackerType = args.attackerType;
+                    args.resolve(result);
+                });
+            } else {
+                endDungeon('Потеряна связь с сервером игры!', 'break');
+            }
+        }
+
 		/** Заканчиваем бой */
 		function endBattle(battleInfo) {
-			if (battleInfo.result.win) {
-				endBattleCall = {
-					calls: [{
-						name: "dungeonEndBattle",
-						args: {
-							result: battleInfo.result,
-							progress: battleInfo.progress,
-						},
-						ident: "body"
-					}]
-				}
-				send(JSON.stringify(endBattleCall), resultEndBattle);
-			} else {
-				endDungeon('dungeonEndBattle win: false\n', battleInfo);
-			}
-		}
+            if (!!battleInfo) {
+                if (battleInfo.result.stars < 3) {
+                    endDungeon('Герой или Титан мог погибнуть в бою!', battleInfo);
+                    return;
+                }
+                let endBattleCall = {
+                    calls: [{
+                        name: "dungeonEndBattle",
+                        args: {
+                            result: battleInfo.result,
+                            progress: battleInfo.progress,
+                        },
+                        ident: "body"
+                    }]
+                }
+                send(JSON.stringify(endBattleCall), resultEndBattle);
+            }
+        }
 
 		/** Получаем и обрабатываем результаты боя */
 		function resultEndBattle(e) {
-			battleResult = e.results[0].result.response;
-			if ('error' in battleResult) {
-				endDungeon('errorBattleResult', battleResult);
-				return;
-			}
-			dungeonGetInfo = battleResult.dungeon ?? battleResult;
-			dungeonActivity += battleResult.reward.dungeonActivity ?? 0;
-			checkFloor(dungeonGetInfo);
-		}
-
-		/** Возвращает разницу между максимальными ХП титанов и переданными */
-		function diffTitanXP(titans) {
-			sumCurrentXp = 0;
-			for (let i in titans) {
-				sumCurrentXp += titans[i].hp
-			}
-			titanIds = Object.getOwnPropertyNames(titans);
-			maxHP = titanStats.reduce((n, e) =>
-				titanIds.includes(e.id.toString()) ? n + e.hp : n
-			, 0);
-			return maxHP < sumCurrentXp ? 0 : maxHP - sumCurrentXp;
-		}
-
-		/** Преобразует объект с идетификаторами в массив с идетификаторами*/
-		function titanObjToArray(obj) {
-			let titans = [];
-			for (let id in obj) {
-				obj[id].id = id;
-				titans.push(obj[id]);
-			}
-			return titans;
-		}
+            if (!!e && !!e.results) {
+                let battleResult = e.results[0].result.response;
+                if ('error' in battleResult) {
+                    endDungeon('errorBattleResult', battleResult);
+                    return;
+                }
+                let dungeonGetInfo = battleResult.dungeon ?? battleResult;
+                dungeonActivity += battleResult.reward.dungeonActivity ?? 0;
+                checkFloor(dungeonGetInfo);
+            } else {
+                endDungeon('Потеряна связь с сервером игры!', 'break');
+            }
+        }
 
 		function saveProgress() {
 			let saveProgressCall = {
@@ -1920,13 +2210,36 @@
 			send(JSON.stringify(saveProgressCall), resultEndBattle);
 		}
 
+
+		/** Выводит статистику прохождения подземелья */
+		function showStats() {
+            let activity = dungeonActivity - startDungeonActivity;
+            let workTime = ((new Date().getTime() - timeDungeon) / 1000);
+            console.log(titansStates);
+            console.log("Собрано титанита: ", activity);
+            console.log("Скорость сбора: " + (3600 * activity / workTime) + " титанита/час");
+            console.log("Время раскопок: " + workTime + " сек.");
+		}
+
+		/** Заканчиваем копать подземелье */
 		function endDungeon(reason, info) {
-			console.log(reason, info);
-			setProgress('Dungeon completed!', true);
-			resolve();
+            if (!end) {
+                end = true;
+                console.log(reason, info);
+                showStats();
+                if (info == 'break') {
+                    setProgress('Dungeon stoped: Титанит ' + dungeonActivity + '/' + maxDungeonActivity +
+                                "\r\nПотеряна связь с сервером игры!", false, hideProgress);
+                } else {
+                    setProgress('Dungeon completed: Титанит ' + dungeonActivity + '/' + maxDungeonActivity, false, hideProgress);
+                }
+                setTimeout(cheats.refreshGame, 1000);
+                resolve();
+            }
 		}
 
 	}
+
 
 	function testTower() {
 		return new Promise((resolve, reject) => {
