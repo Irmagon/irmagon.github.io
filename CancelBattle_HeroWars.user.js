@@ -2,7 +2,7 @@
 // @name			CancelBattle_HeroWars_dev
 // @name:en			CancelBattle_HeroWars_dev
 // @namespace		CancelBattle_HeroWars_dev
-// @version			2.031
+// @version			2.033
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
@@ -159,7 +159,7 @@
 	/** Данные для расчете последнего боя */
 	let lastBattleInfo = null;
 	/** Возможность отменить бой */
-	this.isCancalBattle = true;
+	let isCancalBattle = true;
 
 	/** Идетификатор последней открытой матрешки */
 	let lastRussianDollId = null;
@@ -257,6 +257,8 @@
 	this.cheats = new hackGame();
 	/** Функция расчета результатов боя */
 	this.BattleCalc = cheats.BattleCalc;
+	/** Отправка запроса доступная через консоль */
+	this.SendRequest = send;
 	/** Возвращает объект если переданный парамет строка */
 	function getJson(result) {
 		if (typeof result == 'string') {
@@ -542,7 +544,7 @@
 				}
 				/** Указать колличество для сфер артефактов титанов или артефактных сундуков */
 				if (isChecked('countControl') &&
-					call.name == 'titanArtifactChestOpen' &&
+					call.name == 'titanArtifactChestOpen' ||
 					call.name == 'artifactChestOpen' &&
 					call.args.amount > 1) {
 					const result = await popup.confirm('Указать колличество:', [
@@ -559,7 +561,7 @@
 					/** Указать колличество для золотых шкатулок */
 					if (isChecked('countControl') &&
 						call.args.libId == 148 &&
-						call.args.count > 1) {
+						call.args.amount > 1) {
 						const result = await popup.confirm('Указать колличество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
@@ -1630,9 +1632,6 @@
 		/** Отправляем запрос */
 		xhr.send(json);
 	}
-	// Отправка запроса доступная через консоль
-	this.SendRequest = send;
-
 
 	async function testDungeon(titanit) {
 		return new Promise((resolve, reject) => {
@@ -3045,14 +3044,15 @@
 			});
 			battleInstantPlay.start();
 		}
+
 		/**
 		 * Возвращает из класса функцию с указанным именем
 		 * @param {Object} classF класс
 		 * @param {String} nameF имя функции
-		 * @returns
+		 * @returns 
 		 */
-		function getF(classF, nameF) {
-			let prop = Object.entries(classF.prototype.__properties__)
+		function getFnP(classF, nameF) {
+			let prop = Object.entries(classF.__properties__)
 			return prop.filter((e) => e[1] == nameF).pop()[0];
 		}
 
@@ -3221,7 +3221,8 @@
 			let Game = selfGame['Game'];
 			let navigator = getF(Game, "get_navigator")
 			let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
-			Game.J()[navigator]()[navigate](window, event);
+			let instance = getFnP(Game, 'get_instance');
+			Game[instance]()[navigator]()[navigate](window, event);
 		}
 		/** Переместиться в святилище cheats.goSanctuary() */
 		this.goSanctuary = () => {
@@ -3229,7 +3230,8 @@
 		}
 		/** Перейти к Войне Гильдий */
 		this.goClanWar = function() {
-			let player = selfGame["game.model.GameModel"].J().A;
+			let instance = getFnP(selfGame["game.model.GameModel"], 'get_instance')
+			let player = selfGame["game.model.GameModel"][instance]().A;
 			let clanWarSelect = selfGame["game.mechanics.cross_clan_war.popup.selectMode.CrossClanWarSelectModeMediator"];
 			new clanWarSelect(player).open();
 		}
