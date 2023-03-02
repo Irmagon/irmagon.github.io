@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name			CancelBattle_HeroWars_dev
-// @name:en			CancelBattle_HeroWars_dev
-// @namespace		CancelBattle_HeroWars_dev
-// @version			2.033
+// @name			HeroWarsHelper
+// @name:en			HeroWarsHelper
+// @namespace		HeroWarsHelper
+// @version			2.035
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
 // @author			ZingerY
-// @homepage		http://ilovemycomp.narod.ru/CancelBattle_HeroWars_dev.user.js
+// @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
 // @encoding		utf-8
@@ -20,6 +20,10 @@
 (function() {
 	/** Стартуем скрипт */
 	console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
+	/** Информация о скрипте */
+	const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
+		({name, version, author, homepage, lastModified, updateUrl, source}))
+		(GM_info.script, GM_info.scriptUpdateURL, arguments.callee.toString());
 	/** Если находимся на странице подарков, то собираем и отправляем их на сервер */
 	if (['www.solfors.com', 't.me'].includes(location.host)) {
 		setTimeout(sendCodes, 2000);
@@ -66,12 +70,6 @@
 			title: 'Пропуск боев в запределье и арене титанов, автопропуск в башне и кампании',
 			default: false
 		},
-		fixBanError: {
-			label: 'fixBanError',
-			cbox: null,
-			title: 'Убирает ошибку возникающую из за бана, но сам бан не убирает все дейстия будут по прежнему не доступны',
-			default: false
-		},
 		endlessCards: {
 			label: 'Бесконечные карты',
 			cbox: null,
@@ -114,6 +112,12 @@
 			title: 'Автоповтор боев в кампании',
 			default: false
 		},
+		noOfferDonat: {
+			label: 'Отключить донат',
+			cbox: null,
+			title: 'Убирает все предложения доната',
+			default: false
+		},
 		fastMode: {
 			label: 'Быстрый режим',
 			cbox: null,
@@ -127,6 +131,16 @@
 			input: null,
 			title: 'Сколько фармим титанита',
 			default: 150,
+		},
+		speedBattle: {
+			input: null,
+			title: 'Множитель ускорения боя',
+			default: 5,
+		},
+		countTestBattle: {
+			input: null,
+			title: 'Количество тестовых боев',
+			default: 10,
 		}
 	}
 	/** Проверяет чекбокс */
@@ -149,7 +163,7 @@
 	/** Данные для расчете последнего боя с боссом */
 	let lastBossBattleInfo = null;
 	/** Возможность отменить бой в Астгарде */
-	this.isCancalBossBattle = true;
+	let isCancalBossBattle = true;
 	/** Данные о прошедшей битве */
 	let lastBattleArg = {}
 	/** Имя функции начала боя */
@@ -204,8 +218,10 @@
 	/** Сбор и отправка кодов подарков */
 	function sendCodes() {
 		let codes = [], count = 0;
-		localStorage['giftSendIds'] = localStorage['giftSendIds'] ?? '';
-		document.querySelectorAll('a[target="_blank"]').forEach(e => {
+		if (!localStorage['giftSendIds']) {
+			localStorage['giftSendIds'] = '';
+		}
+        document.querySelectorAll('a[target="_blank"]').forEach(e => {
 			let url = e?.href;
 			if (!url) return;
 			url = new URL(url);
@@ -217,7 +233,8 @@
 		});
 
 		if (codes.length) {
-			sendGiftsCodes(codes);
+			localStorage['giftSendIds'] = localStorage['giftSendIds'].split(';').splice(-50).join(';');
+            sendGiftsCodes(codes);
 		}
 
 		if (!count) {
@@ -240,8 +257,8 @@
 	}
 	/** Отправка кодов */
 	function sendGiftsCodes(codes) {
-		fetch('https://zingery.ru/heroes/gifts.php', {
-			method: 'POST',
+		fetch('https://zingery.ru/heroes/setGifts.php', {
+            method: 'POST',
 			body: JSON.stringify(codes)
 		}).then(
 			response => response.json()
@@ -297,6 +314,7 @@
 	/** Переопределяем/проксируем метод создания Ajax запроса */
 	XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
 		this.uniqid = Date.now();
+		this.errorRequest = false;
 		if (method == 'POST' && url.includes('.nextersglobal.com/api/') && /api\/$/.test(url)) {
 			if (!apiUrl) {
 				apiUrl = url;
@@ -313,7 +331,9 @@
 				signature: [],
 				calls: {},
 			};
-		}
+		} else if (method == 'POST' && url.includes('error.nextersglobal.com/client/')) {
+			this.errorRequest = true;
+        }
 		return original.open.call(this, method, url, async, user, password);
 	};
 	/** Переопределяем/проксируем метод установки заголовков для AJAX запроса */
@@ -382,7 +402,29 @@
 				}
 			}
 		}
+		if (this.errorRequest) {
+			const oldReady = this.onreadystatechange;
+			this.onreadystatechange = function () {
+				Object.defineProperty(this, 'status', {
+					writable: true
+				});
+				this.status = 200;
+				Object.defineProperty(this, 'readyState', {
+					writable: true
+				});
+				this.readyState = 4;
+				Object.defineProperty(this, 'responseText', {
+					writable: true
+				});
+				this.responseText = JSON.stringify({
+					"result": true
+				});
+				return oldReady.apply(this, arguments);
+			}
+			this.onreadystatechange();
+		} else {
 		return original.send.call(this, sourceData);
+        }
 	};
 	/** Обработка и подмена исходящих данных */
 	async function checkChangeSend(sourceData, tempData) {
@@ -419,23 +461,6 @@
 
 			let changeRequest = false;
 			testData = JSON.parse(tempData);
-			if (isChecked('fixBanError')) {
-				testData.calls.forEach((call, i) => {
-					const banFunc = [
-						'crossClanWar_getAvailableHistory',
-						'crossClanWar_getDefencePlan',
-						'crossClanWar_getAttackMap',
-						'clanWarAttack',
-						'crossClanWar_setDefenceTeam',
-						'crossClanWar_getDefenceMap',
-						'crossClanWar_startBattle',
-					]
-					if (banFunc.includes(call.name)) {
-						testData.calls.splice(i, 1);
-						changeRequest = true;
-					}
-				});
-			}
 			for (const call of testData.calls) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
@@ -593,6 +618,12 @@
 			let nowTime = Math.round(Date.now() / 1000);
 			callsIdent = requestHistory[this.uniqid].calls;
 			respond = JSON.parse(response);
+			// if (respond.error) {
+			// 	isChange = true;
+			// 	console.error(respond.error);
+			// 	delete respond.error;
+			// 	respond.results = [];
+			// }
 			for (const call of respond.results) {
 				if (call.ident == callsIdent['subscriptionGetInfo'] &&
 					(call.result.response.subscription?.status != 1 || !call.result.response.subscription)) {
@@ -634,6 +665,24 @@
 						isChange = true;
 					}
 				}
+				/** Скрываем предложения доната */
+				if (isChecked('noOfferDonat') && call.ident == callsIdent['billingGetAll']) {
+					const billings = call.result.response?.billings;
+					const bundle = call.result.response?.bundle;
+					if (billings && bundle) {
+						call.result.response.billings = [];
+						call.result.response.bundle = [];
+						isChange = true;
+					}
+				}
+				/** Скрываем предложения доната */
+				if (isChecked('noOfferDonat') && call.ident == callsIdent['offerGetAll']) {
+					const offers = call.result.response;
+					if (offers) {
+						call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type));
+						isChange = true;
+					}
+				}
 				/** Копирует вопрос викторины в буфер обмена */
 				if (call.ident == callsIdent['quizGetNewQuestion']) {
 					let quest = call.result.response;
@@ -644,6 +693,7 @@
 				if (call.ident == callsIdent['userGetInfo']) {
 					let user = call.result.response;
 					userInfo = Object.assign({}, user);
+					delete userInfo.refillable;
 				}
 				/** Начало боя для прерасчета */
 				if ((call.ident == callsIdent['clanWarAttack'] ||
@@ -664,8 +714,8 @@
 						});
 					}
 					let actions = [getBattleInfo(battle, false)]
-					let countBattleCalc = 10;
-					for (let i = 0; i < countBattleCalc; i++) {
+					const countTestBattle = getInput('countTestBattle');
+					for (let i = 0; i < countTestBattle; i++) {
 						actions.push(getBattleInfo(battle, true));
 					}
 					Promise.all(actions)
@@ -762,11 +812,13 @@
 	}
 	/** Создает интерфейс */
 	function createInterface() {
-		scriptMenu.init();
+		scriptMenu.init({
+			showMenu: true
+		});
 		scriptMenu.addHeader(GM_info.script.name);
 		scriptMenu.addHeader('v' + GM_info.script.version);
 
-		const details = scriptMenu.addDetails('Настройки')
+		const details = scriptMenu.addDetails('Настройки');
 		for (let name in checkboxes) {
 			checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title, details);
 			/** Получаем состояние чекбоксов из localStorage */
@@ -804,7 +856,7 @@
 	/** Список кнопочек */
 	const buttons = {
 		newDay: {
-			name: 'Обновить',
+			name: 'Синхронизация',
 			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
 			func: cheats.refreshGame,
 		},
@@ -820,12 +872,12 @@
 		},
 		testTitanArena: {
 			name: 'Турнир Стихий',
-			title: 'Пройти титан арену',
+			title: 'Автопрохождение Турнира Стихий',
 			func:  testTitanArena,
 		},
 		testDungeon: {
 			name: 'Подземелье',
-			title: 'Пройти подземелье',
+			title: 'Автопрохождение подземелья',
 			func: function () {
 				confShow('Запустить скрипт Подземелье?', () => {
 					let titanit = getInput('countTitanit');
@@ -835,10 +887,15 @@
 		},
 		testTower: {
 			name: 'Башня',
-			title: 'Пройти башню',
+			title: 'Автопрохождение башни',
 			func: function () {
 				confShow('Запустить скрипт Башня?', testTower);
 			},
+		},
+		mailGetAll: {
+			name: 'Почта',
+			title: 'Собрать всю почту, кроме писем с энергией и зарядами портала',
+			func: mailGetAll
 		},
 		offerFarmAllReward: {
 			name: 'Пасхалки',
@@ -875,6 +932,7 @@
 			func: cheats.goClanWar,
 		},
 	}
+
 	/** Вывести кнопочки */
 	function addControlButtons() {
 		for (let name in buttons) {
@@ -1130,7 +1188,8 @@
 			showDetails: {}
 		};
 
-		this.init = function () {
+		this.init = function (option = {}) {
+			this.option = Object.assign(this.option, option);
 			addStyle();
 			addBlocks();
 		}
@@ -2779,7 +2838,8 @@
 		/** Прерасчтет битвы */
 		function preCalcBattle(battle) {
 			let actions = [getBattleInfo(battle, false)];
-			for (let i = 0; i < 10; i++) {
+			const countTestBattle = getInput('countTestBattle');
+			for (let i = 0; i < countTestBattle; i++) {
 				actions.push(getBattleInfo(battle, true));
 			}
 			Promise.all(actions)
@@ -2972,6 +3032,11 @@
 			{name:"SettingToggleButton", prop:"game.view.popup.settings.SettingToggleButton"},
 			{name:"PlayerDungeonData", prop:"game.mechanics.dungeon.model.PlayerDungeonData"},
 			{name:"NextDayUpdatedManager", prop:"game.model.user.NextDayUpdatedManager"},
+			{name:"BattleController", prop:"game.battle.controller.BattleController"},
+			{name:"BattleSettingsModel", prop:"game.battle.controller.BattleSettingsModel"},
+			{name:"BooleanProperty", prop:"engine.core.utils.property.BooleanProperty"},
+			{name:"RuleStorage", prop:"game.data.storage.rule.RuleStorage"},
+			{name:"BattleConfig", prop:"battle.BattleConfig"},
 		];
 		/** Содержит классы игры необходимые для написания и подмены методов игры */
 		Game = {
@@ -3044,12 +3109,28 @@
 			});
 			battleInstantPlay.start();
 		}
+		/**
+		 * Возвращает из класса функцию с указанным именем
+		 * @param {Object} classF класс
+		 * @param {String} nameF имя функции
+		 * @param {String} pos порядок имени и псевдонима
+		 * @returns
+		 */
+		function getF(classF, nameF, pos) {
+			pos = pos || false;
+ 			let prop = Object.entries(classF.prototype.__properties__)
+			if (!pos) {
+ 			return prop.filter((e) => e[1] == nameF).pop()[0];
+			} else {
+				return prop.filter((e) => e[0] == nameF).pop()[1];
+			}
+ 		}
 
 		/**
 		 * Возвращает из класса функцию с указанным именем
 		 * @param {Object} classF класс
 		 * @param {String} nameF имя функции
-		 * @returns 
+		 * @returns
 		 */
 		function getFnP(classF, nameF) {
 			let prop = Object.entries(classF.__properties__)
@@ -3191,6 +3272,47 @@
 						return oldEndlessCards.call(this);
 					}
 				}
+			},
+			speedBattle: function () {
+				const get_timeScale = getF(Game.BattleController, "get_timeScale");
+				const oldSpeedBattle = Game.BattleController.prototype[get_timeScale];
+				Game.BattleController.prototype[get_timeScale] = function () {
+					const speedBattle = Number.parseFloat(getInput('speedBattle'));
+					if (speedBattle) {
+						const BC_11 = getProtoFn(Game.BattleController, 11);
+						const BSM_11 = getProtoFn(Game.BattleSettingsModel, 11);
+						const BP_get_value = getF(Game.BooleanProperty, "get_value");
+						if (this[BC_11][BSM_11][BP_get_value]()) {
+							return 0;
+						}
+						const BSM_2 = getProtoFn(Game.BattleSettingsModel, 2);
+						const BC_44 = getProtoFn(Game.BattleController, 44);
+						const BSM_1 = getProtoFn(Game.BattleSettingsModel, 1);
+						const BC_13 = getProtoFn(Game.BattleController, 13);
+						const BC_3 = getFn(Game.BattleController, 3);
+						if (this[BC_11][BSM_2][BP_get_value]()) {
+							var a = speedBattle * this[BC_44]();
+						} else {
+							a = this[BC_11][BSM_1][BP_get_value]();
+							const multiple = a == 1 ? speedBattle : this[BC_13][a];
+							a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_44]();
+						}
+						const BSM_22 = getProtoFn(Game.BattleSettingsModel, 22);
+						a > this[BC_11][BSM_22][BP_get_value]() && (a = this[BC_11][BSM_22][BP_get_value]());
+						const DS_21 = getFn(Game.DataStorage, 21);
+						const get_battleSpeedMultiplier = getF(Game.RuleStorage, "get_battleSpeedMultiplier", true);
+						// const RS_167 = getProtoFn(Game.RuleStorage, 167); // get_battleSpeedMultiplier
+						var b = Game.DataStorage[DS_21][get_battleSpeedMultiplier]();
+						const R_1 = getFn(selfGame.Reflect, 1);
+						const BC_1 = getFn(Game.BattleController, 1);
+						const get_config = getF(Game.BattlePresets, "get_config");
+						// const BC_0 = getProtoFn(Game.BattleConfig, 0); // .ident
+						null != b && (a = selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) ? a * selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) : a * selfGame.Reflect[R_1](b, "default"));
+						return a
+					} else {
+						return oldSpeedBattle.call(this);
+					}
+				}
 			}
 		}
 		/** Запускает замену записанных функций */
@@ -3241,13 +3363,19 @@
 	/** Автосбор подарков */
 	function getAutoGifts() {
 		let valName = 'giftSendIds_' + userInfo.id;
-		localStorage[valName] = localStorage[valName] ?? '';
-		let url = 'https://zingery.ru/heroes/gifts.php';
-		if (localStorage[valName].length > 0) {
-			url = 'https://zingery.ru/heroes/gifts.php?count=10';
+		if (!localStorage['clearGift' + userInfo.id]) {
+			localStorage[valName] = '';
+			localStorage['clearGift' + userInfo.id] = '+';
 		}
+
+		if (!localStorage[valName]) {
+			localStorage[valName] = '';
+    }
 		/** Отправка запроса для получения кодов подарков */
-		fetch(url).then(
+		fetch('https://zingery.ru/heroes/getGifts.php', {
+				method: 'POST',
+				body: JSON.stringify({scriptInfo, userInfo})
+		}).then(
 			response => response.json()
 		).then(
 			data => {
@@ -3256,13 +3384,13 @@
 				}
 				data.forEach( (giftId, n) => {
 					if (localStorage[valName].includes(giftId)) return;
-					localStorage[valName] += ';' + giftId;
+					//localStorage[valName] += ';' + giftId;
 					freebieCheckCalls.calls.push({
 						name: "freebieCheck",
 						args: {
 							giftId
 						},
-						ident: "freebieCheck_" + n
+						ident: giftId
 					});
 				});
 
@@ -3272,11 +3400,16 @@
 
 				send(JSON.stringify(freebieCheckCalls), e => {
 					let countGetGifts = 0;
+					const gifts = [];
 					for(check of e.results) {
+                        gifts.push(check.ident);
 						if (check.result.response != null) {
 							countGetGifts++;
 						}
 					}
+					const saveGifts = localStorage[valName].split(';');
+					localStorage[valName] = [...saveGifts, ...gifts].slice(-50).join(';');
+					setProgress('Подарки: ' + countGetGifts, true);
 					console.log('Подарки: ' + countGetGifts);
 				});
 			}
@@ -3856,8 +3989,8 @@
 
 		function preCalcBattle(battle) {
 			let actions = [];
-			let countCalcBattle = 10;
-			for (let i = 0; i < countCalcBattle; i++) {
+			const countTestBattle = getInput('countTestBattle');
+			for (let i = 0; i < countTestBattle; i++) {
 				actions.push(getBattleInfo(battle, true));
 			}
 			Promise.all(actions)
@@ -4017,8 +4150,8 @@
 		}
 		/** Прерасчет боя */
 		function preCalcBattle(battle) {
-			let actions = [];
-			for (let i = 0; i < 10; i++) {
+			const countTestBattle = getInput('countTestBattle');
+			for (let i = 0; i < countTestBattle; i++) {
 				actions.push(getBattleInfo(battle));
 			}
 			Promise.all(actions)
@@ -4116,11 +4249,42 @@
 			resolve();
 		}
 	}
+	/** Собрать всю почту, кроме писем с энергией и зарядами портала */
+	function mailGetAll() {
+		let getMailInfo = '{"calls":[{"name":"mailGetAll","args":{},"ident":"body"}]}';
+		let getLetters = '{"calls":[{"name":"mailFarm","args":{"letterIds":[#letterIds#]},"ident":"body"}]}';
+
+		send(getMailInfo, function(res) {
+			let dataMail = getJson(res);
+			if (!dataMail) return;
+			let letters = dataMail?.results[0]?.result?.response?.letters;
+			lettersIds = [];
+			for (let l in letters) {
+				letter = letters[l];
+				const reward = letter.reward;
+				const isFarmLetter = !((reward?.refillable ? reward.refillable[45] : false) || (reward?.stamina ? reward.stamina : false));
+				if (isFarmLetter) {
+					lettersIds.push(~~letter.id);
+				}
+			}
+			if (lettersIds.length) {
+				sendGetLetters = getLetters.replace('#letterIds#', lettersIds.join())
+				send(sendGetLetters, function(res) {
+					lettersIds = res?.results[0]?.result?.response;
+					if (lettersIds) {
+						countLetters = Object.keys(lettersIds).length;
+						setProgress('Получено ' + countLetters + ' писем', true);
+						console.log('mailGetAll', lettersIds);
+					}
+				});
+			} else {
+				setProgress('Нечего собирать', true);
+			}
+		});
+	}
 })();
 
 /**
  * TODO:
- * Ускорение боя больше чем x5
- * Автоотмена боев на СМ ВГ и Астгарде
  * Добивание на арене титанов
  */
