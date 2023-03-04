@@ -1556,10 +1556,11 @@
 		name: GM_info.script.name,
 		get: function (key, def) {
 			let value = localStorage[this.name + ':' + key];
-			if (typeof value != 'undefined') {
+			try {
 				return JSON.parse(value)
+			} catch {
+				return def;
 			}
-			return def;
 		},
 		set: function (key, value) {
 			return localStorage[this.name + ':' + key] = value;
