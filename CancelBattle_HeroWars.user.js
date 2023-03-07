@@ -5,7 +5,7 @@
 // @version			2.035
 // @description		Отмена боев в игре Хроники Хаоса
 // @description:en	Cancellation of battles in the game Hero Wars
-// @author			ZingerY
+// @author			ZingerY (forked by ThomasGaud)
 // @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
