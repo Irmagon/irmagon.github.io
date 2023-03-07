@@ -18,7 +18,8 @@
 // ==/UserScript==
 
 (function() {
-	/** Стартуем скрипт */
+	/**Forked from original ZingerY HeroWarsHelper script by ThomasGaud */
+    /** Стартуем скрипт */
 	console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
 	/** Информация о скрипте */
 	const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
@@ -837,7 +838,7 @@
 		}
 
 		for (let name in inputs) {
-			inputs[name].input = scriptMenu.addInputText(inputs[name].title);
+			inputs[name].input = scriptMenu.addInputText(inputs[name].title,details);
 			/** Получаем состояние inputText из localStorage */
 			let val = storage.get(name, null);
 			if (val != null) {
@@ -1017,7 +1018,7 @@
 			.PopUp_input {
 				width: 150px;
 				font-size: 16px;
-				height: 27px;
+				height: 20px;
 				border: 1px solid #cf9250;
 				border-radius: 9px 9px 0px 0px;
 				background: transparent;
@@ -1309,11 +1310,11 @@
 			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
 		}
 		.scriptMenu_close {
-			width: 40px;
-			height: 40px;
+			width: 20px;
+			height: 20px;
 			position: absolute;
-			right: -18px;
-			top: -18px;
+			right: -5px;
+			top: -5px;
 			border: 3px solid #c18550;
 			border-radius: 20px;
 			background: radial-gradient(circle, rgba(190,30,35,1) 0%, rgba(0,0,0,1) 100%);
@@ -1337,7 +1338,7 @@
 			user-select: none;
 			border-radius: 5px;
 			cursor: pointer;
-			padding: 5px 14px 8px;
+			padding: 3px 10px 6px;
 			margin: 4px;
 			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
 			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
@@ -1353,7 +1354,7 @@
 		.scriptMenu_header {
 			text-align: center;
 			align-self: center;
-			font-size: 15px;
+			font-size: 14px;
 		}
 		.scriptMenu_header a {
 			color: #fce5b7;
@@ -1361,7 +1362,7 @@
 		}
 		.scriptMenu_InputText {
 			width: 130px;
-			height: 24px;
+			height: 20px;
 			border: 1px solid #cf9250;
 			border-radius: 9px;
 			background: transparent;
