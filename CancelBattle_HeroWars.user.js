@@ -2,10 +2,10 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.035
-// @description		Отмена боев в игре Хроники Хаоса
-// @description:en	Cancellation of battles in the game Hero Wars
-// @author			ZingerY (forked by ThomasGaud)
+// @version			2.039
+// @description		Автоматизация действий для игры Хроники Хаоса
+// @description:en	Automation of actions for the game Hero Wars
+// @author			ZingerY
 // @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
@@ -45,17 +45,17 @@
 		setRequestHeader: XMLHttpRequest.prototype.setRequestHeader,
 	};
 	/** Декодер для перобразования байтовых данных в JSON строку */
-	let decoder = new TextDecoder("utf-8");
+	const decoder = new TextDecoder("utf-8");
 	/** Хранит историю запросов */
 	let requestHistory = {};
-	/** Была ли взломана подписка */
+	/** Была ли взломана подписка deprecated */
 	let isHackSubscribe = false;
 	/** URL для запросов к API */
 	let apiUrl = '';
-	/** Идетификатор социальной сети */
+	/** Идетификатор социальной сети deprecated */
 	let sNetwork = '';
-	/** Идетификаторы подписки для соц сетей */
-	let socials = {
+	/** Идетификаторы подписки для соц сетей deprecated */
+	const socials = {
 		vk: 1, // vk.com
 		ok: 2, // ok.ru
 		mm: 3, // my.mail.ru
@@ -63,8 +63,16 @@
 		fb: 4, // apps.facebook.com
 		wb: 6, // hero-wars.com
 	}
+
+	/** Подключение к коду игры */
+	this.cheats = new hackGame();
+	/** Функция расчета результатов боя */
+	this.BattleCalc = cheats.BattleCalc;
+	/** Отправка запроса доступная через консоль */
+	this.SendRequest = send;
+
 	/** Чекбоксы */
-	let checkboxes = {
+	const checkboxes = {
 		passBattle: {
 			label: 'Пропуск боев',
 			cbox: null,
@@ -75,13 +83,13 @@
 			label: 'Бесконечные карты',
 			cbox: null,
 			title: 'Бесконечные карты предсказаний',
-			default: false
+			default: true
 		},
 		sendExpedition: {
 			label: 'Автоэкспедиции',
 			cbox: null,
 			title: 'Автоотправка экспедиций',
-			default: false
+			default: true
 		},
 		cancelBattle: {
 			label: 'Отмена боя',
@@ -105,7 +113,7 @@
 			label: 'Контроль кол-ва',
 			cbox: null,
 			title: 'Возможность указывать колличество открываемых "лутбоксов"',
-			default: false
+			default: true
 		},
 		repeatMission: {
 			label: 'Повтор в компании',
@@ -125,9 +133,19 @@
 			title: 'Быстрый режим прохождения подземелья',
 			default: false
 		},
+		getAnswer: {
+			label: 'АвтоВикторина',
+			cbox: null,
+			title: 'Автоматическое получение возможно правильных ответов на вопросы викторины',
+			default: false
+		}
 	};
-	/** Инпуты */
-	let inputs = {
+	/** Получить состояние чекбокса */
+	function isChecked(checkBox) {
+		return checkboxes[checkBox].cbox?.checked;
+	}
+	/** Поля ввода */
+	const inputs = {
 		countTitanit: {
 			input: null,
 			title: 'Сколько фармим титанита',
@@ -142,16 +160,110 @@
 			input: null,
 			title: 'Количество тестовых боев',
 			default: 10,
+		},
+		countAutoBattle: {
+			input: null,
+			title: 'Количество попыток автобоев',
+			default: 10,
 		}
 	}
-	/** Проверяет чекбокс */
-	function isChecked(checkBox) {
-		return checkboxes[checkBox].cbox?.checked;
-	}
-	/** Проверяет чекбокс */
+	/** Поплучить данные поля ввода */
 	function getInput(inputName) {
 		return inputs[inputName].input.value;
 	}
+
+	/** Список кнопочек */
+	const buttons = {
+		newDay: {
+			name: 'Синхронизация',
+			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
+			func: cheats.refreshGame,
+		},
+		questAllFarm: {
+			name: 'Награды',
+			title: 'Собрать все награды за задания',
+			func: questAllFarm,
+		},
+		sendExpedition: {
+			name: 'Экспедиции',
+			title: 'Отправка и сбор экспедиций',
+			func: checkExpedition,
+		},
+		testTitanArena: {
+			name: 'Турнир Стихий',
+			title: 'Автопрохождение Турнира Стихий',
+			func:  testTitanArena,
+		},
+		testDungeon: {
+			name: 'Подземелье',
+			title: 'Автопрохождение подземелья',
+			func: function () {
+				confShow('Запустить скрипт Подземелье?', () => {
+					let titanit = getInput('countTitanit');
+					testDungeon(titanit);
+				});
+			},
+		},
+		testTower: {
+			name: 'Башня',
+			title: 'Автопрохождение башни',
+			func: function () {
+				confShow('Запустить скрипт Башня?', testTower);
+			},
+		},
+		mailGetAll: {
+			name: 'Почта',
+			title: 'Собрать всю почту, кроме писем с энергией и зарядами портала',
+			func: mailGetAll
+		},
+		offerFarmAllReward: {
+			name: 'Пасхалки',
+			title: 'Собрать все пасхалки или награды',
+			func: offerFarmAllReward,
+		},
+        getOutland: {
+			name: 'Запределье',
+			title: 'Собрать Запределье',
+			func: getOutland,
+		},
+		// bossRatingEvent: {
+		// 	name: 'Горнило душ',
+		// 	title: 'Набивает килы и собрает награду',
+		// 	func: function () {
+		// 		confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
+		// 	},
+		// },
+		testRaidNodes: {
+			name: 'Прислужники',
+			title: 'Атакует прислужников сохраннеными пачками',
+			func: function () {
+				confShow('Запустить скрипт Прислужники?', testRaidNodes);
+			},
+		},
+		goToSanctuary: {
+			name: 'Святилище',
+			title: 'Быстрый переход к Святилищу',
+			func: cheats.goSanctuary,
+		},
+		goToClanWar: {
+			name: 'Война гильдий',
+			title: 'Быстрый переход к Войне гильдий',
+			func: cheats.goClanWar,
+		},
+	}
+
+	/** Вывести кнопочки */
+	function addControlButtons() {
+		for (let name in buttons) {
+			button = buttons[name];
+			scriptMenu.addButton(button.name, button.func, button.title);
+		}
+	}
+	/** Добавляет ссылки */
+	function addBottomUrls() {
+		scriptMenu.addHeader('<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>');
+	}	
+
 	/** Остановить повтор миссии */
 	let isStopSendMission = false;
 	/** Идет повтор миссии */
@@ -180,6 +292,14 @@
 	let lastRussianDollId = null;
 	/** Отменить обучающее руководство */
 	this.isCanceledTutorial = false;
+
+	/** Данные последнего вопроса викторины */
+	let lastQuestion = null;
+	/** Ответ на последний вопрос викторины */
+	let lastAnswer = null;
+	/** Флаг открытия сфер артефактов титанов */
+	let titanArtifactChestOpen = false;
+
 
 	/**
 	 * Копирует тест в буфер обмена
@@ -271,12 +391,7 @@
 			}
 		)
 	}
-	/** Подключение к коду игры */
-	this.cheats = new hackGame();
-	/** Функция расчета результатов боя */
-	this.BattleCalc = cheats.BattleCalc;
-	/** Отправка запроса доступная через консоль */
-	this.SendRequest = send;
+
 	/** Возвращает объект если переданный парамет строка */
 	function getJson(result) {
 		if (typeof result == 'string') {
@@ -463,7 +578,9 @@
 			let changeRequest = false;
 			testData = JSON.parse(tempData);
 			for (const call of testData.calls) {
+				if (!titanArtifactChestOpen) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
+				}
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
@@ -527,6 +644,15 @@
 						changeRequest = true;
 					}
 				}
+				/** Ответ на викторину */
+				if (call.name == 'quizAnswer') {
+					/** Автоматически меняет ответ на правильный если он есть */
+					if (lastAnswer && isChecked('getAnswer')) {
+						call.args.answerId = lastAnswer;
+						lastAnswer = null;
+						changeRequest = true;
+					}
+				}
 				/** Подарки */
 				if (call.name == 'freebieCheck' && isChecked('getAutoGifts')) {
 					freebieCheckInfo = call;
@@ -555,22 +681,43 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
-				/** Указать колличество для сфер титанов и яиц петов */
+				/** Указать колличество для сфер артефактов титанов */
 				if (isChecked('countControl') &&
-					(call.name == 'pet_chestOpen' ||
-					call.name == 'titanUseSummonCircle') &&
-					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
-							{msg: 'Открыть', isInput: true, default: call.args.amount},
-						]);
+					call.name == 'titanArtifactChestOpen' &&
+					call.args.amount > 1 &&
+					!changeRequest) {
+					let result = await popup.confirm('Указать колличество:', [
+						{ msg: 'Открыть', isInput: true, default: call.args.amount },
+					]);
 					if (result) {
-						call.args.amount = result;
+						let sphere = result < 10 ? 1 : 10;
+
+						call.args.amount = sphere;
+						result -= sphere;
+
+						for (let count = result; count > 0; count -= sphere) {
+							if (count < 10) sphere = 1;
+							const ident = "titanArtifactChestOpen_" + count;
+							testData.calls.push({
+								name: "titanArtifactChestOpen",
+								args: {
+									amount: sphere,
+									free: true,
+								},
+								ident: ident
+							});
+							if (!Array.isArray(requestHistory[this.uniqid].calls[call.name])) {
+								requestHistory[this.uniqid].calls[call.name] = [requestHistory[this.uniqid].calls[call.name]];
+							}
+							requestHistory[this.uniqid].calls[call.name].push(ident);
+						}
+
+						titanArtifactChestOpen = true;
 						changeRequest = true;
 					}
 				}
-				/** Указать колличество для сфер артефактов титанов или артефактных сундуков */
+				/** Указать колличество для артефактных сундуков */
 				if (isChecked('countControl') &&
-					call.name == 'titanArtifactChestOpen' ||
 					call.name == 'artifactChestOpen' &&
 					call.args.amount > 1) {
 					const result = await popup.confirm('Указать колличество:', [
@@ -619,39 +766,43 @@
 			let nowTime = Math.round(Date.now() / 1000);
 			callsIdent = requestHistory[this.uniqid].calls;
 			respond = JSON.parse(response);
-			// if (respond.error) {
-			// 	isChange = true;
-			// 	console.error(respond.error);
-			// 	delete respond.error;
-			// 	respond.results = [];
-			// }
+			/** Если запрос вернул ошибку удаляет ошибку (убирает ошибки синхронизации) */
+			if (respond.error) {
+ 					isChange = true;
+				console.error(respond.error);
+				delete respond.error;
+				respond.results = [];
+ 				}
+			let mainReward = null;
+			const allReward = {};
 			for (const call of respond.results) {
-				if (call.ident == callsIdent['subscriptionGetInfo'] &&
-					(call.result.response.subscription?.status != 1 || !call.result.response.subscription)) {
-					if (!call.result.response.subscription) {
-						call.result.response.subscription = {}
-					}
-					callRes = call.result.response.subscription;
-					/** Устанавливем время окончания подписки на +7 от подписки */
-					callRes.endTime = nowTime + 1001 * 24 * 60 * 60;
-					/** Статус подписки */
-					callRes.status = 1;
-					/** Тип (платформа) */
-					callRes.type = socials[sNetwork];
-					isHackSubscribe = true;
-					isChange = true;
-				}
-				/** Фикс экспедиций */
-				if (call.ident == callsIdent['expeditionGet'] && isHackSubscribe) {
-					expeditions = call.result.response;
-					for (const n in expeditions) {
-						exped = expeditions[n];
-						if (exped.slotId == 6) {
-							exped.status = 3;
-							isChange = true;
-						}
-					}
-				}
+				/** Типа активация Покровительства Валькирий на клиенте */
+				// if (call.ident == callsIdent['subscriptionGetInfo'] &&
+				// 	(call.result.response.subscription?.status != 1 || !call.result.response.subscription)) {
+				// 	if (!call.result.response.subscription) {
+				// 		call.result.response.subscription = {}
+				// 	}
+				// 	callRes = call.result.response.subscription;
+				// 	/** Устанавливем время окончания подписки на +7 от подписки */
+				// 	callRes.endTime = nowTime + 1001 * 24 * 60 * 60;
+				// 	/** Статус подписки */
+				// 	callRes.status = 1;
+				// 	/** Тип (платформа) */
+				// 	callRes.type = socials[sNetwork];
+				// 	isHackSubscribe = true;
+				// 	isChange = true;
+				// }
+			/** Фикс экспедиций */
+				// if (call.ident == callsIdent['expeditionGet'] && isHackSubscribe) {
+				// 	expeditions = call.result.response;
+				// 	for (const n in expeditions) {
+				// 		exped = expeditions[n];
+				// 		if (exped.slotId == 6) {
+				// 			exped.status = 3;
+				// 			isChange = true;
+				// 		}
+				// 	}
+				// }
 				/** Бесконечные карты предсказаний */
 				if (call.ident == callsIdent['inventoryGet']) {
 					consumable = call.result.response.consumable;
@@ -684,11 +835,31 @@
 						isChange = true;
 					}
 				}
-				/** Копирует вопрос викторины в буфер обмена */
+				/** Копирует вопрос викторины в буфер обмена и получает на него ответ если есть */
 				if (call.ident == callsIdent['quizGetNewQuestion']) {
 					let quest = call.result.response;
-					copyText(quest.question);
 					console.log(quest.question);
+					copyText(quest.question);
+					setProgress('Вопрос скопирован в буфер обмена', true);
+					lastQuestion = quest;
+					if (isChecked('getAnswer')) {
+						const answer = await getAnswer(lastQuestion);
+						if (answer) {
+							lastAnswer = answer;
+						}
+					}
+				}
+				/** Отправляет вопрос с ответом в базу данных */
+				if (call.ident == callsIdent['quizAnswer']) {
+					const answer = call.result.response;
+					if (lastQuestion) {
+						const answerInfo = {
+							answer,
+							question: lastQuestion
+						}
+						lastQuestion = null;
+						setTimeout(sendAnswerInfo, 0, answerInfo);
+					}
 				}
 				/** Получить даныне пользователя */
 				if (call.ident == callsIdent['userGetInfo']) {
@@ -738,6 +909,32 @@
 					}
 					isChange = true;
 				}
+
+				/** Открытие сфер артефактов титанов */
+				if (titanArtifactChestOpen &&
+					(call.ident == callsIdent['titanArtifactChestOpen'] ||
+						(callsIdent['titanArtifactChestOpen'] && callsIdent['titanArtifactChestOpen'].includes(call.ident)))) {
+					let reward = call.result.response.reward;
+
+					reward.forEach(e => {
+						for (let f in e) {
+							if (!allReward[f]) {
+								allReward[f] = {};
+							}
+							for (let o in e[f]) {
+								if (!allReward[f][o]) {
+									allReward[f][o] = e[f][o];
+								} else {
+									allReward[f][o] += e[f][o];
+								}
+							}
+						}
+					});
+
+					if (!call.ident.includes('titanArtifactChestOpen')) {
+						mainReward = call.result.response;
+					}
+				}
 				/** АвтоПовтор открытия матрешек */
 				if (isChecked('countControl') && call.ident == callsIdent['consumableUseLootBox']) {
 					let lootBox = call.result.response;
@@ -755,6 +952,13 @@
 					}
 				}
 			}
+
+			if (mainReward && titanArtifactChestOpen) {
+				console.log(allReward);
+				mainReward.reward = [allReward];
+				titanArtifactChestOpen = false;
+				isChange = true;
+			}
 		} catch(err) {
 			console.log("Request(response, " + this.uniqid + "):\n", "Error:\n", response, err);
 		}
@@ -766,6 +970,47 @@
 			this.responseText = JSON.stringify(respond);
 		}
 	}
+
+	/** Запрос ответа на вопрос */
+	async function getAnswer(question) {
+		return new Promise((resolve, reject) => {
+			fetch('https://zingery.ru/heroes/getAnswer.php', {
+				method: 'POST',
+				body: JSON.stringify(question)
+			}).then(
+				response => response.json()
+			).then(
+				data => {
+					if (data.result) {
+						resolve(data.result);
+					} else {
+						resolve(false);
+					}
+				}
+			).catch((error) => {
+				console.error(error);
+				resolve(false);
+			});
+		})
+	}
+
+	/** Отправка вопроса и ответа в базу данных */
+	function sendAnswerInfo(answerInfo) {
+		fetch('https://zingery.ru/heroes/setAnswer.php', {
+			method: 'POST',
+			body: JSON.stringify(answerInfo)
+		}).then(
+			response => response.json()
+		).then(
+			data => {
+				if (data.result) {
+					console.log('Вопрос отправлен');
+				}
+			}
+		)
+	}
+
+
 	/** Возвращает тип боя по типу пресета */
 	function getBattleType(strBattleType) {
 		switch (strBattleType) {
@@ -785,6 +1030,7 @@
 			case "clan_global_pvp":
 			case "clan_pvp":
 			case "challenge":
+			case "arena":
 				return "get_clanPvp";
 			case "titan_tower":
 				return "get_titan";
@@ -837,8 +1083,9 @@
 			})
 		}
 
+		const inputDetails = scriptMenu.addDetails('Значения');
 		for (let name in inputs) {
-			inputs[name].input = scriptMenu.addInputText(inputs[name].title,details);
+			inputs[name].input = scriptMenu.addInputText(inputs[name].title, false, inputDetails);
 			/** Получаем состояние inputText из localStorage */
 			let val = storage.get(name, null);
 			if (val != null) {
@@ -854,97 +1101,7 @@
 			})
 		}
 	}
-	/** Список кнопочек */
-	const buttons = {
-		newDay: {
-			name: 'Синхронизация',
-			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
-			func: cheats.refreshGame,
-		},
-		questAllFarm: {
-			name: 'Награды',
-			title: 'Собрать все награды за задания',
-			func: questAllFarm,
-		},
-		sendExpedition: {
-			name: 'Экспедиции',
-			title: 'Отправка и сбор экспедиций',
-			func: checkExpedition,
-		},
-		testTitanArena: {
-			name: 'Турнир Стихий',
-			title: 'Автопрохождение Турнира Стихий',
-			func:  testTitanArena,
-		},
-		testDungeon: {
-			name: 'Подземелье',
-			title: 'Автопрохождение подземелья',
-			func: function () {
-				confShow('Запустить скрипт Подземелье?', () => {
-					let titanit = getInput('countTitanit');
-					testDungeon(titanit);
-				});
-			},
-		},
-		testTower: {
-			name: 'Башня',
-			title: 'Автопрохождение башни',
-			func: function () {
-				confShow('Запустить скрипт Башня?', testTower);
-			},
-		},
-		mailGetAll: {
-			name: 'Почта',
-			title: 'Собрать всю почту, кроме писем с энергией и зарядами портала',
-			func: mailGetAll
-		},
-		offerFarmAllReward: {
-			name: 'Пасхалки',
-			title: 'Собрать все пасхалки или награды',
-			func: offerFarmAllReward,
-		},
-        getOutland: {
-			name: 'Запределье',
-			title: 'Собрать Запределье',
-			func: getOutland,
-		},
-		// bossRatingEvent: {
-		// 	name: 'Горнило душ',
-		// 	title: 'Набивает килы и собрает награду',
-		// 	func: function () {
-		// 		confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
-		// 	},
-		// },
-		testRaidNodes: {
-			name: 'Прислужники',
-			title: 'Атакует прислужников сохраннеными пачками',
-			func: function () {
-				confShow('Запустить скрипт Прислужники?', testRaidNodes);
-			},
-		},
-		goToSanctuary: {
-			name: 'Святилище',
-			title: 'Быстрый переход к Святилищу',
-			func: cheats.goSanctuary,
-		},
-		goToClanWar: {
-			name: 'Война гильдий',
-			title: 'Быстрый переход к Войне гильдий',
-			func: cheats.goClanWar,
-		},
-	}
 
-	/** Вывести кнопочки */
-	function addControlButtons() {
-		for (let name in buttons) {
-			button = buttons[name];
-			scriptMenu.addButton(button.name, button.func, button.title);
-		}
-	}
-	/** Добавляет ссылки */
-	function addBottomUrls() {
-		scriptMenu.addHeader('<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>');
-	}
 	/** Расчитывает HASH MD5 из строки */
 	function md5(r){for(var a=(r,n,t,e,o,u)=>f(c(f(f(n,r),f(e,u)),o),t),n=(r,n,t,e,o,u,f)=>a(n&t|~n&e,r,n,o,u,f),t=(r,n,t,e,o,u,f)=>a(n&e|t&~e,r,n,o,u,f),e=(r,n,t,e,o,u,f)=>a(n^t^e,r,n,o,u,f),o=(r,n,t,e,o,u,f)=>a(t^(n|~e),r,n,o,u,f),f=function(r,n){var t=(65535&r)+(65535&n);return(r>>16)+(n>>16)+(t>>16)<<16|65535&t},c=(r,n)=>r<<n|r>>>32-n,u=Array(r.length>>2),h=0;h<u.length;h++)u[h]=0;for(h=0;h<8*r.length;h+=8)u[h>>5]|=(255&r.charCodeAt(h/8))<<h%32;len=8*r.length,u[len>>5]|=128<<len%32,u[14+(len+64>>>9<<4)]=len;var l=1732584193,i=-271733879,g=-1732584194,v=271733878;for(h=0;h<u.length;h+=16){var A=l,d=i,C=g,m=v;i=o(i=o(i=o(i=o(i=e(i=e(i=e(i=e(i=t(i=t(i=t(i=t(i=n(i=n(i=n(i=n(i,g=n(g,v=n(v,l=n(l,i,g,v,u[h+0],7,-680876936),i,g,u[h+1],12,-389564586),l,i,u[h+2],17,606105819),v,l,u[h+3],22,-1044525330),g=n(g,v=n(v,l=n(l,i,g,v,u[h+4],7,-176418897),i,g,u[h+5],12,1200080426),l,i,u[h+6],17,-1473231341),v,l,u[h+7],22,-45705983),g=n(g,v=n(v,l=n(l,i,g,v,u[h+8],7,1770035416),i,g,u[h+9],12,-1958414417),l,i,u[h+10],17,-42063),v,l,u[h+11],22,-1990404162),g=n(g,v=n(v,l=n(l,i,g,v,u[h+12],7,1804603682),i,g,u[h+13],12,-40341101),l,i,u[h+14],17,-1502002290),v,l,u[h+15],22,1236535329),g=t(g,v=t(v,l=t(l,i,g,v,u[h+1],5,-165796510),i,g,u[h+6],9,-1069501632),l,i,u[h+11],14,643717713),v,l,u[h+0],20,-373897302),g=t(g,v=t(v,l=t(l,i,g,v,u[h+5],5,-701558691),i,g,u[h+10],9,38016083),l,i,u[h+15],14,-660478335),v,l,u[h+4],20,-405537848),g=t(g,v=t(v,l=t(l,i,g,v,u[h+9],5,568446438),i,g,u[h+14],9,-1019803690),l,i,u[h+3],14,-187363961),v,l,u[h+8],20,1163531501),g=t(g,v=t(v,l=t(l,i,g,v,u[h+13],5,-1444681467),i,g,u[h+2],9,-51403784),l,i,u[h+7],14,1735328473),v,l,u[h+12],20,-1926607734),g=e(g,v=e(v,l=e(l,i,g,v,u[h+5],4,-378558),i,g,u[h+8],11,-2022574463),l,i,u[h+11],16,1839030562),v,l,u[h+14],23,-35309556),g=e(g,v=e(v,l=e(l,i,g,v,u[h+1],4,-1530992060),i,g,u[h+4],11,1272893353),l,i,u[h+7],16,-155497632),v,l,u[h+10],23,-1094730640),g=e(g,v=e(v,l=e(l,i,g,v,u[h+13],4,681279174),i,g,u[h+0],11,-358537222),l,i,u[h+3],16,-722521979),v,l,u[h+6],23,76029189),g=e(g,v=e(v,l=e(l,i,g,v,u[h+9],4,-640364487),i,g,u[h+12],11,-421815835),l,i,u[h+15],16,530742520),v,l,u[h+2],23,-995338651),g=o(g,v=o(v,l=o(l,i,g,v,u[h+0],6,-198630844),i,g,u[h+7],10,1126891415),l,i,u[h+14],15,-1416354905),v,l,u[h+5],21,-57434055),g=o(g,v=o(v,l=o(l,i,g,v,u[h+12],6,1700485571),i,g,u[h+3],10,-1894986606),l,i,u[h+10],15,-1051523),v,l,u[h+1],21,-2054922799),g=o(g,v=o(v,l=o(l,i,g,v,u[h+8],6,1873313359),i,g,u[h+15],10,-30611744),l,i,u[h+6],15,-1560198380),v,l,u[h+13],21,1309151649),g=o(g,v=o(v,l=o(l,i,g,v,u[h+4],6,-145523070),i,g,u[h+11],10,-1120210379),l,i,u[h+2],15,718787259),v,l,u[h+9],21,-343485551),l=f(l,A),i=f(i,d),g=f(g,C),v=f(v,m)}var y=Array(l,i,g,v),b="";for(h=0;h<32*y.length;h+=8)b+=String.fromCharCode(y[h>>5]>>>h%32&255);var S="0123456789abcdef",j="";for(h=0;h<b.length;h++)u=b.charCodeAt(h),j+=S.charAt(u>>>4&15)+S.charAt(15&u);return j}
 	/** Скрипт для красивых диалоговых окошек */
@@ -3039,6 +3196,9 @@
 			{name:"BooleanProperty", prop:"engine.core.utils.property.BooleanProperty"},
 			{name:"RuleStorage", prop:"game.data.storage.rule.RuleStorage"},
 			{name:"BattleConfig", prop:"battle.BattleConfig"},
+			{name:"SpecialShopWelcomePopup", prop:"game.view.popup.shop.special.SpecialShopWelcomePopup"},
+			{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
+			{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
 		];
 		/** Содержит классы игры необходимые для написания и подмены методов игры */
 		Game = {
@@ -3097,6 +3257,7 @@
 		 * @param {*} callback функция в которую вернуться результаты боя
 		 */
 		this.BattleCalc = function (battleData, battleConfig, callback) {
+			battleConfig = battleConfig || getBattleType(battleData.type)
 			if (!Game.BattlePresets) throw Error('Use connectGame');
 			battlePresets = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 			battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
@@ -3313,6 +3474,34 @@
 						return a
 					} else {
 						return oldSpeedBattle.call(this);
+					}
+				}
+			},
+			/** Попытка убрать лавку редкойстей */
+			// removeWelcomeShop: function () {
+			// 	let SSWP_4 = getProtoFn(Game.SpecialShopWelcomePopup, 1);
+			// 	const oldWelcomeShop = Game.SpecialShopWelcomePopup.prototype[SSWP_4];
+			// 	Game.SpecialShopWelcomePopup.prototype[SSWP_4] = function () {
+			// 		if (true) {
+			// 			return;
+			// 		} else {
+			// 			return oldWelcomeShop.call(this);
+			// 		}
+			// 	}
+			// },
+			/** Кнопка ускорения без Покровительства Валькирий */
+			battleFastKey: function () {
+				const BGM_37 = getProtoFn(Game.BattleGuiMediator, 37);
+				const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_37];
+				Game.BattleGuiMediator.prototype[BGM_37] = function () {
+					if (true) {
+						const BGM_8 = getProtoFn(Game.BattleGuiMediator, 8);
+						const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
+						const BPW_0 = getProtoFn(Game.BooleanPropertyWriteable, 0);
+						this[BGM_8][BPW_0](true);
+						this[BGM_9][BPW_0](true);
+					} else {
+						return oldBattleFastKey.call(this);
 					}
 				}
 			}
@@ -4047,8 +4236,10 @@
 
 		function startBossBattle() {
 			countBattle++;
+			countMaxBattle = getInput('countAutoBattle');
 			if (countBattle > countMaxBattle) {
-				endBossBattle('>100')
+				setProgress('Превышен лимит попыток: ' + countMaxBattle, true);
+				endBossBattle('Превышен лимит попыток: ' + countMaxBattle);
 				return;
 			}
 			let calls = [{
@@ -4173,6 +4364,7 @@
 		/** Начало боя */
 		function startBattle() {
 			countBattle++;
+			countMaxBattle = getInput('countAutoBattle');
 			setProgress(countBattle  + '/' + countMaxBattle);
 			if (countBattle > countMaxBattle) {
 				setProgress('Превышен лимит попыток: ' + countMaxBattle, true);
@@ -4264,7 +4456,14 @@
 			for (let l in letters) {
 				letter = letters[l];
 				const reward = letter.reward;
-				const isFarmLetter = !((reward?.refillable ? reward.refillable[45] : false) || (reward?.stamina ? reward.stamina : false));
+				/** Исключения на сбор писем */
+				const isFarmLetter = !(
+					(reward?.refillable ? reward.refillable[45] : false) || // сферы портала
+					(reward?.stamina ? reward.stamina : false) || // энергия
+					(reward?.buff ? true : false) || // ускорение набора энергии
+					(reward?.vipPoints ? reward.vipPoints : false) || // вип очки
+					(reward?.fragmentHero ? true : false) // душы героев
+				);
 				if (isFarmLetter) {
 					lettersIds.push(~~letter.id);
 				}
