@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.039
+// @version			2.041
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY
@@ -262,7 +262,7 @@
 	/** Добавляет ссылки */
 	function addBottomUrls() {
 		scriptMenu.addHeader('<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>');
-	}	
+	}
 
 	/** Остановить повтор миссии */
 	let isStopSendMission = false;
@@ -1030,6 +1030,7 @@
 			case "clan_global_pvp":
 			case "clan_pvp":
 			case "challenge":
+            case "grand":
 			case "arena":
 				return "get_clanPvp";
 			case "titan_tower":
