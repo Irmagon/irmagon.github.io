@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.041
+// @version			2.045
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY
@@ -70,6 +70,20 @@
 	this.BattleCalc = cheats.BattleCalc;
 	/** Отправка запроса доступная через консоль */
 	this.SendRequest = send;
+	/** 
+	 * Короткий асинхронный запрос 
+	 * Пример использования (возвращает информацию о персонаже): 
+	 * const userInfo = await Send('{"calls":[{"name":"userGetInfo","args":{},"ident":"body"}]}')
+	*/
+	this.Send = function (json, pr) {
+		return new Promise((resolve, reject) => {
+			try {
+				send(json, resolve, pr);
+			} catch (e) {
+				reject(e);
+			}
+		})
+	}
 
 	/** Чекбоксы */
 	const checkboxes = {
@@ -226,13 +240,14 @@
 			title: 'Собрать Запределье',
 			func: getOutland,
 		},
-		// bossRatingEvent: {
-		// 	name: 'Горнило душ',
-		// 	title: 'Набивает килы и собрает награду',
-		// 	func: function () {
-		// 		confShow('Запустить скрипт Горнило душ?', bossRatingEvent);
-		// 	},
-		// },
+		bossRatingEvent: {
+			name: 'Архидемон',
+			title: 'Набивает килы и собирает награду',
+			func: function () {
+				confShow('Запустить скрипт Архидемон?', bossRatingEvent);
+			},
+		},
+
 		testRaidNodes: {
 			name: 'Прислужники',
 			title: 'Атакует прислужников сохраннеными пачками',
@@ -677,6 +692,19 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
+				/** Указать колличество для сфер титанов и яиц петов */
+				if (isChecked('countControl') &&
+					(call.name == 'pet_chestOpen' ||
+					call.name == 'titanUseSummonCircle') &&
+					call.args.amount > 1) {
+					const result = await popup.confirm('Указать колличество:', [
+							{msg: 'Открыть', isInput: true, default: call.args.amount},
+						]);
+					if (result) {
+						call.args.amount = result;
+						changeRequest = true;
+					}
+				}
 				/** Указать колличество для сфер артефактов титанов */
 				if (isChecked('countControl') &&
 					call.name == 'titanArtifactChestOpen' &&
@@ -842,6 +870,10 @@
 						const answer = await getAnswer(lastQuestion);
 						if (answer) {
 							lastAnswer = answer;
+							console.log(answer);
+							setProgress('Ответ известен: ' + answer, true);
+						} else {
+							setProgress('ВНИМАНИЕ ОТВЕТ НЕ ИЗВЕСТЕН', true);
 						}
 					}
 				}
@@ -1040,7 +1072,7 @@
 			case "core":
 				return "get_core";
 			default:
-				break;
+				return "get_clanPvp";
 		}
 	}
 	/** Возвращает название класса переданного объекта */
@@ -3599,50 +3631,91 @@
 		)
 	}
 	/** Набить килов в горниле душк */
-	function bossRatingEvent() {
-		let heroGetAllCall = '{"calls":[{"name":"heroGetAll","args":{},"ident":"teamGetAll"},{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
-		send(heroGetAllCall, function (data) {
-			let bossEventInfo = data.results[1].result.response.find(e => e.id == 633);
-			if (!bossEventInfo) {
-				setProgress('Эвент завершен', true);
-				return;
+	async function bossRatingEvent() {
+		const topGet = await Send(JSON.stringify({ calls: [{ name: "topGet", args: { type: "bossRatingTop", extraId: 0 }, ident: "body" }] }));
+		if (!topGet) {
+			setProgress('Эвент завершен', true);
+			return;
+		}
+		const replayId = topGet.results[0].result.response[0].userData.replayId;
+		const result = await Send(JSON.stringify({
+			calls: [
+				{ name: "battleGetReplay", args: { id: replayId }, ident: "battleGetReplay" },
+				{ name: "heroGetAll", args: {}, ident: "heroGetAll" },
+				{ name: "pet_getAll", args: {}, ident: "pet_getAll" },
+				{ name: "offerGetAll", args: {}, ident: "offerGetAll" }
+			]
+		}));
+		const bossEventInfo = result.results[3].result.response.find(e => e.offerType == "bossEvent");
+		if (!bossEventInfo) {
+			setProgress('Эвент завершен', true);
+			return;
+		}
+		const usedHeroes = bossEventInfo.progress.usedHeroes;
+		const party = Object.values(result.results[0].result.response.replay.attackers);
+		const availableHeroes = Object.values(result.results[1].result.response).map(e => e.id);
+		const availablePets = Object.values(result.results[2].result.response).map(e => e.id);
+		const calls = [];
+		/** Первая пачка */
+		const args = {
+			heroes: [],
+			favor: {}
+		}
+		for (let hero of party) {
+			if (!availableHeroes.includes(hero.id) || usedHeroes.includes(hero.id)) {
+				continue;
 			}
-			let heroGetAllList = data.results[0].result.response;
-			let usedHeroes = bossEventInfo.progress.usedHeroes;
-			let heroList = [];
-
-			for (let heroId in heroGetAllList) {
-				let hero = heroGetAllList[heroId];
-				if (usedHeroes.includes(hero.id)) {
-					continue;
-				}
-				heroList.push(hero.id);
-				if (heroList.length > 6) {
-					break;
-				}
+			if (hero.id >= 6000 && availablePets.includes(hero.id)) {
+				args.pet = hero.id;
 			}
-
-			if (!heroList.length) {
-				setProgress('Нет героев', true);
-				return;
+			args.heroes.push(hero.id);
+			if (hero.favorPetId) {
+				args.favor[hero.id] = hero.favorPetId;
 			}
-
-			let calls = heroList
-				.map(e => '{"name":"bossRatingEvent_startBattle","args":{"heroes":[' + e + ']},"ident":"body_' + e + '"}')
-				.join(',');
-
-			send('{"calls":[' + calls + ']}', e => {
-				console.log(e);
-				setProgress('Использовано ' + e?.results?.length + ' героев', true);
-				rewardBossRatingEvent();
+		}
+		if (args.heroes.length) {
+			calls.push({
+				name: "bossRatingEvent_startBattle",
+				args,
+				ident: "body_0"
 			});
-		});
+		}
+		/** Другие пачки */
+		let heroes = [];
+		let count = 1;
+		while (heroId = availableHeroes.pop()) {
+			if (args.heroes.includes(heroId) || usedHeroes.includes(heroId)) {
+				continue;
+			}
+			heroes.push(heroId);
+			if (heroes.length == 5) {
+				calls.push({
+					name: "bossRatingEvent_startBattle",
+					args: {
+						heroes: [...heroes],
+						pet: availablePets[Math.floor(Math.random() * availablePets.length)]
+					},
+					ident: "body_" + count
+				});
+				heroes = [];
+				count++;
+			}
+		}
+
+		if (!calls.length) {
+			setProgress('Нет героев', true);
+			return;
+		}
+
+		const resultBattles = await Send(JSON.stringify({ calls }));
+		console.log(resultBattles);
+		rewardBossRatingEvent();
 	}
 	/** Сбор награды из Горнила Душ */
 	function rewardBossRatingEvent() {
 		let rewardBossRatingCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
 		send(rewardBossRatingCall, function (data) {
-			let bossEventInfo = data.results[0].result.response.find(e => e.id == 633);
+			let bossEventInfo = data.results[0].result.response.find(e => e.offerType == "bossEvent");
 			if (!bossEventInfo) {
 				setProgress('Эвент завершен', true);
 				return;
@@ -3650,7 +3723,7 @@
 
 			let farmedChests = bossEventInfo.progress.farmedChests;
 			let score = bossEventInfo.progress.score;
-			setProgress('Количество убитых врагов: ' + score);
+			setProgress('Количество урона: ' + score);
 			let revard = bossEventInfo.reward;
 
 			let getRewardCall = {
@@ -4335,6 +4408,7 @@
 		}
 		/** Прерасчет боя */
 		function preCalcBattle(battle) {
+			let actions = [];
 			const countTestBattle = getInput('countTestBattle');
 			for (let i = 0; i < countTestBattle; i++) {
 				actions.push(getBattleInfo(battle));
@@ -4479,5 +4553,8 @@
 
 /**
  * TODO:
+ * Автосбор дара валькирий и других ежедневных наград
+ * Получение всех уровней при сборе всех наград (квест на титанит и на энку)
+ * Возможность указать любое число при открытии артефактных сундуков
  * Добивание на арене титанов
  */
