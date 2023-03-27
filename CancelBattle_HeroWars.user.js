@@ -240,13 +240,13 @@
 			title: 'Собрать Запределье',
 			func: getOutland,
 		},
-		bossRatingEvent: {
-			name: 'Архидемон',
-			title: 'Набивает килы и собирает награду',
-			func: function () {
-				confShow('Запустить скрипт Архидемон?', bossRatingEvent);
-			},
-		},
+//		bossRatingEvent: {
+//			name: 'Архидемон',
+//			title: 'Набивает килы и собирает награду',
+//			func: function () {
+//				confShow('Запустить скрипт Архидемон?', bossRatingEvent);
+//			},
+//		},
 
 		testRaidNodes: {
 			name: 'Прислужники',
