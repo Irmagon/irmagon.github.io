@@ -2,10 +2,10 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.045
+// @version			2.048
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
-// @author			ZingerY
+// @author			ZingerY (forked from original by ThomasGaud)
 // @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
@@ -48,21 +48,8 @@
 	const decoder = new TextDecoder("utf-8");
 	/** Хранит историю запросов */
 	let requestHistory = {};
-	/** Была ли взломана подписка deprecated */
-	let isHackSubscribe = false;
 	/** URL для запросов к API */
 	let apiUrl = '';
-	/** Идетификатор социальной сети deprecated */
-	let sNetwork = '';
-	/** Идетификаторы подписки для соц сетей deprecated */
-	const socials = {
-		vk: 1, // vk.com
-		ok: 2, // ok.ru
-		mm: 3, // my.mail.ru
-		mg: 5, // store.my.games
-		fb: 4, // apps.facebook.com
-		wb: 6, // hero-wars.com
-	}
 
 	/** Подключение к коду игры */
 	this.cheats = new hackGame();
@@ -126,7 +113,7 @@
 		countControl: {
 			label: 'Контроль кол-ва',
 			cbox: null,
-			title: 'Возможность указывать колличество открываемых "лутбоксов"',
+			title: 'Возможность указывать количество открываемых "лутбоксов"',
 			default: true
 		},
 		repeatMission: {
@@ -147,12 +134,14 @@
 			title: 'Быстрый режим прохождения подземелья',
 			default: false
 		},
+		/*
 		getAnswer: {
 			label: 'АвтоВикторина',
 			cbox: null,
 			title: 'Автоматическое получение возможно правильных ответов на вопросы викторины',
 			default: false
 		}
+		*/
 	};
 	/** Получить состояние чекбокса */
 	function isChecked(checkBox) {
@@ -346,6 +335,11 @@
 	}, 300000);
 	/** Событие загрузки DOM дерева страницы */
 	document.addEventListener("DOMContentLoaded", () => {
+		/** Возвращаем нормальный размер игровому окну */
+		const style = document.createElement('style');
+		style.innerText = "#flash-wrapper{max-width:1000px !important;max-height:640px !important;}";
+		document.head.appendChild(style);
+		/** Создание интерфеса скрипта */
 		createInterface();
 	});
 	/** Сбор и отправка кодов подарков */
@@ -692,12 +686,13 @@
 				if (call.name == 'missionStart') {
 					lastMissionStart = call.args;
 				}
-				/** Указать колличество для сфер титанов и яиц петов */
+				/** Указать количество для сфер титанов и яиц петов */
 				if (isChecked('countControl') &&
 					(call.name == 'pet_chestOpen' ||
 					call.name == 'titanUseSummonCircle') &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
+					call.args.amount = 1;
+					const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 					if (result) {
@@ -705,12 +700,12 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать колличество для сфер артефактов титанов */
+				/** Указать количество для сфер артефактов титанов */
 				if (isChecked('countControl') &&
 					call.name == 'titanArtifactChestOpen' &&
 					call.args.amount > 1 &&
 					!changeRequest) {
-					let result = await popup.confirm('Указать колличество:', [
+					let result = await popup.confirm('Указать количество:', [
 						{ msg: 'Открыть', isInput: true, default: call.args.amount },
 					]);
 					if (result) {
@@ -740,11 +735,11 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать колличество для артефактных сундуков */
+				/** Указать количество для артефактных сундуков */
 				if (isChecked('countControl') &&
 					call.name == 'artifactChestOpen' &&
 					call.args.amount > 1) {
-					const result = await popup.confirm('Указать колличество:', [
+					const result = await popup.confirm('Указать количество:', [
 						{ msg: 'Открыть 1', result: 1 },
 						{ msg: 'Открыть 10', result: 10 },
 					]);
@@ -755,11 +750,11 @@
 				}
 				if (call.name == 'consumableUseLootBox') {
 					lastRussianDollId = call.args.libId;
-					/** Указать колличество для золотых шкатулок */
+					/** Указать количество для золотых шкатулок */
 					if (isChecked('countControl') &&
 						call.args.libId == 148 &&
 						call.args.amount > 1) {
-						const result = await popup.confirm('Указать колличество:', [
+						const result = await popup.confirm('Указать количество:', [
 							{msg: 'Открыть', isInput: true, default: call.args.amount},
 						]);
 						call.args.amount = result;
@@ -800,39 +795,6 @@
 			let mainReward = null;
 			const allReward = {};
 			for (const call of respond.results) {
-				/** Типа активация Покровительства Валькирий на клиенте */
-				// if (call.ident == callsIdent['subscriptionGetInfo'] &&
-				// 	(call.result.response.subscription?.status != 1 || !call.result.response.subscription)) {
-				// 	if (!call.result.response.subscription) {
-				// 		call.result.response.subscription = {}
-				// 	}
-				// 	callRes = call.result.response.subscription;
-				// 	/** Устанавливем время окончания подписки на +7 от подписки */
-				// 	callRes.endTime = nowTime + 1001 * 24 * 60 * 60;
-				// 	/** Статус подписки */
-				// 	callRes.status = 1;
-				// 	/** Тип (платформа) */
-				// 	callRes.type = socials[sNetwork];
-				// 	isHackSubscribe = true;
-				// 	isChange = true;
-				// }
-				/** Фикс экспедиций */
-				// if (call.ident == callsIdent['expeditionGet'] && isHackSubscribe) {
-				// 	expeditions = call.result.response;
-				// 	for (const n in expeditions) {
-				// 		exped = expeditions[n];
-				// 		if (exped.slotId == 6) {
-				// 			exped.status = 3;
-				// 			isChange = true;
-				// 		}
-				// 	}
-				// }
-				/** Бесконечные карты предсказаний */
-				if (call.ident == callsIdent['inventoryGet']) {
-					consumable = call.result.response.consumable;
-					consumable[81] = 999;
-					isChange = true;
-				}
 				/** Потасовка */
 				if (call.ident == callsIdent['brawl_getInfo']) {
 					brawl = call.result.response;
@@ -2853,7 +2815,7 @@
 		let finishListBattle = [];
 		/** Идетификатор текущей пачки */
 		let currentRival = 0;
-		/** Колличество попыток добития пачки */
+		/** Количество попыток добития пачки */
 		let attempts = 0;
 		/** Была ли попытка добития текущего тира */
 		let isCheckCurrentTier = false;
@@ -3177,7 +3139,7 @@
 		scriptMenu.setStatus(text, onclick);
 		hide = hide || false;
 		if (hide) {
-			hideProgress(800);
+			hideProgress(750);
 		}
 	}
 	function hackGame() {
@@ -3217,7 +3179,7 @@
 			{name:"BooleanProperty", prop:"engine.core.utils.property.BooleanProperty"},
 			{name:"RuleStorage", prop:"game.data.storage.rule.RuleStorage"},
 			{name:"BattleConfig", prop:"battle.BattleConfig"},
-			{name:"SpecialShopWelcomePopup", prop:"game.view.popup.shop.special.SpecialShopWelcomePopup"},
+			{name:"SpecialShopModel", prop:"game.model.user.shop.SpecialShopModel"},
 			{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
 			{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
 		];
@@ -3499,18 +3461,18 @@
 					}
 				}
 			},
-			/** Попытка убрать лавку редкойстей */
-			// removeWelcomeShop: function () {
-			// 	let SSWP_4 = getProtoFn(Game.SpecialShopWelcomePopup, 1);
-			// 	const oldWelcomeShop = Game.SpecialShopWelcomePopup.prototype[SSWP_4];
-			// 	Game.SpecialShopWelcomePopup.prototype[SSWP_4] = function () {
-			// 		if (true) {
-			// 			return;
-			// 		} else {
-			// 			return oldWelcomeShop.call(this);
-			// 		}
-			// 	}
-			// },
+			/** Удаление торговца редкими товарами */
+			removeWelcomeShop: function () {
+				let SSM_3 = getProtoFn(Game.SpecialShopModel, 3);
+				const oldWelcomeShop = Game.SpecialShopModel.prototype[SSM_3];
+				Game.SpecialShopModel.prototype[SSM_3] = function () {
+					if (isChecked('noOfferDonat')) {
+						return null;
+					} else {
+						return oldWelcomeShop.call(this);
+					}
+				}
+			},
 			/** Кнопка ускорения без Покровительства Валькирий */
 			battleFastKey: function () {
 				const BGM_37 = getProtoFn(Game.BattleGuiMediator, 37);
@@ -3662,11 +3624,12 @@
 			favor: {}
 		}
 		for (let hero of party) {
-			if (!availableHeroes.includes(hero.id) || usedHeroes.includes(hero.id)) {
-				continue;
-			}
 			if (hero.id >= 6000 && availablePets.includes(hero.id)) {
 				args.pet = hero.id;
+				continue;
+			}
+			if (!availableHeroes.includes(hero.id) || usedHeroes.includes(hero.id)) {
+				continue;
 			}
 			args.heroes.push(hero.id);
 			if (hero.favorPetId) {
