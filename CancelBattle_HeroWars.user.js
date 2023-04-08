@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.048
+// @version			2.050
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -888,7 +888,7 @@
 						});
 				}
 				/** Начало боя с боссом Асгарда */
-				if (call.ident == callsIdent['clanRaid_startBossBattle'] && isChecked('preCalcBattle')) {
+				if (call.ident == callsIdent['clanRaid_startBossBattle']) {
 					lastBossBattleInfo = call.result.response.battle;
 				}
 				/** Отмена туториала */
@@ -3380,7 +3380,7 @@
 					if (isChecked('passBattle')) {
 						Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
 						this[getProtoFn(Game.BattlePausePopup, 3)]();
-						this[getProtoFn(Game.DisplayObjectContainer, 3)](this.clip[getProtoFn(Game.GuiClipContainer, 1)]());
+						this[getProtoFn(Game.DisplayObjectContainer, 3)](this.clip[getProtoFn(Game.GuiClipContainer, 2)]());
 						this.clip[getProtoFn(Game.BattlePausePopupClip, 1)][getProtoFn(Game.ClipLabel, 9)](Game.Translate.translate("UI_POPUP_BATTLE_PAUSE"));
 
 						this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](Game.Translate.translate("UI_POPUP_BATTLE_RETREAT"), (q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 15)]))); /** 14 > 15 */
@@ -3441,8 +3441,8 @@
 							var a = speedBattle * this[BC_44]();
 						} else {
 							a = this[BC_11][BSM_1][BP_get_value]();
-							const multiple = a == 1 ? speedBattle : this[BC_13][a];
-							a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_44]();
+							//const multiple = a == 1 ? speedBattle : this[BC_13][a];
+							a = this[BC_13][a] * Game.BattleController[BC_3][BP_get_value]() * this[BC_44]();
 						}
 						const BSM_22 = getProtoFn(Game.BattleSettingsModel, 22);
 						a > this[BC_11][BSM_22][BP_get_value]() && (a = this[BC_11][BSM_22][BP_get_value]());
@@ -4491,7 +4491,8 @@
 					(reward?.stamina ? reward.stamina : false) || // энергия
 					(reward?.buff ? true : false) || // ускорение набора энергии
 					(reward?.vipPoints ? reward.vipPoints : false) || // вип очки
-					(reward?.fragmentHero ? true : false) // душы героев
+					(reward?.fragmentHero ? true : false) || // душы героев
+					(reward?.bundleHeroReward ? true : false)  // герои
 				);
 				if (isFarmLetter) {
 					lettersIds.push(~~letter.id);
