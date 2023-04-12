@@ -2996,7 +2996,7 @@
 			// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + numReval + '/' + countRivalsTier + ' - ' + countWin + '/11');
 			console.log('resultPreCalcBattle', countWin + '/11' )
 			if (countWin > 0) {
-				attempts = 10;
+				attempts = getInput('countAutoBattle');
 			} else {
 				attempts = 0;
 			}
