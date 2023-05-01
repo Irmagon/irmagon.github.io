@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.058
+// @version			2.059
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -2023,7 +2023,9 @@
 		},
 		set: function (key, value) {
 			this.values[key] = value;
-			db.set(this.userId, this.values);
+			db.set(this.userId, this.values).catch(
+				e => null
+			);
 			localStorage[this.name + ':' + key] = value;
 		},
 		delete: function (key) {
@@ -2048,7 +2050,11 @@
 	/** Открывает или мигрирует в базу данных  */
 	async function openOrMigrateDatabase(userId) {
 		storage.userId = userId;
+		try {
 		await db.open();
+		} catch(e) {
+			return;
+		}
 		let settings = await db.get(userId, false);
 
 		if (settings) {
