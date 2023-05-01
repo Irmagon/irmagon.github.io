@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.050
+// @version			2.057
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -19,7 +19,7 @@
 
 (function() {
 	/**Forked from original ZingerY HeroWarsHelper script by ThomasGaud */
-    /** Стартуем скрипт */
+	/** Стартуем скрипт */
 	console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
 	/** Информация о скрипте */
 	const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
@@ -30,6 +30,8 @@
 		setTimeout(sendCodes, 2000);
 		return;
 	}
+	/** Информация для выполнения ежендевных квестов */
+	const questsInfo = {};
 	/** Загружены ли данные игры */
 	let isLoadGame = false;
 	/** Заголовки последнего запроса */
@@ -57,9 +59,20 @@
 	this.BattleCalc = cheats.BattleCalc;
 	/** Отправка запроса доступная через консоль */
 	this.SendRequest = send;
-	/** 
-	 * Короткий асинхронный запрос 
-	 * Пример использования (возвращает информацию о персонаже): 
+	/** Простой расчет боя доступный через консоль */
+	this.Calc = function (data) {
+		const type = getBattleType(data.type);
+		return new Promise((resolve, reject) => {
+			try {
+				BattleCalc(data, type, resolve);
+			} catch (e) {
+				reject(e);
+			}
+		})
+	}
+	/**
+	 * Короткий асинхронный запрос
+	 * Пример использования (возвращает информацию о персонаже):
 	 * const userInfo = await Send('{"calls":[{"name":"userGetInfo","args":{},"ident":"body"}]}')
 	*/
 	this.Send = function (json, pr) {
@@ -81,13 +94,13 @@
 			default: false
 		},
 		endlessCards: {
-			label: 'Бесконечные карты',
+			label: 'Карты',
 			cbox: null,
 			title: 'Бесконечные карты предсказаний',
 			default: true
 		},
 		sendExpedition: {
-			label: 'АвтоЭкспедиции',
+			label: 'Экспедиции',
 			cbox: null,
 			title: 'Автоотправка экспедиций',
 			default: true
@@ -95,7 +108,7 @@
 		cancelBattle: {
 			label: 'Отмена боя',
 			cbox: null,
-			title: 'Возможность отмены боя на ВГ',
+			title: 'Возможность отмены боя, кроме ВГ/СМ',
 			default: false
 		},
 		getAutoGifts: {
@@ -105,7 +118,7 @@
 			default: true
 		},
 		preCalcBattle: {
-			label: 'Прерасчет боя',
+			label: 'Прерасчет',
 			cbox: null,
 			title: 'Предварительный расчет боя',
 			default: false
@@ -117,7 +130,7 @@
 			default: true
 		},
 		repeatMission: {
-			label: 'Повтор в компании',
+			label: 'Повтор боев',
 			cbox: null,
 			title: 'Автоповтор боев в кампании',
 			default: false
@@ -126,14 +139,15 @@
 			label: 'Отключить донат',
 			cbox: null,
 			title: 'Убирает все предложения доната',
-			default: false
+			/** Костыль чтоб получать поле до получения id персонажа */
+			default: JSON.parse(localStorage[GM_info.script.name + ':noOfferDonat']) || false,
 		},
-		fastMode: {
-			label: 'Быстрый режим',
+		dailyQuests: {
+			label: 'АвтоКвесты',
 			cbox: null,
-			title: 'Быстрый режим прохождения подземелья',
+			title: 'Выполнять ежедневные квесты',
 			default: false
-		},
+		}
 		/*
 		getAnswer: {
 			label: 'АвтоВикторина',
@@ -174,12 +188,11 @@
 	function getInput(inputName) {
 		return inputs[inputName].input.value;
 	}
-
 	/** Список кнопочек */
 	const buttons = {
 		newDay: {
-			name: 'Синхронизация',
-			title: 'Частичная синхонизация данных игры без перезагрузки сатраницы',
+			name: 'Обновить',
+			title: 'Частичная синхронизация данных игры без перезагрузки сатраницы',
 			func: cheats.refreshGame,
 		},
 		questAllFarm: {
@@ -192,57 +205,64 @@
 			title: 'Отправка и сбор экспедиций',
 			func: checkExpedition,
 		},
-		testTitanArena: {
-			name: 'Турнир Стихий',
-			title: 'Автопрохождение Турнира Стихий',
-			func:  testTitanArena,
-		},
-		testDungeon: {
-			name: 'Подземелье',
-			title: 'Автопрохождение подземелья',
-			func: function () {
-				confShow('Запустить скрипт Подземелье?', () => {
-					let titanit = getInput('countTitanit');
-					testDungeon(titanit);
-				});
-			},
-		},
-		testTower: {
-			name: 'Башня',
-			title: 'Автопрохождение башни',
-			func: function () {
-				confShow('Запустить скрипт Башня?', testTower);
-			},
-		},
 		mailGetAll: {
 			name: 'Почта',
 			title: 'Собрать всю почту, кроме писем с энергией и зарядами портала',
-			func: mailGetAll
+			func: mailGetAll,
 		},
+		/*
+		getOutland: {
+			name: 'Запределье',
+			title: 'Собрать Запределье',
+			func: getOutland,
+		},
+		*/
+		testTitanArena: {
+			name: 'Турнир',
+			title: 'Автопрохождение Турнира Стихий',
+			func: testTitanArena,
+		},
+		testDungeon: {
+			name: 'Подземелье',
+			title: 'Автопрохождение подземелья максимальными пачками',
+			func: function () {
+				confShow('Запустить скрипт Подземелье?', testDungeon);
+			},
+		},
+		/*
+		testTower: {
+			name: 'Башня',
+			title: 'Автопрохождение башни',
+			func: testTower,
+		},
+		*/
+		/*
+		bossRatingEvent: {
+			name: 'Архидемон',
+			title: 'Набивает килы и собирает награду',
+			func: function () {
+				confShow('Запустить скрипт Архидемон?', bossRatingEvent);
+			},
+		},
+		*/
+		/*
 		offerFarmAllReward: {
 			name: 'Пасхалки',
 			title: 'Собрать все пасхалки или награды',
 			func: offerFarmAllReward,
 		},
-        getOutland: {
-			name: 'Запределье',
-			title: 'Собрать Запределье',
-			func: getOutland,
-		},
-//		bossRatingEvent: {
-//			name: 'Архидемон',
-//			title: 'Набивает килы и собирает награду',
-//			func: function () {
-//				confShow('Запустить скрипт Архидемон?', bossRatingEvent);
-//			},
-//		},
-
+		*/
 		testRaidNodes: {
 			name: 'Прислужники',
 			title: 'Атакует прислужников сохраннеными пачками',
 			func: function () {
 				confShow('Запустить скрипт Прислужники?', testRaidNodes);
 			},
+		},
+		testAdventure: {
+			name: 'Приключение',
+			title: 'Проходит приключение по указанному маршруту',
+			func: testAdventure,
 		},
 		goToSanctuary: {
 			name: 'Святилище',
@@ -254,12 +274,17 @@
 			title: 'Быстрый переход к Войне гильдий',
 			func: cheats.goClanWar,
 		},
+        getOutland: {
+			name: 'Автосбор',
+			title: 'Выполнить несколько действий',
+			func: testDoYourBest,
+		},
 	}
 	/** Вывести кнопочки */
 	function addControlButtons() {
 		for (let name in buttons) {
 			button = buttons[name];
-			scriptMenu.addButton(button.name, button.func, button.title);
+			button['button'] = scriptMenu.addButton(button.name, button.func, button.title);
 		}
 	}
 	/** Добавляет ссылки */
@@ -299,8 +324,10 @@
 	let lastQuestion = null;
 	/** Ответ на последний вопрос викторины */
 	let lastAnswer = null;
-	/** Флаг открытия сфер артефактов титанов */
-	let titanArtifactChestOpen = false;
+	/** Флаг открытия ключей или сфер артефактов титанов */
+	let artifactChestOpen = false;
+	/** Имя функции открытия ключей или сфер артефактов титанов */
+	let artifactChestOpenCallName = '';
 
 	/**
 	 * Копирует тест в буфер обмена
@@ -489,6 +516,11 @@
 			/** Событие загрузки игры */
 			if (headers["X-Request-Id"] > 2 && !isLoadGame) {
 				isLoadGame = true;
+				await openOrMigrateDatabase(userInfo.id);
+				addControls();
+				addControlButtons();
+				addBottomUrls();
+
 				if (isChecked('sendExpedition')) {
 					checkExpedition();
 				}
@@ -497,8 +529,10 @@
 					getAutoGifts();
 				}
 				cheats.activateHacks();
-				addControlButtons();
-				addBottomUrls();
+				justInfo();
+				if (isChecked('dailyQuests')) {
+					testDailyQuests();
+				}
 			}
 			/** Обработка данных исходящего запроса */
 			sourceData = await checkChangeSend.call(this, sourceData, tempData);
@@ -583,7 +617,7 @@
 			let changeRequest = false;
 			testData = JSON.parse(tempData);
 			for (const call of testData.calls) {
-				if (!titanArtifactChestOpen) {
+				if (!artifactChestOpen) {
 					requestHistory[this.uniqid].calls[call.name] = call.ident;
 				}
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
@@ -700,12 +734,14 @@
 						changeRequest = true;
 					}
 				}
-				/** Указать количество для сфер артефактов титанов */
+				/** Указать колличество для ключей и сфер артефактов титанов */
 				if (isChecked('countControl') &&
-					call.name == 'titanArtifactChestOpen' &&
+					(call.name == 'artifactChestOpen' ||
+						call.name == 'titanArtifactChestOpen') &&
 					call.args.amount > 1 &&
 					!changeRequest) {
-					let result = await popup.confirm('Указать количество:', [
+					artifactChestOpenCallName = call.name;
+					let result = await popup.confirm('Указать колличество:', [
 						{ msg: 'Открыть', isInput: true, default: call.args.amount },
 					]);
 					if (result) {
@@ -716,9 +752,9 @@
 
 						for (let count = result; count > 0; count -= sphere) {
 							if (count < 10) sphere = 1;
-							const ident = "titanArtifactChestOpen_" + count;
+							const ident = artifactChestOpenCallName + "_" + count;
 							testData.calls.push({
-								name: "titanArtifactChestOpen",
+								name: artifactChestOpenCallName,
 								args: {
 									amount: sphere,
 									free: true,
@@ -731,20 +767,7 @@
 							requestHistory[this.uniqid].calls[call.name].push(ident);
 						}
 
-						titanArtifactChestOpen = true;
-						changeRequest = true;
-					}
-				}
-				/** Указать количество для артефактных сундуков */
-				if (isChecked('countControl') &&
-					call.name == 'artifactChestOpen' &&
-					call.args.amount > 1) {
-					const result = await popup.confirm('Указать количество:', [
-						{ msg: 'Открыть 1', result: 1 },
-						{ msg: 'Открыть 10', result: 10 },
-					]);
-					if (result) {
-						call.args.amount = result;
+						artifactChestOpen = true;
 						changeRequest = true;
 					}
 				}
@@ -795,6 +818,10 @@
 			let mainReward = null;
 			const allReward = {};
 			for (const call of respond.results) {
+				/** Получение идетификатора пользователя */
+				if (call.ident == callsIdent['registration']) {
+					userId = call.result.response.userId;
+				}
 				/** Потасовка */
 				if (call.ident == callsIdent['brawl_getInfo']) {
 					brawl = call.result.response;
@@ -804,7 +831,7 @@
 					}
 				}
 				/** Скрываем предложения доната */
-				if (isChecked('noOfferDonat') && call.ident == callsIdent['billingGetAll']) {
+				if (call.ident == callsIdent['billingGetAll'] && getSaveVal('noOfferDonat')) {
 					const billings = call.result.response?.billings;
 					const bundle = call.result.response?.bundle;
 					if (billings && bundle) {
@@ -814,7 +841,7 @@
 					}
 				}
 				/** Скрываем предложения доната */
-				if (isChecked('noOfferDonat') && call.ident == callsIdent['offerGetAll']) {
+				if (call.ident == callsIdent['offerGetAll'] && getSaveVal('noOfferDonat')) {
 					const offers = call.result.response;
 					if (offers) {
 						call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type));
@@ -856,6 +883,9 @@
 					let user = call.result.response;
 					userInfo = Object.assign({}, user);
 					delete userInfo.refillable;
+					if (!questsInfo['userGetInfo']) {
+						questsInfo['userGetInfo'] = user;
+					}
 				}
 				/** Начало боя для прерасчета */
 				if ((call.ident == callsIdent['clanWarAttack'] ||
@@ -899,11 +929,11 @@
 					}
 					isChange = true;
 				}
-				/** Открытие сфер артефактов титанов */
-				if (titanArtifactChestOpen &&
-					(call.ident == callsIdent['titanArtifactChestOpen'] ||
-						(callsIdent['titanArtifactChestOpen'] && callsIdent['titanArtifactChestOpen'].includes(call.ident)))) {
-					let reward = call.result.response.reward;
+				/** Открытие ключей и сфер артефактов титанов */
+				if (artifactChestOpen &&
+					(call.ident == callsIdent[artifactChestOpenCallName] ||
+						(callsIdent[artifactChestOpenCallName] && callsIdent[artifactChestOpenCallName].includes(call.ident)))) {
+					let reward = call.result.response[artifactChestOpenCallName == 'artifactChestOpen' ? 'chestReward' : 'reward'];
 
 					reward.forEach(e => {
 						for (let f in e) {
@@ -920,7 +950,7 @@
 						}
 					});
 
-					if (!call.ident.includes('titanArtifactChestOpen')) {
+					if (!call.ident.includes(artifactChestOpenCallName)) {
 						mainReward = call.result.response;
 					}
 				}
@@ -940,12 +970,37 @@
 						openRussianDoll(lastRussianDollId, newCount);
 					}
 				}
+				/** Получение данных по квестам */
+				if (call.ident == callsIdent['questGetAll']) {
+					if (!questsInfo['questGetAll']) {
+						questsInfo['questGetAll'] = call.result.response;
+					}
+				}
+				/** Получение данных инвентаря для квестов */
+				if (call.ident == callsIdent['inventoryGet']) {
+					if (!questsInfo['inventoryGet']) {
+						questsInfo['inventoryGet'] = call.result.response;
+					}
+				}
+				/** Получение данных героев для квестов */
+				if (call.ident == callsIdent['heroGetAll']) {
+					if (!questsInfo['heroGetAll']) {
+						questsInfo['heroGetAll'] = call.result.response;
+					}
+				}
+				/** Получение данных титанов для квестов */
+				if (call.ident == callsIdent['titanGetAll']) {
+					if (!questsInfo['titanGetAll']) {
+						questsInfo['titanGetAll'] = call.result.response;
+					}
+				}
 			}
 
-			if (mainReward && titanArtifactChestOpen) {
+			if (mainReward && artifactChestOpen) {
 				console.log(allReward);
-				mainReward.reward = [allReward];
-				titanArtifactChestOpen = false;
+				mainReward[artifactChestOpenCallName == 'artifactChestOpen' ? 'chestReward' : 'reward'] = [allReward];
+				artifactChestOpen = false;
+				artifactChestOpenCallName = '';
 				isChange = true;
 			}
 		} catch(err) {
@@ -1051,13 +1106,15 @@
 		scriptMenu.init({
 			showMenu: true
 		});
-		scriptMenu.addHeader(GM_info.script.name);
+		scriptMenu.addHeader(GM_info.script.name, justInfo);
 		scriptMenu.addHeader('v' + GM_info.script.version);
+	}
 
-		const details = scriptMenu.addDetails('Настройки');
+	function addControls() {
+		const checkboxDetails = scriptMenu.addDetails('Настройки');
 		for (let name in checkboxes) {
-			checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title, details);
-			/** Получаем состояние чекбоксов из localStorage */
+			checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title, checkboxDetails);
+			/** Получаем состояние чекбоксов из storage */
 			let val = storage.get(name, null);
 			if (val != null) {
 				checkboxes[name].cbox.checked = val;
@@ -1065,7 +1122,7 @@
 				storage.set(name, checkboxes[name].default);
 				checkboxes[name].cbox.checked = checkboxes[name].default;
 			}
-			/** Отсеживание события изменения чекбокса для записи в localStorage */
+			/** Отсеживание события изменения чекбокса для записи в storage */
 			checkboxes[name].cbox.dataset['name'] = name;
 			checkboxes[name].cbox.addEventListener('change', function () {
 				storage.set(this.dataset['name'], this.checked);
@@ -1075,7 +1132,7 @@
 		const inputDetails = scriptMenu.addDetails('Значения');
 		for (let name in inputs) {
 			inputs[name].input = scriptMenu.addInputText(inputs[name].title, false, inputDetails);
-			/** Получаем состояние inputText из localStorage */
+			/** Получаем состояние inputText из storage */
 			let val = storage.get(name, null);
 			if (val != null) {
 				inputs[name].input.value = val;
@@ -1083,21 +1140,29 @@
 				storage.set(name, inputs[name].default);
 				inputs[name].input.value = inputs[name].default;
 			}
-			/** Отсеживание события изменения поля для записи в localStorage */
+			/** Отсеживание события изменения поля для записи в storage */
 			inputs[name].input.dataset['name'] = name;
 			inputs[name].input.addEventListener('input', function () {
-				storage.set(this.dataset['name'], this.value);
+				const inputName = this.dataset['name'];
+				let value = +this.value;
+				if (!value || Number.isNaN(value)) {
+					value = storage.get(inputName, inputs[inputName].default);
+					inputs[name].input.value = value;
+				}
+				storage.set(inputName, value);
 			})
 		}
 	}
 	/** Расчитывает HASH MD5 из строки */
 	function md5(r){for(var a=(r,n,t,e,o,u)=>f(c(f(f(n,r),f(e,u)),o),t),n=(r,n,t,e,o,u,f)=>a(n&t|~n&e,r,n,o,u,f),t=(r,n,t,e,o,u,f)=>a(n&e|t&~e,r,n,o,u,f),e=(r,n,t,e,o,u,f)=>a(n^t^e,r,n,o,u,f),o=(r,n,t,e,o,u,f)=>a(t^(n|~e),r,n,o,u,f),f=function(r,n){var t=(65535&r)+(65535&n);return(r>>16)+(n>>16)+(t>>16)<<16|65535&t},c=(r,n)=>r<<n|r>>>32-n,u=Array(r.length>>2),h=0;h<u.length;h++)u[h]=0;for(h=0;h<8*r.length;h+=8)u[h>>5]|=(255&r.charCodeAt(h/8))<<h%32;len=8*r.length,u[len>>5]|=128<<len%32,u[14+(len+64>>>9<<4)]=len;var l=1732584193,i=-271733879,g=-1732584194,v=271733878;for(h=0;h<u.length;h+=16){var A=l,d=i,C=g,m=v;i=o(i=o(i=o(i=o(i=e(i=e(i=e(i=e(i=t(i=t(i=t(i=t(i=n(i=n(i=n(i=n(i,g=n(g,v=n(v,l=n(l,i,g,v,u[h+0],7,-680876936),i,g,u[h+1],12,-389564586),l,i,u[h+2],17,606105819),v,l,u[h+3],22,-1044525330),g=n(g,v=n(v,l=n(l,i,g,v,u[h+4],7,-176418897),i,g,u[h+5],12,1200080426),l,i,u[h+6],17,-1473231341),v,l,u[h+7],22,-45705983),g=n(g,v=n(v,l=n(l,i,g,v,u[h+8],7,1770035416),i,g,u[h+9],12,-1958414417),l,i,u[h+10],17,-42063),v,l,u[h+11],22,-1990404162),g=n(g,v=n(v,l=n(l,i,g,v,u[h+12],7,1804603682),i,g,u[h+13],12,-40341101),l,i,u[h+14],17,-1502002290),v,l,u[h+15],22,1236535329),g=t(g,v=t(v,l=t(l,i,g,v,u[h+1],5,-165796510),i,g,u[h+6],9,-1069501632),l,i,u[h+11],14,643717713),v,l,u[h+0],20,-373897302),g=t(g,v=t(v,l=t(l,i,g,v,u[h+5],5,-701558691),i,g,u[h+10],9,38016083),l,i,u[h+15],14,-660478335),v,l,u[h+4],20,-405537848),g=t(g,v=t(v,l=t(l,i,g,v,u[h+9],5,568446438),i,g,u[h+14],9,-1019803690),l,i,u[h+3],14,-187363961),v,l,u[h+8],20,1163531501),g=t(g,v=t(v,l=t(l,i,g,v,u[h+13],5,-1444681467),i,g,u[h+2],9,-51403784),l,i,u[h+7],14,1735328473),v,l,u[h+12],20,-1926607734),g=e(g,v=e(v,l=e(l,i,g,v,u[h+5],4,-378558),i,g,u[h+8],11,-2022574463),l,i,u[h+11],16,1839030562),v,l,u[h+14],23,-35309556),g=e(g,v=e(v,l=e(l,i,g,v,u[h+1],4,-1530992060),i,g,u[h+4],11,1272893353),l,i,u[h+7],16,-155497632),v,l,u[h+10],23,-1094730640),g=e(g,v=e(v,l=e(l,i,g,v,u[h+13],4,681279174),i,g,u[h+0],11,-358537222),l,i,u[h+3],16,-722521979),v,l,u[h+6],23,76029189),g=e(g,v=e(v,l=e(l,i,g,v,u[h+9],4,-640364487),i,g,u[h+12],11,-421815835),l,i,u[h+15],16,530742520),v,l,u[h+2],23,-995338651),g=o(g,v=o(v,l=o(l,i,g,v,u[h+0],6,-198630844),i,g,u[h+7],10,1126891415),l,i,u[h+14],15,-1416354905),v,l,u[h+5],21,-57434055),g=o(g,v=o(v,l=o(l,i,g,v,u[h+12],6,1700485571),i,g,u[h+3],10,-1894986606),l,i,u[h+10],15,-1051523),v,l,u[h+1],21,-2054922799),g=o(g,v=o(v,l=o(l,i,g,v,u[h+8],6,1873313359),i,g,u[h+15],10,-30611744),l,i,u[h+6],15,-1560198380),v,l,u[h+13],21,1309151649),g=o(g,v=o(v,l=o(l,i,g,v,u[h+4],6,-145523070),i,g,u[h+11],10,-1120210379),l,i,u[h+2],15,718787259),v,l,u[h+9],21,-343485551),l=f(l,A),i=f(i,d),g=f(g,C),v=f(v,m)}var y=Array(l,i,g,v),b="";for(h=0;h<32*y.length;h+=8)b+=String.fromCharCode(y[h>>5]>>>h%32&255);var S="0123456789abcdef",j="";for(h=0;h<b.length;h++)u=b.charCodeAt(h),j+=S.charAt(u>>>4&15)+S.charAt(15&u);return j}
 	/** Скрипт для красивых диалоговых окошек */
-	const popup = new(function () {
+	const popup = new (function () {
 		this.popUp,
-		this.downer,
-		this.msgText,
-		this.buttons = [];
+			this.downer,
+			this.middle,
+			this.msgText,
+			this.buttons = [];
+		this.checkboxes = [];
 
 		function init() {
 			addStyle();
@@ -1107,112 +1172,157 @@
 		const addStyle = () => {
 			let style = document.createElement('style');
 			style.innerText = `
-			.PopUp_ {
-				position: absolute;
-				min-width: 300px;
-				max-width: 500px;
-				max-height: 400px;
-				background-color: #190e08e6;
-				z-index: 10001;
-				top: 169px;
-				left: 345px;
-				border: 3px #ce9767 solid;
-				border-radius: 10px;
-				display: flex;
-				flex-direction: column;
-				justify-content: space-around;
-				padding: 15px 12px;
-			}
+		.PopUp_ {
+			position: absolute;
+			min-width: 300px;
+			max-width: 500px;
+			max-height: 400px;
+			background-color: #190e08e6;
+			z-index: 10001;
+			top: 169px;
+			left: 345px;
+			border: 3px #ce9767 solid;
+			border-radius: 10px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-around;
+		}
 
-			.PopUp_back {
-				position: absolute;
-				background-color: #00000066;
-				width: 100%;
-				height: 100%;
-				z-index: 10000;
-				top: 0;
-				left: 0;
-			}
+		.PopUp_back {
+			position: absolute;
+			background-color: #00000066;
+			width: 100%;
+			height: 100%;
+			z-index: 10000;
+			top: 0;
+			left: 0;
+		}
 
-			.PopUp_blocks {
-				width: 100%;
-				height: 50%;
-				display: flex;
-				justify-content: space-evenly;
-				align-items: center;
-			}
+		.PopUp_blocks {
+			width: 100%;
+			height: 50%;
+			display: flex;
+			justify-content: space-evenly;
+			align-items: center;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
 
-			.PopUp_blocks:last-child {
-				margin-top: 25px;
-			}
+		.PopUp_blocks:last-child {
+			margin-top: 5px;
+		}
 
-			.PopUp_buttons {
-				display: flex;
-				margin: 10px 12px;
-				flex-direction: column;
-			}
+		.PopUp_buttons {
+			display: flex;
+			margin: 10px 10px;
+			flex-direction: column;
+		}
 
-			.PopUp_button {
-				background-color: #52A81C;
-				border-radius: 5px;
-				box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
-				cursor: pointer;
-				padding: 5px 18px 8px;
-			}
+		.PopUp_button {
+			background-color: #52A81C;
+			border-radius: 10px;
+			box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
+			cursor: pointer;
+			padding: 1px 10px 1px;
+		}
 
-			.PopUp_input {
-				width: 150px;
-				font-size: 16px;
-				height: 20px;
-				border: 1px solid #cf9250;
-				border-radius: 9px 9px 0px 0px;
-				background: transparent;
-				color: #fce1ac;
-				padding: 1px 10px;
-				box-sizing: border-box;
-				box-shadow: 0px 0px 4px, 0px 0px 0px 3px #ce9767;
-			}
+		.PopUp_input {
+			text-align: center;
+			font-size: 16px;
+			height: 27px;
+			border: 1px solid #cf9250;
+			border-radius: 9px 9px 0px 0px;
+			background: transparent;
+			color: #fce1ac;
+			padding: 1px 10px;
+			box-sizing: border-box;
+			box-shadow: 0px 0px 4px, 0px 0px 0px 3px #ce9767;
+		}
 
-			.PopUp_input::placeholder {
-				color: #fce1ac75;
-			}
+		.PopUp_checkboxes {
+			display: flex;
+			flex-direction: column;
+			margin: 5px 10px -5px 10px;
+			align-items: flex-start;
+		}
 
-			.PopUp_input:focus {
-				outline: 0;
-			}
+		.PopUp_ContCheckbox {
+			margin: 1px 0px;
+		}
 
-			.PopUp_input + .PopUp_button {
-				border-radius: 0px 0px 5px 5px;
-				padding: 2px 18px 5px;
-			}
+		.PopUp_checkbox {
+			position: absolute;
+			z-index: -1;
+			opacity: 0;
+		}
+		.PopUp_checkbox+label {
+			display: inline-flex;
+			align-items: center;
+			user-select: none;
+			font-family: sans-serif;
+			font-stretch: condensed;
+			letter-spacing: 1px;
+			color: #fce1ac;
+			text-shadow: 0px 0px 1px;
+		}
+		.PopUp_checkbox+label::before {
+			content: '';
+			display: inline-block;
+			width: 20px;
+			height: 20px;
+			border: 1px solid #cf9250;
+			border-radius: 7px;
+			margin-right: 7px;
+		}
+		.PopUp_checkbox:checked+label::before {
+			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
+		}
 
-			.PopUp_button:hover {
-				filter: brightness(1.2);
-			}
+		.PopUp_input::placeholder {
+			color: #fce1ac75;
+		}
 
-			.PopUp_text {
-				font-family: sans-serif;
-				font-stretch: condensed;
-				text-align: center;
-			}
+		.PopUp_input:focus {
+			outline: 0;
+		}
 
-			.PopUp_buttonText {
-				color: #E4FF4C;
-				text-shadow: 0px 1px 2px black;
-			}
+		.PopUp_input + .PopUp_button {
+			border-radius: 0px 0px 5px 5px;
+			padding: 2px 18px 5px;
+		}
 
-			.PopUp_msgText {
-				color: #FDE5B6;
-				text-shadow: 0px 0px 2px;
-			}
-			`;
+		.PopUp_button:hover {
+			filter: brightness(1.2);
+		}
+
+		.PopUp_text {
+			font-family: sans-serif;
+			font-stretch: condensed;
+			letter-spacing: 1px;
+			text-align: center;
+		}
+
+		.PopUp_buttonText {
+			color: #E4FF4C;
+			text-shadow: 0px 1px 2px black;
+		}
+
+		.PopUp_msgText {
+			color: #FDE5B6;
+			text-shadow: 0px 0px 2px;
+		}
+
+		.PopUp_hideBlock {
+			display: none;
+		}
+		`;
 			document.head.appendChild(style);
 		}
 
 		const addBlocks = () => {
 			this.back = document.createElement('div');
 			this.back.classList.add('PopUp_back');
-			this.back.style.display = 'none';
+			this.back.classList.add('PopUp_hideBlock');
 			document.body.append(this.back);
 
 			this.popUp = document.createElement('div');
@@ -1222,6 +1332,11 @@
 			let upper = document.createElement('div')
 			upper.classList.add('PopUp_blocks');
 			this.popUp.append(upper);
+
+			this.middle = document.createElement('div')
+			this.middle.classList.add('PopUp_blocks');
+			this.middle.classList.add('PopUp_checkboxes');
+			this.popUp.append(this.middle);
 
 			this.downer = document.createElement('div')
 			this.downer.classList.add('PopUp_blocks');
@@ -1233,23 +1348,26 @@
 		}
 
 		this.showBack = function () {
-			this.back.style.display = '';
+			this.back.classList.remove('PopUp_hideBlock');
 		}
 
 		this.hideBack = function () {
-			this.back.style.display = 'none';
+			this.back.classList.add('PopUp_hideBlock');
 		}
 
 		this.show = function () {
+			if (this.checkboxes.length) {
+				this.middle.classList.remove('PopUp_hideBlock');
+			}
 			this.showBack();
-			this.popUp.style.display = '';
+			this.popUp.classList.remove('PopUp_hideBlock');
 			this.popUp.style.left = (window.innerWidth - this.popUp.offsetWidth) / 2 + 'px';
 			this.popUp.style.top = (window.innerHeight - this.popUp.offsetHeight) / 3 + 'px';
 		}
 
 		this.hide = function () {
 			this.hideBack();
-			this.popUp.style.display = 'none';
+			this.popUp.classList.add('PopUp_hideBlock');
 		}
 
 		this.addButton = (option, buttonClick) => {
@@ -1299,16 +1417,63 @@
 			}
 		}
 
+		this.addCheckBox = (checkBox) => {
+			const contCheckbox = document.createElement('div');
+			contCheckbox.classList.add('PopUp_ContCheckbox');
+			this.middle.append(contCheckbox);
+
+			const checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.id = 'PopUpCheckbox' + this.checkboxes.length;
+			checkbox.dataset.name = checkBox.name;
+			checkbox.checked = checkBox.checked;
+			checkbox.label = checkBox.label;
+			checkbox.classList.add('PopUp_checkbox');
+			contCheckbox.appendChild(checkbox)
+
+			const checkboxLabel = document.createElement('label');
+			checkboxLabel.innerText = checkBox.label;
+			checkboxLabel.setAttribute('for', checkbox.id);
+			contCheckbox.appendChild(checkboxLabel);
+
+			this.checkboxes.push(checkbox);
+		}
+
+		this.clearCheckBox = () => {
+			this.middle.classList.add('PopUp_hideBlock');
+			while (this.checkboxes.length) {
+				this.checkboxes.pop().parentNode.remove();
+			}
+		}
+
 		this.setMsgText = (text) => {
 			this.msgText.innerHTML = text;
 		}
 
-		this.confirm = async (msg, buttOpt) => {
+		this.getCheckBoxes = () => {
+			const checkBoxes = [];
+
+			for (const checkBox of this.checkboxes) {
+				checkBoxes.push({
+					name: checkBox.dataset.name,
+					label: checkBox.label,
+					checked: checkBox.checked
+				});
+			}
+
+			return checkBoxes;
+		}
+
+		this.confirm = async (msg, buttOpt, checkBoxes = []) => {
 			this.clearButtons();
+			this.clearCheckBox();
 			return new Promise((complete, failed) => {
 				this.setMsgText(msg);
 				if (!buttOpt) {
-					buttOpt = [{msg:'Ок', result: true, isInput: false}];
+					buttOpt = [{ msg: 'Ок', result: true, isInput: false }];
+				}
+				for (const checkBox of checkBoxes) {
+					this.addCheckBox(checkBox);
 				}
 				for (let butt of buttOpt) {
 					this.addButton(butt, (result) => {
@@ -1327,8 +1492,8 @@
 	const scriptMenu = new (function () {
 
 		this.mainMenu,
-		this.buttons = [],
-		this.checkboxes = [];
+			this.buttons = [],
+			this.checkboxes = [];
 		this.option = {
 			showMenu: false,
 			showDetails: {}
@@ -1336,6 +1501,7 @@
 
 		this.init = function (option = {}) {
 			this.option = Object.assign(this.option, option);
+			this.option.showDetails = this.loadShowDetails();
 			addStyle();
 			addBlocks();
 		}
@@ -1368,12 +1534,12 @@
 		}
 		.scriptMenu_label {
 			position: absolute;
-			top: 30%;
+			top: 48%;
 			left: -4px;
 			z-index: 9999;
 			cursor: pointer;
-			width: 30px;
-			height: 30px;
+			width: 25px;
+			height: 25px;
 			background: radial-gradient(circle, #47a41b 0%, #1a2f04 100%);
 			border: 1px solid #1a2f04;
 			border-radius: 5px;
@@ -1407,12 +1573,15 @@
 			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
+			padding: 5px 5px 5px 5px;
 			box-sizing: border-box;
 			font-family: sans-serif;
 			font-stretch: condensed;
+			letter-spacing: 1px;
 			color: #fce1ac;
 			text-shadow: 0px 0px 1px;
 			transition: 1s;
+			display: flex;
 			flex-direction: column;
 			flex-wrap: nowrap;
 		}
@@ -1426,11 +1595,12 @@
 			left: -300px;
 		}
 		.scriptMenu_divInput {
-			margin: 2px;
+			margin: 1px;
 		}
 		.scriptMenu_divInputText {
 			margin: 2px;
 			align-self: center;
+			display: flex;
 		}
 		.scriptMenu_checkbox {
 			position: absolute;
@@ -1455,11 +1625,11 @@
 			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
 		}
 		.scriptMenu_close {
-			width: 20px;
-			height: 20px;
+			width: 25px;
+			height: 25px;
 			position: absolute;
-			right: -5px;
-			top: -5px;
+			right: -11px;
+			top: -11px;
 			border: 3px solid #c18550;
 			border-radius: 20px;
 			background: radial-gradient(circle, rgba(190,30,35,1) 0%, rgba(0,0,0,1) 100%);
@@ -1483,7 +1653,7 @@
 			user-select: none;
 			border-radius: 5px;
 			cursor: pointer;
-			padding: 3px 10px 6px;
+			padding: 1px 10px 5px;
 			margin: 4px;
 			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
 			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
@@ -1499,14 +1669,15 @@
 		.scriptMenu_header {
 			text-align: center;
 			align-self: center;
-			font-size: 14px;
+			margin: 0px 15px;
 		}
 		.scriptMenu_header a {
 			color: #fce5b7;
 			text-decoration: none;
 		}
 		.scriptMenu_InputText {
-			width: 130px;
+			text-align: center;
+			width: 120px;
 			height: 20px;
 			border: 1px solid #cf9250;
 			border-radius: 9px;
@@ -1525,6 +1696,9 @@
 		.scriptMenu_Summary {
 			cursor: pointer;
 			margin-left: 7px;
+		}
+		.scriptMenu_Details {
+			align-self: left;
 		}
 	`;
 			document.head.appendChild(style);
@@ -1621,6 +1795,8 @@
 			buttonText.innerText = text;
 			button.appendChild(buttonText);
 			this.buttons.push(button);
+
+			return button;
 		}
 
 		/**
@@ -1637,19 +1813,19 @@
 			divCheckbox.title = title;
 			main.appendChild(divCheckbox);
 
-			const newCheckbox = document.createElement('input');
-			newCheckbox.type = 'checkbox';
-			newCheckbox.id = 'newCheckbox' + this.checkboxes.length;
-			newCheckbox.classList.add('scriptMenu_checkbox');
-			divCheckbox.appendChild(newCheckbox)
+			const checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.id = 'scriptMenuCheckbox' + this.checkboxes.length;
+			checkbox.classList.add('scriptMenu_checkbox');
+			divCheckbox.appendChild(checkbox)
 
-			const newCheckboxLabel = document.createElement('label');
-			newCheckboxLabel.innerText = label;
-			newCheckboxLabel.setAttribute('for', newCheckbox.id);
-			divCheckbox.appendChild(newCheckboxLabel);
+			const checkboxLabel = document.createElement('label');
+			checkboxLabel.innerText = label;
+			checkboxLabel.setAttribute('for', checkbox.id);
+			divCheckbox.appendChild(checkboxLabel);
 
-			this.checkboxes.push(newCheckbox);
-			return newCheckbox;
+			this.checkboxes.push(checkbox);
+			return checkbox;
 		}
 
 		/**
@@ -1682,131 +1858,327 @@
 		 * @param {String} name
 		 * @returns
 		 */
-		this.addDetails = (summaryText, name) => {
+		this.addDetails = (summaryText, name = null) => {
 			const details = document.createElement('details');
-			if (this.option.showDetails[name]) {
-				details.open = this.option.showDetails[name];
-			}
+			details.classList.add('scriptMenu_Details');
 			this.mainMenu.appendChild(details);
 
 			const summary = document.createElement('summary');
 			summary.classList.add('scriptMenu_Summary');
 			summary.innerText = summaryText;
+			if (name) {
+				const self = this;
+				details.open = this.option.showDetails[name];
+				details.dataset.name = name;
+				summary.addEventListener('click', () => {
+					self.option.showDetails[details.dataset.name] = !details.open;
+					self.saveShowDetails(self.option.showDetails);
+				});
+			}
 			details.appendChild(summary);
 
 			return details;
 		}
-	});
-	/** Хранилище данных (только для числовых и булевых значений) */
-	const storage = {
-		name: GM_info.script.name,
-		get: function (key, def) {
-			let value = localStorage[this.name + ':' + key];
-			try {
-				return JSON.parse(value)
-			} catch {
-				return def;
+
+		/**
+		 * Сохранение состояния развенутости блоков details
+		 * @param {*} value 
+		 */
+		this.saveShowDetails = (value) => {
+			localStorage.setItem('scriptMenu_showDetails', JSON.stringify(value));
+		}
+
+		/**
+		 * Загрузка состояния развенутости блоков details
+		 * @returns 
+		 */
+		this.loadShowDetails = () => {
+			let showDetails = localStorage.getItem('scriptMenu_showDetails');
+
+			if (!showDetails) {
+				return {};
 			}
-		},
-		set: function (key, value) {
-			return localStorage[this.name + ':' + key] = value;
-		},
-		delete: function (key) {
-			return delete localStorage[this.name + ':' + key];
+
+			try {
+				showDetails = JSON.parse(showDetails);
+			} catch (e) {
+				return {};
+			}
+
+			return showDetails;
+		}
+	});
+	/** База данных */
+	class Database {
+		constructor(dbName, storeName) {
+			this.dbName = dbName;
+			this.storeName = storeName;
+			this.db = null;
+		}
+
+		async open() {
+			return new Promise((resolve, reject) => {
+				const request = indexedDB.open(this.dbName);
+
+				request.onerror = () => {
+					reject(new Error(`Failed to open database ${this.dbName}`));
+				};
+
+				request.onsuccess = () => {
+					this.db = request.result;
+					resolve();
+				};
+
+				request.onupgradeneeded = (event) => {
+					const db = event.target.result;
+					if (!db.objectStoreNames.contains(this.storeName)) {
+						db.createObjectStore(this.storeName);
+					}
+				};
+			});
+		}
+
+		async set(key, value) {
+			return new Promise((resolve, reject) => {
+				const transaction = this.db.transaction([this.storeName], 'readwrite');
+				const store = transaction.objectStore(this.storeName);
+				const request = store.put(value, key);
+
+				request.onerror = () => {
+					reject(new Error(`Failed to save value with key ${key}`));
+				};
+
+				request.onsuccess = () => {
+					resolve();
+				};
+			});
+		}
+
+		async get(key, def) {
+			return new Promise((resolve, reject) => {
+				const transaction = this.db.transaction([this.storeName], 'readonly');
+				const store = transaction.objectStore(this.storeName);
+				const request = store.get(key);
+
+				request.onerror = () => {
+					resolve(def);
+				};
+
+				request.onsuccess = () => {
+					resolve(request.result);
+				};
+			});
+		}
+
+		async delete(key) {
+			return new Promise((resolve, reject) => {
+				const transaction = this.db.transaction([this.storeName], 'readwrite');
+				const store = transaction.objectStore(this.storeName);
+				const request = store.delete(key);
+
+				request.onerror = () => {
+					reject(new Error(`Failed to delete value with key ${key}`));
+				};
+
+				request.onsuccess = () => {
+					resolve();
+				};
+			});
 		}
 	}
-	/** Отправка экспедиций TODO: переписать в класс */
-	// Проверка и отправка экспедиций
+	/** Возвращает сохраненное значение */
+	function getSaveVal(saveName, def) {
+		const result = storage.get(saveName, def);
+		return result;
+	}
+	/** Сохраняет значение */
+	function setSaveVal(saveName, value) {
+		storage.set(saveName, value);
+	}
+	/** Инициализация базы данных */
+	const db = new Database(GM_info.script.name, 'settings');
+	/** Хранилище данных */
+	const storage = {
+		userId: 0,
+		/** Значения по умолчанию */
+		values: [
+			...Object.entries(checkboxes).map(e => ({ [e[0]]: e[1].default })),
+			...Object.entries(inputs).map(e => ({ [e[0]]: e[1].default })),
+		].reduce((acc, obj) => ({ ...acc, ...obj }), {}),
+		name: GM_info.script.name,
+		get: function (key, def) {
+			if (key in this.values) {
+				return this.values[key];
+			}
+			return def;
+		},
+		set: function (key, value) {
+			this.values[key] = value;
+			db.set(this.userId, this.values);
+			localStorage[this.name + ':' + key] = value;
+		},
+		delete: function (key) {
+			delete this.values[key];
+			db.set(this.userId, this.values);
+			delete localStorage[this.name + ':' + key];
+		}
+	}
+	/** Возвращает все ключи из localStorage которые начинаются с prefix (для миграции) */
+	function getAllValuesStartingWith(prefix) {
+		const values = [];
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key.startsWith(prefix)) {
+				const val = localStorage.getItem(key);
+				const keyValue = key.split(':')[1];
+				values.push({ key: keyValue, val });
+			}
+		}
+		return values;
+	}
+	/** Открывает или мигрирует в базу данных  */
+	async function openOrMigrateDatabase(userId) {
+		storage.userId = userId;
+		await db.open();
+		let settings = await db.get(userId, false);
+
+		if (settings) {
+			storage.values = settings;
+			return;
+		}
+
+		const values = getAllValuesStartingWith(GM_info.script.name);
+		for (const value of values) {
+			let val = null;
+			try {
+				val = JSON.parse(value.val);
+			} catch {
+				break;
+			}
+			storage.values[value.key] = val;
+		}
+		await db.set(userId, storage.values);
+	}
+	/** Отправка экспедиций  */
 	function checkExpedition() {
-		var heroesInfo = '{"calls":[{"name":"heroGetAll","args":{},"ident":"body"}]}';
-		var sendExped = '{"calls":[{"name":"expeditionSendHeroes","args":{"expeditionId":#number#,"heroes":[#heroes#]},"ident":"body"}]}';
-		var checkExped = '{"calls":[{"name":"expeditionGet","args":{},"ident":"body"}]}';
-		var endExped = '{"calls":[{"name":"expeditionFarm","args":{"expeditionId":#number#},"ident":"body"}]}';
+		return new Promise((resolve, reject) => {
+			const expedition = new Expedition(resolve, reject);
+			expedition.start();
+		});
+	}
 
-		send(checkExped, function(res) {
-			let dataExpedition = getJson(res);
-			if (!dataExpedition) return;
-			dataExpedition = dataExpedition?.results[0]?.result?.response;
-			dataExped = {useHeroes:[], exped:[]};
-			for (var n in dataExpedition) {
-				var exped = dataExpedition[n];
+	class Expedition {
+		checkExpedInfo = {
+			calls: [{
+				name: "expeditionGet",
+				args: {},
+				ident: "expeditionGet"
+			}, {
+				name: "heroGetAll",
+				args: {},
+				ident: "heroGetAll"
+			}]
+		}
 
-				// console.log(exped, exped.status, dateNow, exped.endTime);
-				var dateNow = (Date.now() / 1000);
+		constructor(resolve, reject) {
+			this.resolve = resolve;
+			this.reject = reject;
+		}
+
+		async start() {
+			const data = await Send(JSON.stringify(this.checkExpedInfo));
+
+			const expedInfo = data.results[0].result.response;
+			const dataHeroes = data.results[1].result.response;
+			const dataExped = { useHeroes: [], exped: [] };
+			const calls = [];
+
+			/** Добавляем экспедиции для сбора */
+			for (var n in expedInfo) {
+				const exped = expedInfo[n];
+				const dateNow = (Date.now() / 1000);
 				if (exped.status == 2 && exped.endTime != 0 && dateNow > exped.endTime) {
-					send(endExped.replace('#number#', exped.id), function(res, exped) {
-						// console.log(exped.id,res);
-					}, exped);
+					calls.push({
+						name: "expeditionFarm",
+						args: { expeditionId: exped.id },
+						ident: "expeditionFarm_" + exped.id
+					});
 				} else {
 					dataExped.useHeroes = dataExped.useHeroes.concat(exped.heroes);
 				}
 				if (exped.status == 1) {
-					dataExped.exped.push({id: exped.id, power: exped.power});
+					dataExped.exped.push({ id: exped.id, power: exped.power });
 				}
 			}
-			dataExped.exped = dataExped.exped.sort((a,b)=>(b.power - a.power));
-			send(heroesInfo, function(res, expData) {
-				let dataHeroes = getJson(res);
-				if (!dataHeroes) return;
-				dataHeroes = dataHeroes?.results[0]?.result?.response;
-				let heroesArr = [];
-				for (let n in dataHeroes) {
-					let hero = dataHeroes[n];
-					if (hero.xp > 0 && !expData.useHeroes.includes(hero.id)) {
-						heroesArr.push({id: hero.id, power: hero.power})
-					}
+			dataExped.exped = dataExped.exped.sort((a, b) => (b.power - a.power));
+
+			/** Собираем список героев */
+			const heroesArr = [];
+			for (let n in dataHeroes) {
+				const hero = dataHeroes[n];
+				if (hero.xp > 0 && !dataExped.useHeroes.includes(hero.id)) {
+					heroesArr.push({ id: hero.id, power: hero.power })
 				}
-				heroesArr = heroesArr.sort((a,b)=>(a.power - b.power));
-				for (let i in expData.exped) {
-					let exped = expData.exped[i];
-					let heroesIds = selectionHeroes(heroesArr, exped.power);
-					if (heroesIds && heroesIds.length > 4) {
-						for (let q in heroesArr) {
-							if (heroesIds.includes(heroesArr[q].id)) {
-								delete heroesArr[q];
-							}
+			}
+
+			/** Добавляем экспедиции для отправки */
+			heroesArr.sort((a, b) => (a.power - b.power));
+			for (const exped of dataExped.exped) {
+				let heroesIds = this.selectionHeroes(heroesArr, exped.power);
+				if (heroesIds && heroesIds.length > 4) {
+					for (let q in heroesArr) {
+						if (heroesIds.includes(heroesArr[q].id)) {
+							delete heroesArr[q];
 						}
-						let sendExp = sendExped.replace('#heroes#', heroesIds.join());
-						sendExp = sendExp.replace('#number#', exped.id)
-						send(sendExp, function(res, exped) {
-							// console.log(exped,res);
-						}, sendExp);
 					}
-				}
-				setProgress('Done', true);
-			}, dataExped)
-		}, null);
-	}
-	// Подбор героев для экспедиций
-	function selectionHeroes(heroes, power) {
-		let resultHeroers = [];
-		let heroesIds = [];
-		for (let q = 0; q < 5; q++) {
-			for (let i in heroes) {
-				let hero = heroes[i];
-				let summ = summArray(resultHeroers, 'power');
-				if (heroesIds.includes(hero.id)) {
-					continue;
-				}
-				// let dif = (summ + hero.power) - power;
-				let need = Math.round((power - summ) / (5 - resultHeroers.length));
-				// if (hero.power > need && dif < need) {
-				if (hero.power > need) {
-					resultHeroers.push(hero);
-					heroesIds.push(hero.id);
-					break;
+					calls.push({
+						name: "expeditionSendHeroes",
+						args: {
+							expeditionId: exped.id,
+							heroes: heroesIds
+						},
+						ident: "expeditionSendHeroes_" + exped.id
+					});
 				}
 			}
+
+			await Send(JSON.stringify({ calls }));
+			this.end();
 		}
-		let summ = summArray(resultHeroers, 'power');
-		if (summ < power) {
-			return false;
+
+		/** Подбор героев для экспедиций */
+		selectionHeroes(heroes, power) {
+			const resultHeroers = [];
+			const heroesIds = [];
+			for (let q = 0; q < 5; q++) {
+				for (let i in heroes) {
+					let hero = heroes[i];
+					if (heroesIds.includes(hero.id)) {
+						continue;
+					}
+
+					const summ = resultHeroers.reduce((acc, hero) => acc + hero.power, 0);
+					const need = Math.round((power - summ) / (5 - resultHeroers.length));
+					if (hero.power > need) {
+						resultHeroers.push(hero);
+						heroesIds.push(hero.id);
+						break;
+					}
+				}
+			}
+
+			const summ = resultHeroers.reduce((acc, hero) => acc + hero.power, 0);
+			if (summ < power) {
+				return false;
+			}
+			return heroesIds;
 		}
-		return heroesIds;
-	}
-	// Суммирует силу героев в пачке
-	function summArray(arr, elem) {
-		return arr.reduce((e,i)=>e+i[elem],0);
+
+		/** Завершает скрипт экспедиции */
+		end() {
+			setProgress('Экспедиции отправлены', true);
+			this.resolve()
+		}
 	}
 	// Отправка запроса
 	function send(json, callback, pr) {
@@ -1839,38 +2211,34 @@
 		xhr.send(json);
 	}
 
-	async function testDungeon(titanit) {
+	function testDungeon() {
 		return new Promise((resolve, reject) => {
-			popup.showBack();
-			let dung = new executeDungeon(resolve, reject);
+			const dung = new executeDungeon(resolve, reject);
+			const titanit = getInput('countTitanit');
 			dung.start(titanit);
 		});
 	}
 
 	/** Прохождение подземелья */
 	function executeDungeon(resolve, reject) {
-		let dungeonActivity = 0;
-		let startDungeonActivity = 0;
-		let maxDungeonActivity = 150;
-		let limitDungeonActivity = 30180;
-		let fastMode = isChecked('fastMode');
-		let end = false;
+		dungeonActivity = 0;
+		maxDungeonActivity = 150;
 
-        let timeDungeon = new Date().getTime();
+		titanGetAll = [];
 
-		let titansStates = {};
-        let bestBattle = {};
-
-		let teams = {
-			neutral: [],
-			water: [],
+		teams = {
+			heroes: [],
 			earth: [],
 			fire: [],
-			hero: []
+			neutral: [],
+			water: [],
 		}
 
+		titanStats = [];
 
-		let callsExecuteDungeon = {
+		titansStates = {};
+
+		callsExecuteDungeon = {
 			calls: [{
 				name: "dungeonGetInfo",
 				args: {},
@@ -1887,450 +2255,159 @@
 				name: "clanGetInfo",
 				args: {},
 				ident: "clanGetInfo"
+			}, {
+				name: "titanGetAll",
+				args: {},
+				ident: "titanGetAll"
 			}]
 		}
 
-		this.start = async function(titanit) {
-			maxDungeonActivity = titanit > limitDungeonActivity ? limitDungeonActivity : titanit;
+		this.start = function(titanit) {
+			maxDungeonActivity = titanit || 75;
 			send(JSON.stringify(callsExecuteDungeon), startDungeon);
 		}
 
 		/** Получаем данные по подземелью */
 		function startDungeon(e) {
-			let res = e.results;
-			let dungeonGetInfo = res[0].result.response;
+			res = e.results;
+			dungeonGetInfo = res[0].result.response;
 			if (!dungeonGetInfo) {
 				endDungeon('noDungeon', res);
 				return;
 			}
-            console.log("Начинаем копать: ", new Date());
-			let teamGetAll = res[1].result.response;
-			let teamGetFavor = res[2].result.response;
+			teamGetAll = res[1].result.response;
+			teamGetFavor = res[2].result.response;
 			dungeonActivity = res[3].result.response.stat.todayDungeonActivity;
-            startDungeonActivity = res[3].result.response.stat.todayDungeonActivity;
-			titansStates = dungeonGetInfo.states.titans;
+			titanGetAll = Object.values(res[4].result.response);
 
 			teams.hero = {
 				favor: teamGetFavor.dungeon_hero,
 				heroes: teamGetAll.dungeon_hero.filter(id => id < 6000),
 				teamNum: 0,
 			}
-			let heroPet = teamGetAll.dungeon_hero.filter(id => id >= 6000).pop();
+			heroPet = teamGetAll.dungeon_hero.filter(id => id >= 6000).pop();
 			if (heroPet) {
 				teams.hero.pet = heroPet;
 			}
 
-			teams.neutral = getTitanTeam('neutral');
-			teams.water = {
+			teams.neutral = {
 				favor: {},
-				heroes: getTitanTeam('water'),
+				heroes: getTitanTeam(titanGetAll, 'neutral'),
 				teamNum: 0,
 			};
-			teams.earth = {
+			teams.water = {
 				favor: {},
-				heroes: getTitanTeam('earth'),
+				heroes: getTitanTeam(titanGetAll, 'water'),
 				teamNum: 0,
 			};
 			teams.fire = {
 				favor: {},
-				heroes: getTitanTeam('fire'),
+				heroes: getTitanTeam(titanGetAll, 'fire'),
 				teamNum: 0,
 			};
+			teams.earth = {
+				favor: {},
+				heroes: getTitanTeam(titanGetAll, 'earth'),
+				teamNum: 0,
+			};
+
 
 			checkFloor(dungeonGetInfo);
 		}
 
-		function getTitanTeam(type) {
+		function getTitanTeam(titans, type) {
 			switch (type) {
 				case 'neutral':
-					return [4023, 4022, 4012, 4021, 4011, 4010, 4020];
+					return titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
 				case 'water':
-					return [4000, 4001, 4002, 4003]
-                        .filter(e => !titansStates[e]?.isDead);
-				case 'earth':
-					return [4020, 4022, 4021, 4023]
-                        .filter(e => !titansStates[e]?.isDead);
+					return titans.filter(e => e.id.toString().slice(2, 3) == '0').map(e => e.id);
 				case 'fire':
-					return [4010, 4011, 4012, 4013]
-                        .filter(e => !titansStates[e]?.isDead);
+					return titans.filter(e => e.id.toString().slice(2, 3) == '1').map(e => e.id);
+				case 'earth':
+					return titans.filter(e => e.id.toString().slice(2, 3) == '2').map(e => e.id);
 			}
 		}
 
-		/** Создать копию объекта */
-		function clone(a) {
-            return JSON.parse(JSON.stringify(a));
+		function fixTitanTeam(titans) {
+			titans.heroes = titans.heroes.filter(e => !titansStates[e]?.isDead);
+			return titans;
 		}
 
-		/** Находит стихию на этаже */
-        function findElement(floor, element) {
-            for (let i in floor) {
-                if (floor[i].attackerType === element) {
-                    return i;
-                }
-            }
-            return undefined;
-        }
-
 		/** Проверяем этаж */
-		async function checkFloor(dungeonInfo) {
+		function checkFloor(dungeonInfo) {
 			if (!('floor' in dungeonInfo) || dungeonInfo.floor?.state == 2) {
 				saveProgress();
 				return;
 			}
+			// console.log(dungeonInfo, dungeonActivity);
 			setProgress('Dungeon: Титанит ' + dungeonActivity + '/' + maxDungeonActivity);
 			if (dungeonActivity >= maxDungeonActivity) {
 				endDungeon('endDungeon');
 				return;
 			}
 			titansStates = dungeonInfo.states.titans;
-            bestBattle = {};
-			let floorChoices = dungeonInfo.floor.userData;
-            if (floorChoices.length > 1) {
-                for (let element in teams) {
-                    let teamNum = findElement(floorChoices, element);
-                    if (!!teamNum) {
-                        if (element == 'earth') {
-                            teamNum = await chooseEarthOrFire(floorChoices);
-                            if (teamNum < 0) {
-                                endDungeon('Невозможно победить без потери Титана!', dungeonInfo);
-                                return;
-                            }
-                        }
-                        chooseElement(floorChoices[teamNum].attackerType, teamNum);
-                        return;
-                    }
-                }
-            } else {
-                chooseElement(floorChoices[0].attackerType, 0);
-            }
-        }
-
-		/** Выбираем огнем или землей атаковать */
-		async function chooseEarthOrFire(floorChoices) {
-            bestBattle.recovery = -11;
-            let selectedTeamNum = -1;
-            for (let attempt = 0; selectedTeamNum < 0 && attempt < 4; attempt++) {
-                for (let teamNum in floorChoices) {
-                    let attackerType = floorChoices[teamNum].attackerType;
-                    selectedTeamNum = await attemptAttackEarthOrFire(teamNum, attackerType, attempt);
-                }
-            }
-            console.log("Выбор команды огня или земли: ", selectedTeamNum < 0 ? "не сделан" : floorChoices[selectedTeamNum].attackerType);
-            return selectedTeamNum;
+			titanStats = titanObjToArray(titansStates);
+			floorChoices = dungeonInfo.floor.userData;
+			floorType = dungeonInfo.floorType;
+			primeElement = dungeonInfo.elements.prime;
+			if (floorType == "battle") {
+				promises = [];
+				for (let teamNum in floorChoices) {
+					attackerType = floorChoices[teamNum].attackerType;
+					promises.push(startBattle(teamNum, attackerType));
+				}
+				Promise.all(promises)
+					.then(processingPromises);
+			}
 		}
 
-		/** Попытка атаки землей и огнем */
-		async function attemptAttackEarthOrFire(teamNum, attackerType, attempt) {
-            let team = clone(teams[attackerType]);
-            let startIndex = team.heroes.length + attempt - 4;
-            if (startIndex >= 0) {
-                team.heroes = team.heroes.slice(startIndex);
-                let recovery = await getBestRecovery(teamNum, attackerType, team, fastMode ? 5 : 25);
-                if (recovery > bestBattle.recovery) {
-                    bestBattle.recovery = recovery;
-                    bestBattle.selectedTeamNum = teamNum;
-                    bestBattle.team = team;
-                }
-            }
-            if (bestBattle.recovery < -10) {
-                return -1;
-            }
-            return bestBattle.selectedTeamNum;
+		function processingPromises(results) {
+			selectInfo = results[0];
+			if (results.length < 2) {
+				// console.log(selectInfo);
+				endBattle(selectInfo);
+				return;
+			}
+
+			selectInfo = false;
+			minRes = 1e10;
+			for (let info of results) {
+				diffXP = diffTitanXP(info.progress[0].attackers.heroes);
+				diffRes = diffXP;
+				if (info.attackerType == 'neutral') {
+					diffRes /= 2;
+					diffRes -= 4;
+				}
+				if (info.attackerType == primeElement) {
+					diffRes /= 2;
+					diffRes -= 5;
+				}
+				info.diffXP = diffXP
+				info.diffRes = diffRes
+				if (!info.result.win) {
+					continue;
+				}
+				if (diffRes < minRes) {
+					selectInfo = info;
+					minRes = diffRes;
+				}
+			}
+			// console.log(selectInfo.teamNum, results);
+			if (!selectInfo) {
+				endDungeon('dungeonEndBattle\n', results);
+				return;
+			}
+
+			startBattle(selectInfo.teamNum, selectInfo.attackerType)
+				.then(endBattle);
 		}
-
-		/** Выбираем стихию для атаки */
-		async function chooseElement(attackerType, teamNum) {
-            let result;
-            switch (attackerType) {
-                case 'hero':
-                case 'water':
-                    result = await startBattle(teamNum, attackerType, teams[attackerType]);
-                    break;
-                case 'earth':
-                case 'fire':
-                    result = await attackEarthOrFire(teamNum, attackerType);
-                    break;
-                case 'neutral':
-                    result = await attackNeutral(teamNum, attackerType);
-            }
-            if (!!result && attackerType != 'hero') {
-                let recovery = (!!!bestBattle.recovery ? 10 * getRecovery(result) : bestBattle.recovery) * 100;
-                let titans = result.progress[0].attackers.heroes;
-                console.log("Проведен бой: " + attackerType +
-                            ", recovery = " + (recovery > 0 ? "+" : "") + recovery + "% \r\n", titans);
-            }
-            endBattle(result);
-        }
-
-		/** Атакуем Землей или Огнем */
-		async function attackEarthOrFire(teamNum, attackerType) {
-            if (!!!bestBattle.recovery) {
-                bestBattle.recovery = -11;
-                let selectedTeamNum = -1;
-                for (let attempt = 0; selectedTeamNum < 0 && attempt < 4; attempt++) {
-                    selectedTeamNum = await attemptAttackEarthOrFire(teamNum, attackerType, attempt);
-                }
-                if (selectedTeamNum < 0) {
-                    endDungeon('Невозможно победить без потери Титана!', attackerType);
-                    return;
-                }
-            }
-            return findAttack(teamNum, attackerType, bestBattle.team);
-		}
-
-		/** Находим подходящий результат для атаки */
-		async function findAttack(teamNum, attackerType, team) {
-            let recovery = -1000;
-            let iterations = 0;
-            let result;
-            let correction = fastMode ? 0.01 : 0.001;
-            for (let needRecovery = bestBattle.recovery; recovery < needRecovery; needRecovery -= correction, iterations++) {
-                result = await startBattle(teamNum, attackerType, team);
-                recovery = getRecovery(result);
-            }
-            bestBattle.recovery = recovery;
-            return result;
-		}
-
-		/** Атакуем Нейтральной командой */
-		async function attackNeutral(teamNum, attackerType) {
-            let factors = calcFactor();
-            bestBattle.recovery = -0.2;
-            await findBestBattleNeutral(teamNum, attackerType, factors, true)
-            if (fastMode && (bestBattle.recovery < 0 || (bestBattle.recovery < 0.2 && factors[0].value < 0.5))) {
-                let recovery = (100 * bestBattle.recovery);
-                console.log("Не удалось найти удачный бой в быстром режиме: " + attackerType +
-                            ", recovery = " + (recovery > 0 ? "+" : "") + recovery + "% \r\n", bestBattle.attackers);
-                await findBestBattleNeutral(teamNum, attackerType, factors, false)
-            }
-            if (!!bestBattle.attackers) {
-                let team = getTeam(bestBattle.attackers);
-                return findAttack(teamNum, attackerType, team);
-            }
-            endDungeon('Не удалось найти удачный бой!', attackerType);
-            return undefined;
-        }
-
-		/** Находит лучшую нейтральную команду */
-		async function findBestBattleNeutral(teamNum, attackerType, factors, mode) {
-            let countFactors = factors.length < 4 ? factors.length : 4;
-            let aradgi = !titansStates['4013']?.isDead;
-            let edem = !titansStates['4023']?.isDead;
-            let mor = !titansStates['4032']?.isDead;
-            let iyry = !titansStates['4042']?.isDead;
-            let actions = [];
-            if (fastMode && mode) {
-                for (let i = 0; i < countFactors; i++) {
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(factors[i].id)));
-                }
-                if (countFactors > 1) {
-                    let firstId = factors[0].id;
-                    let secondId = factors[1].id;
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4001, secondId)));
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4002, secondId)));
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4003, secondId)));
-                }
-                if (aradgi) {
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4013)));
-                    if (countFactors > 0) {
-                        let firstId = factors[0].id;
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4000, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4001, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4002, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(firstId, 4003, 4013)));
-                    }
-                    if (edem) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4023, 4000, 4013)));
-                    }
-                }
-            } else {
-                if (mode) {
-                    for (let i = 0; i < factors.length; i++) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(factors[i].id)));
-                    }
-                } else {
-                    countFactors = factors.length < 2 ? factors.length : 2;
-                }
-                for (let i = 0; i < countFactors; i++) {
-                    let mainId = factors[i].id;
-                    if (aradgi && (mode || i > 0)) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4013)));
-                    }
-                    if (mor) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4032)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4032)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4032)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4032)));
-                    }
-                    if (iyry) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, 4042)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, 4042)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, 4042)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, 4042)));
-                    }
-                    let isFull = mode || i > 0;
-                    for (let j = isFull ? i + 1 : 2; j < factors.length; j++) {
-                        let extraId = factors[j].id;
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4000, extraId)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4001, extraId)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4002, extraId)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(mainId, 4003, extraId)));
-                    }
-                }
-                if (aradgi) {
-                    if (mode) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4013)));
-                    }
-                    if (mor) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4000, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4001, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4002, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032, 4003, 4013)));
-                    }
-                    if (iyry) {
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4000, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4001, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4002, 4013)));
-                        actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042, 4003, 4013)));
-                    }
-                }
-                if (mor) {
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4032)));
-                }
-                if (iyry) {
-                    actions.push(startBattle(teamNum, attackerType, getNeutralTeam(4042)));
-                }
-            }
-            for (let result of await Promise.all(actions)) {
-                let recovery = getRecovery(result);
-                if (recovery > bestBattle.recovery) {
-                    bestBattle.recovery = recovery;
-                    bestBattle.attackers = result.progress[0].attackers.heroes;
-                }
-            }
-        }
-
-		/** Получаем нейтральную команду */
-        function getNeutralTeam(id, swapId, addId) {
-            let neutralTeam = clone(teams.water);
-            let neutral = neutralTeam.heroes;
-            if (neutral.length == 4) {
-                if (!!swapId) {
-                    for (let i in neutral) {
-                        if (neutral[i] == swapId) {
-                            neutral[i] = addId;
-                        }
-                    }
-                }
-            } else if (!!addId) {
-                neutral.push(addId);
-            }
-            neutral.push(id);
-            return neutralTeam;
-		}
-
-		/** Получить команду титанов */
-        function getTeam(titans) {
-            return {
-                favor: {},
-                heroes: Object.keys(titans).map(id => parseInt(id)),
-                teamNum: 0,
-            };
-        }
-
-		/** Вычисляем фактор боеготовности титанов */
-		function calcFactor() {
-            let neutral = teams.neutral;
-            let factors = [];
-            for (let i in neutral) {
-                let titanId = neutral[i];
-                let titan = titansStates[titanId];
-                let factor = !!titan ? titan.hp / titan.maxHp + titan.energy / 10000.0 : 1;
-                if (factor > 0) {
-                    factors.push({id: titanId, value: factor});
-                }
-            }
-            factors.sort(function(a, b) {
-                return a.value - b.value;
-            });
-            return factors;
-		}
-
-		/** Возвращает наилучший результат из нескольких боев */
-		async function getBestRecovery(teamNum, attackerType, team, countBattle) {
-            let bestRecovery = -1000;
-            let actions = [];
-            for (let i = 0; i < countBattle; i++) {
-                actions.push(startBattle(teamNum, attackerType, team));
-            }
-            for (let result of await Promise.all(actions)) {
-                let recovery = getRecovery(result);
-                if (recovery > bestRecovery) {
-                    bestRecovery = recovery;
-                }
-            }
-            return bestRecovery;
-        }
-
-        /** Возвращает разницу в здоровье атакующей команды после и до битвы и проверяет здоровье титанов на необходимый минимум*/
-        function getRecovery(result) {
-            if (result.result.stars < 3) {
-                return -100;
-            }
-            let beforeSumFactor = 0;
-            let afterSumFactor = 0;
-            let beforeTitans = result.battleData.attackers;
-            let afterTitans = result.progress[0].attackers.heroes;
-            for (let i in afterTitans) {
-                let titan = afterTitans[i];
-                let percentHP = titan.hp / beforeTitans[i].hp;
-                let energy = titan.energy;
-                let factor = checkTitan(i, energy, percentHP) ? getFactor(i, energy, percentHP) : -100;
-                afterSumFactor += factor;
-            }
-            for (let i in beforeTitans) {
-                let titan = beforeTitans[i];
-                let state = titan.state;
-                beforeSumFactor += !!state ? getFactor(i, state.energy, state.hp / titan.hp) : 1;
-            }
-            return afterSumFactor - beforeSumFactor;
-        }
-
-        /** Возвращает состояние титана*/
-        function getFactor(id, energy, percentHP) {
-            let elemantId = id.slice(2, 3);
-            let isEarthOrFire = elemantId == '1' || elemantId == '2';
-            let energyBonus = id == '4020' && energy == 1000 ? 0.1 : energy / 20000.0;
-            let factor = percentHP + energyBonus;
-            return isEarthOrFire ? factor : factor / 10;
-        }
-
-        /** Проверяет состояние титана*/
-        function checkTitan(id, energy, percentHP) {
-            switch (id) {
-                case '4020':
-                    return percentHP > 0.25 || (energy == 1000 && percentHP > 0.05);
-                    break;
-                case '4010':
-                    return percentHP + energy / 2000.0 > 0.63;
-                    break;
-                case '4000':
-                    return percentHP > 0.62 || (energy < 1000 && (
-                        (percentHP > 0.45 && energy >= 400) ||
-                        (percentHP > 0.3 && energy >= 670)));
-            }
-            return true;
-        }
-
 
 		/** Начинаем бой */
-		function startBattle(teamNum, attackerType, args) {
+		function startBattle(teamNum, attackerType) {
 			return new Promise(function (resolve, reject) {
+				args = fixTitanTeam(teams[attackerType]);
 				args.teamNum = teamNum;
-				let startBattleCall = {
+				startBattleCall = {
 					calls: [{
 						name: "dungeonStartBattle",
 						args,
@@ -2344,61 +2421,72 @@
 				});
 			});
 		}
-
-		/** Возращает результат боя в промис */
+		/** Возращает резульат боя в промис */
 		function resultBattle(resultBattles, args) {
-            if (!!resultBattles && !!resultBattles.results) {
-                let battleData = resultBattles.results[0].result.response;
-                let battleType = "get_tower";
-                if (battleData.type == "dungeon_titan") {
-                    battleType = "get_titan";
-                }
-                BattleCalc(battleData, battleType, function (result) {
-                    result.teamNum = args.teamNum;
-                    result.attackerType = args.attackerType;
-                    args.resolve(result);
-                });
-            } else {
-                endDungeon('Потеряна связь с сервером игры!', 'break');
-            }
-        }
-
+			battleData = resultBattles.results[0].result.response;
+			battleType = "get_tower";
+			if (battleData.type == "dungeon_titan") {
+				battleType = "get_titan";
+			}
+			BattleCalc(battleData, battleType, function (result) {
+				result.teamNum = args.teamNum;
+				result.attackerType = args.attackerType;
+				args.resolve(result);
+			});
+		}
 		/** Заканчиваем бой */
 		function endBattle(battleInfo) {
-            if (!!battleInfo) {
-                if (battleInfo.result.stars < 3) {
-                    endDungeon('Герой или Титан мог погибнуть в бою!', battleInfo);
-                    return;
-                }
-                let endBattleCall = {
-                    calls: [{
-                        name: "dungeonEndBattle",
-                        args: {
-                            result: battleInfo.result,
-                            progress: battleInfo.progress,
-                        },
-                        ident: "body"
-                    }]
-                }
-                send(JSON.stringify(endBattleCall), resultEndBattle);
-            }
-        }
+			if (battleInfo.result.win) {
+				endBattleCall = {
+					calls: [{
+						name: "dungeonEndBattle",
+						args: {
+							result: battleInfo.result,
+							progress: battleInfo.progress,
+						},
+						ident: "body"
+					}]
+				}
+				send(JSON.stringify(endBattleCall), resultEndBattle);
+			} else {
+				endDungeon('dungeonEndBattle win: false\n', battleInfo);
+			}
+		}
 
 		/** Получаем и обрабатываем результаты боя */
 		function resultEndBattle(e) {
-            if (!!e && !!e.results) {
-                let battleResult = e.results[0].result.response;
-                if ('error' in battleResult) {
-                    endDungeon('errorBattleResult', battleResult);
-                    return;
-                }
-                let dungeonGetInfo = battleResult.dungeon ?? battleResult;
-                dungeonActivity += battleResult.reward.dungeonActivity ?? 0;
-                checkFloor(dungeonGetInfo);
-            } else {
-                endDungeon('Потеряна связь с сервером игры!', 'break');
-            }
-        }
+			battleResult = e.results[0].result.response;
+			if ('error' in battleResult) {
+				endDungeon('errorBattleResult', battleResult);
+				return;
+			}
+			dungeonGetInfo = battleResult.dungeon ?? battleResult;
+			dungeonActivity += battleResult.reward.dungeonActivity ?? 0;
+			checkFloor(dungeonGetInfo);
+		}
+
+		/** Возвращает разницу между максимальными ХП титанов и переданными */
+		function diffTitanXP(titans) {
+			sumCurrentXp = 0;
+			for (let i in titans) {
+				sumCurrentXp += titans[i].hp
+			}
+			titanIds = Object.getOwnPropertyNames(titans);
+			maxHP = titanStats.reduce((n, e) =>
+				titanIds.includes(e.id.toString()) ? n + e.hp : n
+			, 0);
+			return maxHP < sumCurrentXp ? 0 : maxHP - sumCurrentXp;
+		}
+
+		/** Преобразует объект с идетификаторами в массив с идетификаторами*/
+		function titanObjToArray(obj) {
+			let titans = [];
+			for (let id in obj) {
+				obj[id].id = id;
+				titans.push(obj[id]);
+			}
+			return titans;
+		}
 
 		function saveProgress() {
 			let saveProgressCall = {
@@ -2411,38 +2499,15 @@
 			send(JSON.stringify(saveProgressCall), resultEndBattle);
 		}
 
-
-		/** Выводит статистику прохождения подземелья */
-		function showStats() {
-            let activity = dungeonActivity - startDungeonActivity;
-            let workTime = ((new Date().getTime() - timeDungeon) / 1000);
-            console.log(titansStates);
-            console.log("Собрано титанита: ", activity);
-            console.log("Скорость сбора: " + (3600 * activity / workTime) + " титанита/час");
-            console.log("Время раскопок: " + workTime + " сек.");
-		}
-
-		/** Заканчиваем копать подземелье */
 		function endDungeon(reason, info) {
-            if (!end) {
-                end = true;
-                console.log(reason, info);
-                showStats();
-                if (info == 'break') {
-                    setProgress('Dungeon stoped: Титанит ' + dungeonActivity + '/' + maxDungeonActivity +
-                                "\r\nПотеряна связь с сервером игры!", false, hideProgress);
-                } else {
-                    setProgress('Dungeon completed: Титанит ' + dungeonActivity + '/' + maxDungeonActivity, false, hideProgress);
-                }
-                setTimeout(cheats.refreshGame, 1000);
-                resolve();
-            }
+			console.log(reason, info);
+			setProgress('Подземелье завершено', true);
+			resolve();
 		}
 	}
 
 	function testTower() {
 		return new Promise((resolve, reject) => {
-			popup.showBack();
 			tower = new executeTower(resolve, reject);
 			tower.start();
 		});
@@ -2488,31 +2553,31 @@
 		}
 
 		buffIds = [
-			{id: 0, cost: 0, isBuy: false}, // заглушка
-			{id: 1, cost: 1, isBuy: true}, // 3% атака
-			{id: 2, cost: 6, isBuy: true}, // 2% атака
-			{id: 3, cost: 16, isBuy: true}, // 4% атака
-			{id: 4, cost: 40, isBuy: true}, // 8% атака
-			{id: 5, cost: 1, isBuy: true}, // 10% броня
-			{id: 6, cost: 6, isBuy: true}, // 5% броня
-			{id: 7, cost: 16, isBuy: true}, // 10% броня
-			{id: 8, cost: 40, isBuy: true}, // 20% броня
-			{id: 9, cost: 1, isBuy: true}, // 10% защита от магии
-			{id: 10, cost: 6, isBuy: true}, // 5% защита от магии
-			{id: 11, cost: 16, isBuy: true}, // 10% защита от магии
-			{id: 12, cost: 40, isBuy: true}, // 20% защита от магии
-			{id: 13, cost: 1, isBuy: false}, // 40% здоровья герою
-			{id: 14, cost: 6, isBuy: false}, // 40% здоровья герою
-			{id: 15, cost: 16, isBuy: false}, // 80% здоровья герою
-			{id: 16, cost: 40, isBuy: false}, // 40% здоровья всем героям
-			{id: 17, cost: 1, isBuy: false}, // 40% энергии герою
-			{id: 18, cost: 3, isBuy: false}, // 40% энергии герою
-			{id: 19, cost: 8, isBuy: false}, // 80% энергии герою
-			{id: 20, cost: 20, isBuy: false}, // 40% энергии всем героям
-			{id: 21, cost: 40, isBuy: false}, // Воскрешение героя
+			{ id: 0, cost: 0, isBuy: false }, // заглушка
+			{ id: 1, cost: 1, isBuy: true }, // 3% атака
+			{ id: 2, cost: 6, isBuy: true }, // 2% атака
+			{ id: 3, cost: 16, isBuy: true }, // 4% атака
+			{ id: 4, cost: 40, isBuy: true }, // 8% атака
+			{ id: 5, cost: 1, isBuy: true }, // 10% броня
+			{ id: 6, cost: 6, isBuy: true }, // 5% броня
+			{ id: 7, cost: 16, isBuy: true }, // 10% броня
+			{ id: 8, cost: 40, isBuy: true }, // 20% броня
+			{ id: 9, cost: 1, isBuy: true }, // 10% защита от магии
+			{ id: 10, cost: 6, isBuy: true }, // 5% защита от магии
+			{ id: 11, cost: 16, isBuy: true }, // 10% защита от магии
+			{ id: 12, cost: 40, isBuy: true }, // 20% защита от магии
+			{ id: 13, cost: 1, isBuy: false }, // 40% здоровья герою
+			{ id: 14, cost: 6, isBuy: false }, // 40% здоровья герою
+			{ id: 15, cost: 16, isBuy: false }, // 80% здоровья герою
+			{ id: 16, cost: 40, isBuy: false }, // 40% здоровья всем героям
+			{ id: 17, cost: 1, isBuy: false }, // 40% энергии герою
+			{ id: 18, cost: 3, isBuy: false }, // 40% энергии герою
+			{ id: 19, cost: 8, isBuy: false }, // 80% энергии герою
+			{ id: 20, cost: 20, isBuy: false }, // 40% энергии всем героям
+			{ id: 21, cost: 40, isBuy: false }, // Воскрешение героя
 		]
 
-		this.start = function() {
+		this.start = function () {
 			send(JSON.stringify(callsExecuteTower), startTower);
 		}
 
@@ -2545,7 +2610,7 @@
 			let fixHeroes = argsBattle.heroes.filter(e => !heroesStates[e]?.isDead);
 			if (fixHeroes.length < 5) {
 				heroGetAll = heroGetAll.filter(e => !heroesStates[e.id]?.isDead);
-				fixHeroes = heroGetAll.sort((a, b) => b.power - a.power).slice(0,5).map(e => e.id);
+				fixHeroes = heroGetAll.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
 				Object.keys(argsBattle.favor).forEach(e => {
 					if (!fixHeroes.includes(+e)) {
 						delete argsBattle.favor[e];
@@ -2562,22 +2627,28 @@
 			maySkipFloor = +towerInfo.maySkipFloor;
 			floorNumber = +towerInfo.floorNumber;
 			heroesStates = towerInfo.states.heroes;
+			floorInfo = towerInfo.floor;
 
+			/** Открыт ли на этаже хоть один сундук */
 			isOpenChest = false;
 			if (towerInfo.floorType == "chest") {
 				isOpenChest = towerInfo.floor.chests.reduce((n, e) => n + e.opened, 0);
 			}
 
-			setProgress('Tower: Этаж ' + floorNumber);
+			setProgress('Башня: Этаж ' + floorNumber);
 			if (floorNumber > 49) {
 				if (isOpenChest) {
 					endTower('alreadyOpenChest 50 floor', floorNumber);
 					return;
 				}
 			}
-			// towerInfo.chestSkip ???
+			// Если сундук открыт и можно скипать этажи, то переходим дальше
 			if (towerInfo.mayFullSkip && +towerInfo.teamLevel == 130) {
-				nextOpenChest(floorNumber);
+				if (isOpenChest) {
+					nextOpenChest(floorNumber);
+				} else {
+					nextChestOpen(floorNumber);
+				}
 				return;
 			}
 
@@ -2586,6 +2657,10 @@
 				case "battle":
 					if (floorNumber <= maySkipFloor) {
 						skipFloor();
+						return;
+					}
+					if (floorInfo.state == 2) {
+						nextFloor();
 						return;
 					}
 					startBattle().then(endBattle);
@@ -2709,7 +2784,7 @@
 		}
 
 		function buyBuff(buffId) {
-			return new Promise(function(resolve, reject) {
+			return new Promise(function (resolve, reject) {
 				buyBuffCall = {
 					calls: [{
 						name: "towerBuyBuff",
@@ -2737,34 +2812,82 @@
 			checkFloor(towerInfo);
 		}
 		/** Получаем награды башни */
-		function farmPointRewards() {
-			let {pointRewards,points} = lastTowerInfo;
-			pointsAll = Object.getOwnPropertyNames(pointRewards);
-			farmPoints = pointsAll.filter(e => +e <= +points && !pointRewards[e]);
+		function farmTowerRewards(reason) {
+			let { pointRewards, points } = lastTowerInfo;
+			let pointsAll = Object.getOwnPropertyNames(pointRewards);
+			let farmPoints = pointsAll.filter(e => +e <= +points && !pointRewards[e]);
 			if (!farmPoints.length) {
 				return;
 			}
-			farmPointRewardsCall = {
+			let farmTowerRewardsCall = {
 				calls: [{
 					name: "tower_farmPointRewards",
 					args: {
 						points: farmPoints
 					},
-					ident: "body"
+					ident: "tower_farmPointRewards"
 				}]
 			}
-			send(JSON.stringify(farmPointRewardsCall), ()=>{});
-		}
-		/** Меняем черепа на монетки */
-		function farmSkullReward() {
-			farmSkullRewardCall = {
-				calls: [{
+
+			if (scullCoin > 0 && reason == 'openChest 50 floor') {
+				farmTowerRewardsCall.calls.push({
 					name: "tower_farmSkullReward",
 					args: {},
-					ident: "body"
-				}]
+					ident: "tower_farmSkullReward"
+				});
 			}
-			send(JSON.stringify(farmSkullRewardCall), () => {});
+
+			send(JSON.stringify(farmTowerRewardsCall), () => { });
+		}
+
+		function fullSkipTower() {
+			/** Следующий сундук */
+			function nextChest(n) {
+				return {
+					name: "towerNextChest",
+					args: {},
+					ident: "group_" + n + "_body"
+				}
+			}
+			/** Открыть сундук */
+			function openChest(n) {
+				return {
+					name: "towerOpenChest",
+					args: {
+						"num": 2
+					},
+					ident: "group_" + n + "_body"
+				}
+			}
+
+			const fullSkipTowerCall = {
+				calls: []
+			}
+
+			let n = 0;
+			for (let i = 0; i < 15; i++) {
+				fullSkipTowerCall.calls.push(nextChest(++n));
+				fullSkipTowerCall.calls.push(openChest(++n));
+			}
+
+			send(JSON.stringify(fullSkipTowerCall), data => {
+				data.results[0] = data.results[28];
+				checkDataFloor(data);
+			});
+		}
+
+		function nextChestOpen(floorNumber) {
+			const calls = [{
+				name: "towerOpenChest",
+				args: {
+					num: 2
+				},
+				ident: "towerOpenChest"
+			}];
+
+			Send(JSON.stringify({ calls })).then(e => {
+				nextOpenChest(floorNumber);
+			});
 		}
 
 		function nextOpenChest(floorNumber) {
@@ -2772,7 +2895,12 @@
 				endTower('openChest 50 floor', floorNumber);
 				return;
 			}
-			nextOpenChestCall = {
+			if (floorNumber == 1) {
+				fullSkipTower();
+				return;
+			}
+
+			let nextOpenChestCall = {
 				calls: [{
 					name: "towerNextChest",
 					args: {},
@@ -2791,19 +2919,16 @@
 		function endTower(reason, info) {
 			console.log(reason, info);
 			if (reason != 'noTower') {
-				farmPointRewards();
-				if (scullCoin > 0 && reason == 'openChest 50 floor') {
-					farmSkullReward();
-				}
+				farmTowerRewards(reason);
 			}
-			setProgress('Tower completed!', true);
+			setProgress('Башня выполнена!', true);
 			resolve();
 		}
+
 	}
 
 	function testTitanArena() {
 		return new Promise((resolve, reject) => {
-			popup.showBack();
 			titAren = new executeTitanArena(resolve, reject);
 			titAren.start();
 		});
@@ -3122,16 +3247,17 @@
 				titanArenaFarmDailyReward();
 			}
 			console.log(reason, info);
-			setProgress('TitanArena completed!', true);
+			setProgress('Турнир Стихий выполнен!', true);
 			resolve();
 		}
 	}
+	let hideTimeoutProgress = 0;
 	/** Скрыть прогресс */
 	function hideProgress(timeout) {
 		timeout = timeout || 0;
-		setTimeout(function () {
+		clearTimeout(hideTimeoutProgress);
+		hideTimeoutProgress = setTimeout(function () {
 			scriptMenu.setStatus('');
-			popup.hideBack();
 		}, timeout);
 	}
 	/** Отображение прогресса */
@@ -3139,7 +3265,7 @@
 		scriptMenu.setStatus(text, onclick);
 		hide = hide || false;
 		if (hide) {
-			hideProgress(750);
+			hideProgress(3000);
 		}
 	}
 	function hackGame() {
@@ -3240,7 +3366,7 @@
 		 * @param {*} callback функция в которую вернуться результаты боя
 		 */
 		this.BattleCalc = function (battleData, battleConfig, callback) {
-			battleConfig = battleConfig || getBattleType(battleData.type)
+			// battleConfig = battleConfig || getBattleType(battleData.type)
 			if (!Game.BattlePresets) throw Error('Use connectGame');
 			battlePresets = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 			battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
@@ -3723,20 +3849,17 @@
 	}
 	/** Собрать пасхалки и награды событий */
 	function offerFarmAllReward() {
-		let offerGetAllCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
-		send(offerGetAllCall, function (data) {
-			let offerGetAll = data.results[0].result.response.filter(e => e.type == "reward" && !e?.freeRewardObtained && e.reward);
+		const offerGetAllCall = '{"calls":[{"name":"offerGetAll","args":{},"ident":"offerGetAll"}]}';
+		return Send(offerGetAllCall).then((data) => {
+			const offerGetAll = data.results[0].result.response.filter(e => e.type == "reward" && !e?.freeRewardObtained && e.reward);
 			if (!offerGetAll.length) {
 				setProgress('Нечего собирать', true);
 				return;
 			}
 
-			let rewardListCall = {
-				calls: []
-			};
-			for (let n in offerGetAll) {
-				let reward = offerGetAll[n];
-				rewardListCall.calls.push({
+			const calls = [];
+			for (let reward of offerGetAll) {
+				calls.push({
 					name: "offerFarmReward",
 					args: {
 						offerId: reward.id
@@ -3745,7 +3868,7 @@
 				});
 			}
 
-			send(JSON.stringify(rewardListCall), e => {
+			return Send(JSON.stringify({ calls })).then(e => {
 				console.log(e);
 				setProgress('Собрано ' + e?.results?.length + ' наград', true);
 			});
@@ -4474,44 +4597,759 @@
 	}
 	/** Собрать всю почту, кроме писем с энергией и зарядами портала */
 	function mailGetAll() {
-		let getMailInfo = '{"calls":[{"name":"mailGetAll","args":{},"ident":"body"}]}';
-		let getLetters = '{"calls":[{"name":"mailFarm","args":{"letterIds":[#letterIds#]},"ident":"body"}]}';
+		const getMailInfo = '{"calls":[{"name":"mailGetAll","args":{},"ident":"body"}]}';
 
-		send(getMailInfo, function(res) {
-			let dataMail = getJson(res);
-			if (!dataMail) return;
-			let letters = dataMail?.results[0]?.result?.response?.letters;
-			lettersIds = [];
-			for (let l in letters) {
-				letter = letters[l];
-				const reward = letter.reward;
-				/** Исключения на сбор писем */
-				const isFarmLetter = !(
-					(reward?.refillable ? reward.refillable[45] : false) || // сферы портала
-					(reward?.stamina ? reward.stamina : false) || // энергия
-					(reward?.buff ? true : false) || // ускорение набора энергии
-					(reward?.vipPoints ? reward.vipPoints : false) || // вип очки
-					(reward?.fragmentHero ? true : false) || // душы героев
-					(reward?.bundleHeroReward ? true : false)  // герои
-				);
-				if (isFarmLetter) {
-					lettersIds.push(~~letter.id);
+		return Send(getMailInfo).then(dataMail => {
+			const letters = dataMail.results[0].result.response.letters;
+			const letterIds = lettersFilter(letters);
+			if (!letterIds.length) {
+				setProgress('Нечего собирать', true);
+				return;
+			}
+
+			const calls = [
+				{ name: "mailFarm", args: { letterIds }, ident: "body" }
+			];
+
+			return Send(JSON.stringify({ calls })).then(res => {
+				const lettersIds = res.results[0].result.response;
+				if (lettersIds) {
+					const countLetters = Object.keys(lettersIds).length;
+					setProgress('Получено ' + countLetters + ' писем', true);
+				}
+			});
+		});
+	}
+	/** Фильтрует получаемые письма */
+	function lettersFilter(letters) {
+		const lettersIds = [];
+		for (let l in letters) {
+			letter = letters[l];
+			const reward = letter.reward;
+			/** Исключения на сбор писем */
+			const isFarmLetter = !(
+				(reward?.refillable ? reward.refillable[45] : false) || // сферы портала
+				(reward?.stamina ? reward.stamina : false) || // энергия
+				(reward?.buff ? true : false) || // ускорение набора энергии
+				(reward?.vipPoints ? reward.vipPoints : false) || // вип очки
+				(reward?.fragmentHero ? true : false) || // душы героев
+				(reward?.bundleHeroReward ? true : false)  // герои
+			);
+			if (isFarmLetter) {
+				lettersIds.push(~~letter.id);
+			}
+		}
+		return lettersIds;
+	}
+	/** Отображение информации о сферах портала и попытках на ВГ */
+	async function justInfo() {
+		return new Promise(async (resolve, reject) => {
+			const calls = [{
+				name: "userGetInfo",
+				args: {},
+				ident: "userGetInfo"
+			},
+			{
+				name: "clanWarGetInfo",
+				args: {},
+				ident: "clanWarGetInfo"
+			}];
+			const result = await Send(JSON.stringify({ calls }));
+			const infos = result.results;
+			const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
+			const clanWarMyTries = infos[1].result.response?.myTries ?? 0;
+			const sanctuaryButton = buttons['goToSanctuary'].button;
+			const clanWarButton = buttons['goToClanWar'].button;
+			if (portalSphere.amount) {
+				sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
+				sanctuaryButton.title = 'Святилище ' + portalSphere.amount + ' сферы портала';
+			} else {
+				sanctuaryButton.style.color = '';
+				sanctuaryButton.title = 'Святилище';
+			}
+			if (clanWarMyTries) {
+				clanWarButton.style.color = 'red';
+				clanWarButton.title = 'Война гильдий ' + clanWarMyTries + ' ударов';
+			} else {
+				clanWarButton.style.color = '';
+				clanWarButton.title = 'Война гильдий';
+			}
+			setProgress('<img src="https://zingery.ru/heroes/portal.png" style="height: 25px;position: relative;top: 5px;"> ' + portalSphere.amount + '</br>' + 'ВГ: ' + clanWarMyTries, true);
+			resolve();
+		});
+	}
+
+	function testDailyQuests() {
+		return new Promise((resolve, reject) => {
+			const bossBattle = new dailyQuests(resolve, reject, questsInfo);
+			bossBattle.start();
+		});
+	}
+	/** Автоматическое выполнение ежедневных квестов */
+	class dailyQuests {
+		/**
+		 * Send(' {"calls":[{"name":"heroGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
+		 * Send(' {"calls":[{"name":"titanGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
+		 * Send(' {"calls":[{"name":"inventoryGet","args":{},"ident":"body"}]}').then(e => console.log(e))
+		 * Send(' {"calls":[{"name":"questGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
+		 */
+		dataQuests = {
+			10001: {
+				description: 'Улучши умения героев 3 раза', // Смотреть героев и деньги
+				isWeCanDo: () => false,
+			},
+			10002: {
+				description: 'Пройди 10 миссий', // --------------
+				isWeCanDo: () => false,
+			},
+			10003: {
+				description: 'Пройди 3 героические миссии', // --------------
+				isWeCanDo: () => false,
+			},
+			10004: {
+				description: 'Сразись 3 раза на Арене или Гранд Арене', // --------------
+				isWeCanDo: () => false,
+			},
+			10006: {
+				description: 'Используй обмен изумрудов 1 раз',
+				doItCall: [{ name: "refillableAlchemyUse", args: { multi: false }, ident: "refillableAlchemyUse" }],
+				isWeCanDo: () => false,
+			},
+			10007: {
+				description: 'Открой 1 сундук', // ++++++++++++++++
+				doItCall: [{ name: "chestBuy", args: { chest: "town", free: true, pack: false }, ident: "chestBuy" }],
+				isWeCanDo: (info) => {
+					const chestInfo = info['userGetInfo'].refillable.find(e => e.id == 37);
+					return chestInfo.amount > 0;
+				},
+			},
+			10016: {
+				description: 'Отправь подарки согильдийцам', // ++++++++++++++++
+				doItCall: [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
+				isWeCanDo: () => true,
+			},
+			10018: {
+				description: 'Используй зелье опыта', // TODO: Смотреть героев, смотреть зелья (consumable 9, 10, 11, 12)
+				/** Тратит банку опыта на Галахарда */
+				doItCall: [{ name: "consumableUseHeroXp", args: { heroId: 2, libId: 10, amount: 1 }, ident: "consumableUseHeroXp" }],
+				isWeCanDo: () => false,
+			},
+			10019: {
+				description: 'Открой 1 сундук в Башне',
+				doItFunc: testTower,
+				isWeCanDo: () => false,
+			},
+			10020: {
+				description: 'Открой 3 сундука в Запределье',
+				isWeCanDo: () => false,
+			},
+			10021: {
+				description: 'Собери 75 Титанита в Подземелье Гильдии',
+				isWeCanDo: () => false,
+			},
+			10022: {
+				description: 'Собери 150 Титанита в Подземелье Гильдии',
+				doItFunc: testDungeon,
+				isWeCanDo: () => false,
+			},
+			10023: {
+				description: 'Прокачай Дар Стихий на 1 уровень', // TODO: Смотреть героев, смотреть искры (consumable 24, 250 на 0 уровне и золото 7000)
+				/** Улучшение и сброс дара стихий Галахарду */
+				doItCall: [
+					{ name: "heroTitanGiftLevelUp", args: { heroId: 2 }, ident: "heroTitanGiftLevelUp" },
+					{ name: "heroTitanGiftDrop", args: { heroId: 2 }, ident: "heroTitanGiftDrop" }
+				],
+				isWeCanDo: () => false,
+			},
+			10024: {
+				description: 'Повысь уровень любого артефакта один раз', // Смотреть героев, 
+				isWeCanDo: () => false,
+			},
+			10025: {
+				description: 'Начни 1 Экспедицию',
+				doItFunc: checkExpedition,
+				isWeCanDo: () => false,
+			},
+			10026: {
+				description: 'Начни 4 Экспедиции', // --------------
+				doItFunc: checkExpedition,
+				isWeCanDo: () => false,
+			},
+			10027: {
+				description: 'Победи в 1 бою Турнира Стихий',
+				doItFunc: testTitanArena,
+				isWeCanDo: () => false,
+			},
+			10028: {
+				description: 'Повысь уровень любого артефакта титанов', // TODO: Смотреть титанов, можно качать арты за золото если золота больше 5 лямов
+				isWeCanDo: () => false,
+			},
+			10029: {
+				description: 'Открой сферу артефактов титанов', // ++++++++++++++++
+				doItCall: [{ name: "titanArtifactChestOpen", args: { amount: 1, free: true }, ident: "titanArtifactChestOpen" }],
+				isWeCanDo: (info) => {
+					return info['inventoryGet']?.consumable[55] > 0
+				},
+			},
+			10030: {
+				description: 'Улучши облик любого героя 1 раз', // TODO: Смотреть героев
+				isWeCanDo: () => false,
+			},
+			10031: {
+				description: 'Победи в 6 боях Турнира Стихий', // --------------
+				doItFunc: testTitanArena,
+				isWeCanDo: () => false,
+			},
+			10043: {
+				description: 'Начни или присоеденись к Приключению', // --------------
+				isWeCanDo: () => false,
+			},
+			10044: {
+				description: 'Воспользуйся призывом питомцев 1 раз', // ++++++++++++++++
+				doItCall: [{ name: "pet_chestOpen", args: { amount: 1, paid: false }, ident: "pet_chestOpen" }],
+				isWeCanDo: (info) => {
+					return info['inventoryGet']?.consumable[90] > 0
+				},
+			},
+			10046: {
+				description: 'Открой 3 сундука в Приключениях', // TODO: Смотреть приключение
+				isWeCanDo: () => false,
+			},
+			10047: {
+				description: 'Набери 150 очков активности в Гильдии', // TODO: Смотреть героев и руны consumable 1, 2, 3, 4
+				/** Прокачать руну Галахарду */
+				doItCall: [{ name: "heroEnchantRune", args: { heroId: 2, tier: 0, items: { consumable: { '1': 1 } } }, ident: "heroEnchantRune" }],
+				isWeCanDo: () => false,
+			},
+		};
+
+		constructor(resolve, reject, questInfo) {
+			this.resolve = resolve;
+			this.reject = reject;
+			this.questInfo = questInfo
+		}
+
+		async start() {
+			let countQuest = 0; // TODO возожно не нужна
+			const weCanDo = [];
+			const selectedActions = getSaveVal('selectedActions', {});
+			for (let quest of this.questInfo['questGetAll']) {
+				if (quest.id in this.dataQuests && quest.state == 1) {
+					if (!selectedActions[quest.id]) {
+						selectedActions[quest.id] = {
+							checked: false
+						}
+					}
+					if (!this.dataQuests[quest.id].isWeCanDo(this.questInfo)) {
+						continue;
+					}
+					weCanDo.push({
+						name: quest.id,
+						label: this.dataQuests[quest.id].description,
+						checked: selectedActions[quest.id].checked
+					});
+					countQuest++;
 				}
 			}
-			if (lettersIds.length) {
-				sendGetLetters = getLetters.replace('#letterIds#', lettersIds.join())
-				send(sendGetLetters, function(res) {
-					lettersIds = res?.results[0]?.result?.response;
-					if (lettersIds) {
-						countLetters = Object.keys(lettersIds).length;
-						setProgress('Получено ' + countLetters + ' писем', true);
-						console.log('mailGetAll', lettersIds);
-					}
-				});
-			} else {
-				setProgress('Нечего собирать', true);
+
+			if (!weCanDo.length) {
+				this.end('Нечего выполнять');
+				return;
 			}
+
+			console.log(weCanDo);
+			const answer = await popup.confirm(`Можно выполнить квесты:`, [
+				{ msg: 'Выполняй', result: true },
+				{ msg: 'Отмена', result: false },
+			], weCanDo);
+			if (!answer) {
+				this.end('');
+				return;
+			}
+			const taskList = popup.getCheckBoxes();
+			taskList.forEach(e => {
+				selectedActions[e.name].checked = e.checked;
+			});
+			setSaveVal('selectedActions', selectedActions);
+			const calls = [];
+			let countChecked = 0;
+			for (const task of taskList) {
+				if (task.checked) {
+					countChecked++;
+					const quest = this.dataQuests[task.name]
+					console.log(quest.description);
+
+					if (quest.doItCall) {
+						calls.push(...quest.doItCall);
+					}
+				}
+			}
+
+			if (!countChecked) {
+				this.end('Ни одного квеста не выполенно');
+				return;
+			}
+
+			await Send(JSON.stringify({ calls }));
+			this.end('Выполенно квестов: ' + countChecked);
+		}
+
+		errorHandling(error) {
+			//console.error(error);
+			let errorInfo = error.toString() + '\n';
+			try {
+				const errorStack = error.stack.split('\n');
+				const endStack = errorStack.map(e => e.split('@')[0]).indexOf("testDoYourBest");
+				errorInfo += errorStack.slice(0, endStack).join('\n');
+			} catch (e) {
+				errorInfo += error.stack;
+			}
+			copyText(errorInfo);
+		}
+
+		end(status) {
+			setProgress(status, true);
+			this.resolve();
+		}
+	}
+
+	function testDoYourBest() {
+		return new Promise((resolve, reject) => {
+			const doIt = new doYourBest(resolve, reject);
+			doIt.start();
 		});
+	}
+	/** Кнопка сделать все */
+	class doYourBest {
+
+		funcList = [
+			{
+				name: 'getOutland',
+				label: 'Собрать Запределье',
+				checked: false
+			},
+			{
+				name: 'testTower',
+				label: 'Пройти башню',
+				checked: false
+			},
+			{
+				name: 'checkExpedition',
+				label: 'Проверить экспедиции',
+				checked: false
+			},
+			{
+				name: 'testTitanArena',
+				label: 'Пройти Турнир Стихий',
+				checked: false
+			},
+			{
+				name: 'testDungeon',
+				label: 'Пройти подземелье',
+				checked: false
+			},
+			{
+				name: 'mailGetAll',
+				label: 'Собрать почту',
+				checked: false
+			},
+			{
+				name: 'collectAllStuff',
+				label: 'Собрать пасхалки, камни облика, ключи и монеты арены',
+				checked: false
+			},
+			{
+				name: 'questAllFarm',
+				label: 'Собрать награды за квесты',
+				checked: false
+			},
+			{
+				name: 'synchronization',
+				label: 'Сделать синхронизацю',
+				checked: false
+			},
+		];
+
+		functions = {
+			getOutland,
+			testTower,
+			checkExpedition,
+			testTitanArena,
+			testDungeon,
+			mailGetAll,
+			collectAllStuff: async () => {
+				await offerFarmAllReward();
+				await Send('{"calls":[{"name":"subscriptionFarm","args":{},"ident":"body"},{"name":"zeppelinGiftFarm","args":{},"ident":"zeppelinGiftFarm"},{"name":"grandFarmCoins","args":{},"ident":"grandFarmCoins"}]}');
+			},
+			questAllFarm,
+			synchronization: async () => {
+				cheats.refreshGame();
+			}
+		}
+
+		constructor(resolve, reject, questInfo) {
+			this.resolve = resolve;
+			this.reject = reject;
+			this.questInfo = questInfo
+		}
+
+		async start() {
+			const selectedDoIt = getSaveVal('selectedDoIt', {});
+
+			this.funcList.forEach(task => {
+				if (!selectedDoIt[task.name]) {
+					selectedDoIt[task.name] = {
+						checked: task.checked
+					}
+				} else {
+					task.checked = selectedDoIt[task.name].checked
+				}
+			});
+
+			const answer = await popup.confirm('Выполнить следующие функции?', [
+				{ msg: 'Отмена', result: false },
+				{ msg: 'Погнали!', result: true },
+			], this.funcList);
+
+			if (!answer) {
+				this.end('');
+				return;
+			}
+
+			const taskList = popup.getCheckBoxes();
+			taskList.forEach(task => {
+				selectedDoIt[task.name].checked = task.checked;
+			});
+			setSaveVal('selectedDoIt', selectedDoIt);
+			for (const task of popup.getCheckBoxes()) {
+				if (task.checked) {
+					try {
+						setProgress(task.label + '<br>Выполняется!');
+						await this.functions[task.name]();
+						setProgress(task.label + '<br>Выполнено!');
+					} catch (error) {
+						if (await popup.confirm('Призошли ошибки при выполнении:<br>' + task.label + '<br>Скопировать в буфер информацию об ошибке?', [
+							{ msg: 'Нет', result: false },
+							{ msg: 'Да', result: true },
+						])) {
+							this.errorHandling(error);
+						}
+					}
+				}
+			}
+			setTimeout((msg) => {
+				this.end(msg);
+			}, 2000, 'Все задачи выполнены');
+			return;
+		}
+
+		errorHandling(error) {
+			//console.error(error);
+			let errorInfo = error.toString() + '\n';
+			try {
+				const errorStack = error.stack.split('\n');
+				const endStack = errorStack.map(e => e.split('@')[0]).indexOf("testDoYourBest");
+				errorInfo += errorStack.slice(0, endStack).join('\n');
+			} catch (e) {
+				errorInfo += error.stack;
+			}
+			copyText(errorInfo);
+		}
+
+		end(status) {
+			setProgress(status, true);
+			this.resolve();
+		}
+	}
+
+	function testAdventure() {
+		return new Promise((resolve, reject) => {
+			const bossBattle = new executeAdventure(resolve, reject);
+			bossBattle.start();
+		});
+	}
+	/** Прохождение приключения по указанному маршруту */
+	class executeAdventure {
+		terminatеReason = 'Неизвестно';
+		callAdventureInfo = { name: "adventure_getInfo", args: {}, ident: "adventure_getInfo" }
+		callTeamGetAll = { name: "teamGetAll", args: {}, ident: "teamGetAll" }
+		callTeamGetFavor = { name: "teamGetFavor", args: {}, ident: "teamGetFavor" }
+
+		constructor(resolve, reject) {
+			this.resolve = resolve;
+			this.reject = reject;
+		}
+
+		async start() {
+			this.path = await this.getPath();
+			if (!this.path) {
+				this.end();
+				return;
+			}
+			const data = await Send(JSON.stringify({
+				calls: [
+					this.callAdventureInfo,
+					this.callTeamGetAll,
+					this.callTeamGetFavor
+				]
+			}));
+			return this.checkAdventureInfo(data.results);
+		}
+
+		async getPath() {
+			const answer = await popup.confirm('Введите путь приключения через запятые', [
+				{
+					msg: 'Начать приключение по этому пути!',
+					placeholder: '1,2,3,4,5,6',
+					isInput: true,
+					default: getSaveVal('adventurePath', '')
+				},
+				{
+					msg: 'Отмена',
+					result: false
+				},
+			]);
+			if (!answer) {
+				this.terminatеReason = 'Отменено';
+				return false;
+			}
+			let path = answer.split(',');
+			if (path.length < 2) {
+				this.terminatеReason = 'Путь должен состоять минимум из 2х точек';
+				return false;
+			}
+
+			for (let p in path) {
+				path[p] = +path[p].trim()
+				if (Number.isNaN(path[p])) {
+					this.terminatеReason = 'Путь должен содержать только цифры и запятые';
+					return false;
+				}
+			}
+			setSaveVal('adventurePath', answer);
+			return path;
+		}
+
+		checkAdventureInfo(data) {
+			this.advInfo = data[0].result.response;
+			if (!this.advInfo) {
+				this.terminatеReason = 'Вы не в приключении';
+				return this.end();
+			}
+			const heroesTeam = data[1].result.response.adventure_hero;
+			const favor = data[2]?.result.response.adventure_hero;
+			const heroes = heroesTeam.slice(0, 5);
+			const pet = heroesTeam[5];
+			this.args = {
+				pet,
+				heroes,
+				favor,
+				path: [],
+				broadcast: false
+			}
+			const advUserInfo = this.advInfo.users[userInfo.id];
+			this.turnsLeft = advUserInfo.turnsLeft;
+			this.currentNode = advUserInfo.currentNode;
+			this.nodes = this.advInfo.nodes;
+			return this.loop();
+		}
+
+		async loop() {
+			const position = this.path.indexOf(+this.currentNode);
+			if (!(~position)) {
+				this.terminatеReason = 'Вашего местоположения нет на пути';
+				return this.end();
+			}
+			this.path = this.path.slice(position);
+			if ((this.path.length - 1) > this.turnsLeft &&
+				await popup.confirm('Ваших попыток не достаточно для завершения пути, продолжить?', [
+					{ msg: 'Да, продолжай!', result: false },
+					{ msg: 'Нет', result: true },
+				])) {
+				this.terminatеReason = 'Попыток не достаточно';
+				return this.end();
+			}
+			const toPath = [];
+			for (const nodeId of this.path) {
+				if (!this.turnsLeft) {
+					this.terminatеReason = 'Попытки закончились';
+					return this.end();
+				}
+				toPath.push(nodeId);
+				console.log(toPath);
+				if (toPath.length > 1) {
+					setProgress(toPath.join(' > ') + ' Ходы: ' + this.turnsLeft);
+				}
+				if (nodeId == this.currentNode) {
+					continue;
+				}
+
+				const nodeInfo = this.getNodeInfo(nodeId);
+				if (nodeInfo.type == 'TYPE_COMBAT') {
+					if (nodeInfo.state == 'empty') {
+						this.turnsLeft--;
+						continue;
+					}
+
+					/** Отключаем штатную отменую боя */
+					isCancalBattle = false;
+					if (await this.battle(toPath)) {
+						this.turnsLeft--;
+						toPath.splice(0, toPath.indexOf(nodeId));
+						nodeInfo.state == 'empty';
+						continue;
+					}
+					isCancalBattle = true;
+					return this.end()
+				}
+
+				if (nodeInfo.type == 'TYPE_PLAYERBUFF') {
+					const buff = this.checkBuff(nodeInfo);
+					if (buff == null) {
+						continue;
+					}
+
+					if (await this.collectBuff(buff, toPath)) {
+						this.turnsLeft--;
+						toPath.splice(0, toPath.indexOf(nodeId));
+						continue;
+					}
+					this.terminatеReason = 'Ошибка при получении бафа';
+					return this.end();
+				}
+			}
+			this.terminatеReason = 'Успех!';
+			return this.end();
+		}
+
+		/** Проведение боя */
+		async battle(path, preCalc = true) {
+			try {
+				const data = await this.startBattle(path);
+				const battle = data.results[0].result.response.battle;
+				const result = await Calc(battle);
+				if (result.result.win) {
+					const info = await this.endBattle(result);
+					if (info.results[0].result.response?.error) {
+						this.terminatеReason = 'Ошибка завершения боя';
+						return false;
+					}
+				} else {
+					await this.cancelBattle(result);
+
+					if (preCalc && await this.preCalcBattle(battle)) {
+						for (let i = 1; i <= getInput('countAutoBattle'); i++) {
+							setProgress('АвтоБой: ' + i + '/' + getInput('countAutoBattle'));
+							const result = await this.battle(path, false);
+							if (result) {
+								setProgress('Победа');
+								return true;
+							}
+						}
+						this.terminatеReason = 'Не удалось победить в автобою';
+						return false;
+					}
+					return false;
+				}
+			} catch (e) {
+				console.error(e);
+				this.terminatеReason = 'Ошибка в процессе прохождения боя';
+				return false;
+			}
+			return true;
+		}
+
+		/** Прерасчтет битвы */
+		async preCalcBattle(battle) {
+			const countTestBattle = getInput('countTestBattle');
+			for (let i = 0; i < countTestBattle; i++) {
+				battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
+				const result = await Calc(battle);
+				if (result.result.win) {
+					console.log(i, countTestBattle);
+					return true;
+				}
+			}
+			this.terminatеReason = 'Нет шансов победить в этом бою: 0/' + countTestBattle;
+			return false;
+		}
+
+		/** Начинает бой */
+		startBattle(path) {
+			this.args.path = path;
+			const calls = [{
+				name: "adventure_turnStartBattle",
+				args: this.args,
+				ident: "body"
+			}];
+			return Send(JSON.stringify({ calls }));
+		}
+
+		cancelBattle(battle) {
+			const fixBattle = function (heroes) {
+				for (const ids in heroes) {
+					const hero = heroes[ids];
+					hero.energy = random(1, 999);
+					if (hero.hp > 0) {
+						hero.hp = random(1, hero.hp);
+					}
+				}
+			}
+			fixBattle(battle.progress[0].attackers.heroes);
+			fixBattle(battle.progress[0].defenders.heroes);
+			return this.endBattle(battle);
+		}
+
+		/** Заканчивает бой */
+		endBattle(battle) {
+			const calls = [{
+				name: "adventure_endBattle",
+				args: {
+					result: battle.result,
+					progress: battle.progress,
+				},
+				ident: "body"
+			}];
+			return Send(JSON.stringify({ calls }));
+		}
+
+		/** Проверяет можно ли получить баф */
+		checkBuff(nodeInfo) {
+			let id = null;
+			let value = 0;
+			for (const buffId in nodeInfo.buffs) {
+				const buff = nodeInfo.buffs[buffId];
+				if (buff.owner == null && buff.value > value) {
+					id = buffId;
+					value = buff.value;
+				}
+			}
+			nodeInfo.buffs[id].owner = 'Я';
+			return id;
+		}
+
+		/** Собирает баф */
+		async collectBuff(buff, path) {
+			const calls = [{
+				name: "adventure_turnCollectBuff",
+				args: {
+					buff,
+					path
+				},
+				ident: "body"
+			}];
+			return Send(JSON.stringify({ calls }));
+		}
+
+		getNodeInfo(nodeId) {
+			return this.nodes.find(node => node.id == nodeId);
+		}
+
+		end() {
+			setProgress(this.terminatеReason, true);
+			console.log(this.terminatеReason);
+			this.resolve();
+		}
 	}
 })();
 
