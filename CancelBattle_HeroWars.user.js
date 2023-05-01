@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.057
+// @version			2.058
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -140,7 +140,15 @@
 			cbox: null,
 			title: 'Убирает все предложения доната',
 			/** Костыль чтоб получать поле до получения id персонажа */
-			default: JSON.parse(localStorage[GM_info.script.name + ':noOfferDonat']) || false,
+			default: (() => {
+				$result = false;
+				try {
+					$result = JSON.parse(localStorage[GM_info.script.name + ':noOfferDonat'])
+				} catch(e) {
+					$result = false;
+				}
+				return $result || false;
+			})(),
 		},
 		dailyQuests: {
 			label: 'АвтоКвесты',
@@ -529,6 +537,7 @@
 					getAutoGifts();
 				}
 				cheats.activateHacks();
+
 				justInfo();
 				if (isChecked('dailyQuests')) {
 					testDailyQuests();
@@ -1882,7 +1891,7 @@
 
 		/**
 		 * Сохранение состояния развенутости блоков details
-		 * @param {*} value 
+		 * @param {*} value
 		 */
 		this.saveShowDetails = (value) => {
 			localStorage.setItem('scriptMenu_showDetails', JSON.stringify(value));
@@ -1890,7 +1899,7 @@
 
 		/**
 		 * Загрузка состояния развенутости блоков details
-		 * @returns 
+		 * @returns
 		 */
 		this.loadShowDetails = () => {
 			let showDetails = localStorage.getItem('scriptMenu_showDetails');
@@ -4762,7 +4771,7 @@
 				isWeCanDo: () => false,
 			},
 			10024: {
-				description: 'Повысь уровень любого артефакта один раз', // Смотреть героев, 
+				description: 'Повысь уровень любого артефакта один раз', // Смотреть героев,
 				isWeCanDo: () => false,
 			},
 			10025: {
@@ -5197,6 +5206,7 @@
 						this.turnsLeft--;
 						toPath.splice(0, toPath.indexOf(nodeId));
 						nodeInfo.state == 'empty';
+						isCancalBattle = true;
 						continue;
 					}
 					isCancalBattle = true;
@@ -5251,8 +5261,14 @@
 					}
 					return false;
 				}
-			} catch (e) {
-				console.error(e);
+			} catch (error) {
+				console.error(error);
+				if (await popup.confirm('Призошли ошибка в процессе прохождения боя<br>Скопировать ошибку в буфер обмена?', [
+					{ msg: 'Нет', result: false },
+					{ msg: 'Да', result: true },
+				])) {
+					this.errorHandling(error);
+				}
 				this.terminatеReason = 'Ошибка в процессе прохождения боя';
 				return false;
 			}
@@ -5345,7 +5361,21 @@
 			return this.nodes.find(node => node.id == nodeId);
 		}
 
+		errorHandling(error) {
+			//console.error(error);
+			let errorInfo = error.toString() + '\n';
+			try {
+				const errorStack = error.stack.split('\n');
+				const endStack = errorStack.map(e => e.split('@')[0]).indexOf("testAdventure");
+				errorInfo += errorStack.slice(0, endStack).join('\n');
+			} catch (e) {
+				errorInfo += error.stack;
+			}
+			copyText(errorInfo);
+		}
+
 		end() {
+			isCancalBattle = true;
 			setProgress(this.terminatеReason, true);
 			console.log(this.terminatеReason);
 			this.resolve();
