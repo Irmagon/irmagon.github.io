@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.059
+// @version			2.060
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -61,7 +61,7 @@
 	this.SendRequest = send;
 	/** Простой расчет боя доступный через консоль */
 	this.Calc = function (data) {
-		const type = getBattleType(data.type);
+		const type = getBattleType(data?.type);
 		return new Promise((resolve, reject) => {
 			try {
 				BattleCalc(data, type, resolve);
@@ -5240,8 +5240,8 @@
 
 		/** Проведение боя */
 		async battle(path, preCalc = true) {
-			try {
 				const data = await this.startBattle(path);
+			try {
 				const battle = data.results[0].result.response.battle;
 				const result = await Calc(battle);
 				if (result.result.win) {
@@ -5273,7 +5273,7 @@
 					{ msg: 'Нет', result: false },
 					{ msg: 'Да', result: true },
 				])) {
-					this.errorHandling(error);
+					this.errorHandling(error, data);
 				}
 				this.terminatеReason = 'Ошибка в процессе прохождения боя';
 				return false;
@@ -5367,7 +5367,7 @@
 			return this.nodes.find(node => node.id == nodeId);
 		}
 
-		errorHandling(error) {
+		errorHandling(error, data) {
 			//console.error(error);
 			let errorInfo = error.toString() + '\n';
 			try {
@@ -5376,6 +5376,9 @@
 				errorInfo += errorStack.slice(0, endStack).join('\n');
 			} catch (e) {
 				errorInfo += error.stack;
+			}
+			if (data) {
+				errorInfo += '\nData: ' + JSON.stringify(data);
 			}
 			copyText(errorInfo);
 		}
@@ -5391,8 +5394,6 @@
 
 /**
  * TODO:
- * Автосбор дара валькирий и других ежедневных наград
  * Получение всех уровней при сборе всех наград (квест на титанит и на энку)
- * Возможность указать любое число при открытии артефактных сундуков
  * Добивание на арене титанов
  */
