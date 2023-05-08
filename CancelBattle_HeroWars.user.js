@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.060
+// @version			2.061
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -5211,7 +5211,7 @@
 					if (await this.battle(toPath)) {
 						this.turnsLeft--;
 						toPath.splice(0, toPath.indexOf(nodeId));
-						nodeInfo.state == 'empty';
+						nodeInfo.state = 'empty';
 						isCancalBattle = true;
 						continue;
 					}
@@ -5254,6 +5254,7 @@
 					await this.cancelBattle(result);
 
 					if (preCalc && await this.preCalcBattle(battle)) {
+						path = path.slice(-2);
 						for (let i = 1; i <= getInput('countAutoBattle'); i++) {
 							setProgress('АвтоБой: ' + i + '/' + getInput('countAutoBattle'));
 							const result = await this.battle(path, false);
