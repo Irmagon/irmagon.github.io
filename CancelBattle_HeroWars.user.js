@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.061
+// @version			2.062
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -270,7 +270,16 @@
 		testAdventure: {
 			name: 'Приключение',
 			title: 'Проходит приключение по указанному маршруту',
-			func: testAdventure,
+			func: () => {
+				testAdventure();
+			},
+		},
+		testSoloAdventure: {
+			name: 'Буря',
+			title: 'Проходит Бурю по указанному маршруту',
+			func: () => {
+				testAdventure('solo');
+			},
 		},
 		goToSanctuary: {
 			name: 'Святилище',
@@ -632,6 +641,8 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
+					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
+					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
@@ -639,7 +650,9 @@
 					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
 						let resultPopup = false;
-						if (call.name == 'adventure_endBattle' ||
+						if (call.name == 'crossClanWar_endBattle' ||
+							call.name == 'clanWarEndBattle' ||
+							call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
 							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
@@ -5077,30 +5090,80 @@
 		}
 	}
 
-	function testAdventure() {
+	function testAdventure(type) {
 		return new Promise((resolve, reject) => {
 			const bossBattle = new executeAdventure(resolve, reject);
-			bossBattle.start();
+			bossBattle.start(type);
 		});
 	}
 	/** Прохождение приключения по указанному маршруту */
 	class executeAdventure {
+ 
+		type = 'default';
+ 
+		actions = {
+			default: {
+				getInfo: "adventure_getInfo",
+				startBattle: 'adventure_turnStartBattle',
+				endBattle: 'adventure_endBattle',
+				collectBuff: 'adventure_turnCollectBuff'
+			},
+			solo: {
+				getInfo: "adventureSolo_getInfo",
+				startBattle: 'adventureSolo_turnStartBattle',
+				endBattle: 'adventureSolo_endBattle',
+				collectBuff: 'adventureSolo_turnCollectBuff'
+			}
+		}
+ 
 		terminatеReason = 'Неизвестно';
-		callAdventureInfo = { name: "adventure_getInfo", args: {}, ident: "adventure_getInfo" }
-		callTeamGetAll = { name: "teamGetAll", args: {}, ident: "teamGetAll" }
-		callTeamGetFavor = { name: "teamGetFavor", args: {}, ident: "teamGetFavor" }
+		callAdventureInfo = {
+			name: "adventure_getInfo",
+			args: {},
+			ident: "adventure_getInfo"
+		}
+		callTeamGetAll = {
+			name: "teamGetAll",
+			args: {},
+			ident: "teamGetAll"
+		}
+		callTeamGetFavor = {
+			name: "teamGetFavor",
+			args: {},
+			ident: "teamGetFavor"
+		}
+		callStartBattle = {
+			name: "adventure_turnStartBattle",
+			args: {},
+			ident: "body"
+		}
+		callEndBattle = {
+			name: "adventure_endBattle",
+			args: {
+				result: {},
+				progress: {},
+			},
+			ident: "body"
+		}
+		callCollectBuff = {
+			name: "adventure_turnCollectBuff",
+			args: {},
+			ident: "body"
+		}
 
 		constructor(resolve, reject) {
 			this.resolve = resolve;
 			this.reject = reject;
 		}
 
-		async start() {
+		async start(type) {
+			this.type = type || this.type;
 			this.path = await this.getPath();
 			if (!this.path) {
 				this.end();
 				return;
 			}
+			this.callAdventureInfo.name = this.actions[this.type].getInfo;
 			const data = await Send(JSON.stringify({
 				calls: [
 					this.callAdventureInfo,
@@ -5300,11 +5363,9 @@
 		/** Начинает бой */
 		startBattle(path) {
 			this.args.path = path;
-			const calls = [{
-				name: "adventure_turnStartBattle",
-				args: this.args,
-				ident: "body"
-			}];
+			this.callStartBattle.name = this.actions[this.type].startBattle;
+			this.callStartBattle.args = this.args
+			const calls = [this.callStartBattle];
 			return Send(JSON.stringify({ calls }));
 		}
 
@@ -5325,14 +5386,10 @@
 
 		/** Заканчивает бой */
 		endBattle(battle) {
-			const calls = [{
-				name: "adventure_endBattle",
-				args: {
-					result: battle.result,
-					progress: battle.progress,
-				},
-				ident: "body"
-			}];
+			this.callEndBattle.name = this.actions[this.type].endBattle;
+			this.callEndBattle.args.result = battle.result
+			this.callEndBattle.args.progress = battle.progress
+			const calls = [this.callEndBattle];
 			return Send(JSON.stringify({ calls }));
 		}
 
@@ -5353,14 +5410,9 @@
 
 		/** Собирает баф */
 		async collectBuff(buff, path) {
-			const calls = [{
-				name: "adventure_turnCollectBuff",
-				args: {
-					buff,
-					path
-				},
-				ident: "body"
-			}];
+			this.callCollectBuff.name = this.actions[this.type].collectBuff;
+			this.callCollectBuff.args = { buff, path };
+			const calls = [this.callCollectBuff];
 			return Send(JSON.stringify({ calls }));
 		}
 
