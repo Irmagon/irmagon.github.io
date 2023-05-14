@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.062
+// @version			2.063
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -105,11 +105,11 @@
 			title: 'Автоотправка экспедиций',
 			default: true
 		},
-		cancelBattle: {
+		cancelBattleBan: {
 			label: 'Отмена боя',
 			cbox: null,
-			title: 'Возможность отмены боя, кроме ВГ/СМ',
-			default: false
+			title: 'Возможность отмены боя на ВГ, СМ и в Асгарде',
+			default: false,
 		},
 		getAutoGifts: {
 			label: 'Подарки',
@@ -274,6 +274,7 @@
 				testAdventure();
 			},
 		},
+		/*
 		testSoloAdventure: {
 			name: 'Буря',
 			title: 'Проходит Бурю по указанному маршруту',
@@ -281,6 +282,7 @@
 				testAdventure('solo');
 			},
 		},
+		*/
 		goToSanctuary: {
 			name: 'Святилище',
 			title: 'Быстрый переход к Святилищу',
@@ -440,17 +442,6 @@
 				}
 			}
 		)
-	}
-	/** Возвращает объект если переданный парамет строка */
-	function getJson(result) {
-		if (typeof result == 'string') {
-			result = JSON.parse(result);
-		}
-		if (result?.error) {
-			console.warn(result.error);
-			return false;
-		}
-		return result;
 	}
 	/** Отображает диалоговое окно */
 	function confShow(message, yesCallback, noCallback) {
@@ -641,8 +632,8 @@
 				/** Отмена боя в приключениях, на ВГ и с прислужниками Асгарда */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
-					call.name == 'clanWarEndBattle' && isChecked('cancelBattle') ||
-					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattle') ||
+					call.name == 'clanWarEndBattle' && isChecked('cancelBattleBan') ||
+					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattleBan') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
@@ -654,7 +645,7 @@
 							call.name == 'clanWarEndBattle' ||
 							call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
-							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
+							resultPopup = await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
 							resultPopup = await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить');
 						}
@@ -671,10 +662,11 @@
 				}
 				/** Отмена боя в Асгарде */
 				if (call.name == 'clanRaid_endBossBattle' &&
-					isCancalBossBattle) {
+					isCancalBossBattle && 
+					isChecked('cancelBattleBan')) {
 					bossDamage = call.args.progress[0].defenders.heroes[1].extra;
 					sumDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
-					let resultPopup = await showMsgs(
+					let resultPopup = await showMsg(
 						'Вы нанесли ' + sumDamage.toLocaleString() + ' урона.',
 						'Хорошо', 'Отменить', 'Авто')
 					if (resultPopup) {
@@ -1146,8 +1138,19 @@
 			}
 			/** Отсеживание события изменения чекбокса для записи в storage */
 			checkboxes[name].cbox.dataset['name'] = name;
-			checkboxes[name].cbox.addEventListener('change', function () {
-				storage.set(this.dataset['name'], this.checked);
+			checkboxes[name].cbox.addEventListener('change', async function (event) {
+				const nameCheckbox = this.dataset['name'];
+				if (this.checked && nameCheckbox == 'cancelBattleBan') {
+					this.checked = false;
+					if (await popup.confirm('<p style="color:red;">Использование этой функции может привести к бану.</p> Продолжить?', [
+						{ msg: 'Нет, я отказываюсь от этого!', result: true },
+						{ msg: 'Да, я беру на себя все риски!', result: false },
+					])) {
+						return;
+					}
+					this.checked = true;
+				}
+				storage.set(nameCheckbox, this.checked);
 			})
 		}
 
@@ -5098,9 +5101,9 @@
 	}
 	/** Прохождение приключения по указанному маршруту */
 	class executeAdventure {
- 
+
 		type = 'default';
- 
+
 		actions = {
 			default: {
 				getInfo: "adventure_getInfo",
@@ -5115,7 +5118,7 @@
 				collectBuff: 'adventureSolo_turnCollectBuff'
 			}
 		}
- 
+
 		terminatеReason = 'Неизвестно';
 		callAdventureInfo = {
 			name: "adventure_getInfo",
