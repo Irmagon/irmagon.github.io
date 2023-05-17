@@ -2,7 +2,7 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.063
+// @version			2.064
 // @description		Автоматизация действий для игры Хроники Хаоса
 // @description:en	Automation of actions for the game Hero Wars
 // @author			ZingerY (forked from original by ThomasGaud)
@@ -641,11 +641,9 @@
 					nameFuncEndBattle = call.name;
 					if (!call.args.result.win) {
 						let resultPopup = false;
-						if (call.name == 'crossClanWar_endBattle' ||
-							call.name == 'clanWarEndBattle' ||
-							call.name == 'adventure_endBattle' ||
+						if (call.name == 'adventure_endBattle' ||
 							call.name == 'adventureSolo_endBattle') {
-							resultPopup = await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
+							resultPopup = await showMsgs('Вы потерпели поражение!', 'Хорошо', 'Отменить', 'Авто');
 						} else {
 							resultPopup = await showMsg('Вы потерпели поражение!', 'Хорошо', 'Отменить');
 						}
@@ -662,13 +660,13 @@
 				}
 				/** Отмена боя в Асгарде */
 				if (call.name == 'clanRaid_endBossBattle' &&
-					isCancalBossBattle && 
+					isCancalBossBattle &&
 					isChecked('cancelBattleBan')) {
 					bossDamage = call.args.progress[0].defenders.heroes[1].extra;
 					sumDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
-					let resultPopup = await showMsg(
+					let resultPopup = await showMsgs(
 						'Вы нанесли ' + sumDamage.toLocaleString() + ' урона.',
-						'Хорошо', 'Отменить', 'Авто')
+						'Хорошо', 'Отменить', 'Отменить и показать Статистику')
 					if (resultPopup) {
 						fixBattle(call.args.progress[0].attackers.heroes);
 						fixBattle(call.args.progress[0].defenders.heroes);
@@ -4399,13 +4397,14 @@
 
 			reachDamage = fixDamage(avgDamage);
 			const result = await popup.confirm(
-				'Статистика урона:' +
+				'Статистика урона за ${damages.length} боев:' +
 				'<br>Минимальный: ' + minDamage.toLocaleString() +
 				'<br>Максимальный: ' + maxDamage.toLocaleString() +
-				'<br>Средний: ' + avgDamage.toLocaleString() +
-				'<br>Поиск урона больше чем ' + reachDamage.toLocaleString(), [
-				{msg: 'Отмена', result: 0},
-				{msg: 'Погнали', isInput: true, default: reachDamage},
+				'<br>Средний: ' + avgDamage.toLocaleString() 
+				/*+ '<br>Поиск урона больше чем ' + reachDamage.toLocaleString()*/
+				, [
+				{msg: 'Ок', result: 0},
+				/* {msg: 'Погнали', isInput: true, default: reachDamage}, */
 			])
 			if (result) {
 				reachDamage = result;
@@ -4536,12 +4535,12 @@
 		/** Обработка результатов прерасчета боя */
 		function resultPreCalcBattle(results) {
 			let countWin = results.reduce((w, s) => w + s);
+			setProgress('Шансы ${countWin} к ${results.length}', true);
 			if (countWin > 0) {
 				isCancalBattle = false;
 				startBattle();
 				return;
 			}
-			setProgress('Не судьба, шансы 0', true);
 			endAutoBattle('Не в этот раз');
 		}
 		/** Начало боя */
