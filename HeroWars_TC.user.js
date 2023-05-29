@@ -2648,7 +2648,7 @@
     const bestLordBattle = {
         "-400701": {pack: 1000, score: 250, progress: [{attackers: {input: ["auto", 294, 14, "cast", 354, 16.945, 4001, "cast", 354, 16.945, 4013, "cast", 386, 18.09, 4023, "cast", 401, 18.94, 4003, "cast", 448, 22.425, 4001, "cast", 556, 27.5, 4013, "cast", 658, 34.42, 4003, "auto", 680, 36.142, "auto", 714, 38.084, "auto", 831, 45.4]}}]},
         "-400801": {pack: 1100, score: 250, progress: [{attackers: {input: ["auto", 418, 17.6, "auto", 463, 18.7]}}]},
-        "-400901": {pack: 2101, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "cast", 292, 15.7, 4013, "cast", 292, 15.7, 4011, "auto", 346, 18.4]}}]},
+        "-400901": {pack: 2101, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "cast", 318, 17.324555561277045, 4011, "teamCustom", 328, 17.5605556223122, 1, "cast", 328, 17.5605556223122, 4013, "auto", 328, 17.5605556223122]}}]},
         "-400702": {pack: 1100, score: 250, progress: [{attackers: {input: ["auto", 452, 20.5, "cast", 635, 28.4, 4001, "cast", 651, 28.8, 4013, "auto", 691, 30.4]}}]},
         "-400802": {pack: 1101, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "cast", 272, 13.5, 4010, "cast", 292, 15.29, 4001, "auto", 299, 15.3, "auto", 352, 17.6, "cast", 488, 24.9, 4002, "cast", 488, 24.9, 4003, "auto", 492, 25]}}]},
         "-400902": {pack: 2120, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "cast", 225, 11.877, 4010, "auto", 242, 12.534]}}]},
