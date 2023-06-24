@@ -735,6 +735,16 @@
 			title: I18N('TO_DO_EVERYTHING_TITLE'),
 			func: testDoYourBest,
 		},
+		sendExpedition: {
+			name: I18N('EXPEDITIONS'),
+			title: I18N('EXPEDITIONS_TITLE'),
+			func: checkExpedition
+		},
+		mailGetAll: {
+			name: I18N('MAIL'),
+			title: I18N('MAIL_TITLE'),
+			func: mailGetAll
+		},
 		/*
 		getOutland: {
 			name: I18N('OUTLAND'),
@@ -765,11 +775,7 @@
 			},
 		},
 		*/
-		sendExpedition: {
-			name: I18N('EXPEDITIONS'),
-			title: I18N('EXPEDITIONS_TITLE'),
-			func: checkExpedition
-		},
+
 		/*
 		bossRatingEvent: {
 			name: I18N('ARCHDEMON'),
@@ -788,11 +794,7 @@
 			},
 		},
 		*/
-		mailGetAll: {
-			name: I18N('MAIL'),
-			title: I18N('MAIL_TITLE'),
-			func: mailGetAll
-		},
+
 		testRaidNodes: {
 			name: I18N('MINIONS'),
 			title: I18N('MINIONS_TITLE'),
@@ -1321,6 +1323,8 @@
 				 */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
+					call.name == 'clanWarEndBattle' && isChecked('cancelBattleBan') ||
+					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattleBan') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
