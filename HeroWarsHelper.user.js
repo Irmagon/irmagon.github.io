@@ -1321,8 +1321,6 @@
 				 */
 				if ((call.name == 'adventure_endBattle' ||
 					call.name == 'adventureSolo_endBattle' ||
-					call.name == 'clanWarEndBattle' && isChecked('cancelBattleBan') ||
-					call.name == 'crossClanWar_endBattle' && isChecked('cancelBattleBan') ||
 					call.name == 'brawl_endBattle' ||
 					call.name == 'towerEndBattle' ||
 					call.name == 'clanRaid_endNodeBattle') &&
