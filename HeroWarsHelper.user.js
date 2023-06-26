@@ -762,11 +762,6 @@
 			title: I18N('REWARDS_TITLE'),
 			func: questAllFarm
 		},
-		getOutland: {
-			name: I18N('TO_DO_EVERYTHING'),
-			title: I18N('TO_DO_EVERYTHING_TITLE'),
-			func: testDoYourBest,
-		},
 		sendExpedition: {
 			name: I18N('EXPEDITIONS'),
 			title: I18N('EXPEDITIONS_TITLE'),
@@ -859,6 +854,11 @@
 			name: I18N('GUILD_WAR'),
 			title: I18N('GUILD_WAR_TITLE'),
 			func: cheats.goClanWar,
+		},
+		getOutland: {
+			name: I18N('TO_DO_EVERYTHING'),
+			title: I18N('TO_DO_EVERYTHING_TITLE'),
+			func: testDoYourBest,
 		},
 	}
 	/**
