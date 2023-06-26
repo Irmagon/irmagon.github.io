@@ -1,5 +1,6 @@
 ## Установить скрипты
-[HeroWarsHelper](https://irmagon.github.io/HeroWarsHelper.user.js) - основной скрипт
+Сначала в браузер поставить менеджер скриптов [TamperMonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ru)  
+Потом в него поставить основной скрипт - [HeroWarsHelper](https://irmagon.github.io/HeroWarsHelper.user.js)  
 
 ## Чекбоксы
 **Пропуск боев**  - при включении позволяет проводить бой на автомате при нажатии кнопки отступить в Запределье и на арене титанов. В башне и в компании сразу показывает результат боя после его начала без загрузки и отображения боя.  
