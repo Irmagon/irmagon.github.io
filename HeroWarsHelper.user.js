@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.076
+// @version			2.077
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -360,6 +360,15 @@
 			LOST_HEROES: 'You have won, but you have lost one or several heroes',
 			VICTORY_IMPOSSIBLE: 'Is victory impossible, should we focus on the result?',
 			FIND_COEFF: 'Find the coefficient greater than',
+			BTN_PASS: 'PASS',
+			BRAWLS: 'Brawls',
+			BRAWLS_TITLE: 'Activates the ability to auto-brawl',
+			START_AUTO_BRAWLS: 'Start Auto Brawls?',
+			LOSSES: 'Losses',
+			WINS: 'Wins',
+			FIGHTS: 'Fights',
+			STAGE: 'Stage',
+			DONT_HAVE_LIVES: 'You don\'t have lives',
 		},
 		ru: {
 			/* Чекбоксы */
@@ -563,6 +572,15 @@
 			LOST_HEROES: 'Вы победили, но потеряли одного или несколько героев!',
 			VICTORY_IMPOSSIBLE: 'Победа не возможна, бъем на результат?',
 			FIND_COEFF: 'Поиск коэффициента больше чем',
+			BTN_PASS: 'ПРОПУСК',
+			BRAWLS: 'Потасовки',
+			BRAWLS_TITLE: 'Включает возможность автопотасовок',
+			START_AUTO_BRAWLS: 'Запустить Автопотасовки?',
+			LOSSES: 'Поражений',
+			WINS: 'Побед',
+			FIGHTS: 'Боев',
+			STAGE: 'Стадия',
+			DONT_HAVE_LIVES: 'У Вас нет жизней',
 		}
 	}
 
@@ -661,6 +679,20 @@
 			cbox: null,
 			title: I18N('DAILY_QUESTS_TITLE'),
 			default: false
+		},
+		autoBrawls: {
+			label: I18N('BRAWLS'),
+			cbox: null,
+			title: I18N('BRAWLS_TITLE'),
+			default: (() => {
+				$result = false;
+				try {
+					$result = JSON.parse(localStorage[GM_info.script.name + ':autoBrawls'])
+				} catch (e) {
+					$result = false;
+				}
+				return $result || false;
+			})(),
 		}
 		/*
 		getAnswer: {
@@ -953,6 +985,19 @@
 	 * Имя функции открытия ключей или сфер артефактов титанов
 	 */
 	let artifactChestOpenCallName = '';
+
+	/**
+	 * Brawl pack
+	 *
+	 * Пачка для потасовок
+	 */
+	let brawlsPack = null;
+	/**
+	 * Autobrawl started
+	 *
+	 * Автопотасовка запущена
+	 */
+	let isBrawlsAutoStart = false;
 
 	/**
 	 * Copies the text to the clipboard
@@ -1355,6 +1400,25 @@
 							changeRequest = true;
 						}
 					}
+
+					if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
+						if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
+							{ msg: I18N('BTN_NO'), result: false },
+							{ msg: I18N('BTN_YES'), result: true },
+						])) {
+							this.onReadySuccess = testBrawls;
+							isBrawlsAutoStart = true;
+						}
+					}
+				}
+				/**
+				 * Save pack for Brawls
+				 *
+				 * Сохраняем пачку для потасовок
+				 */
+				if (call.name == 'brawl_startBattle') {
+					console.log(JSON.stringify(call.args));
+					brawlsPack = call.args.heroes;
 				}
 				/**
 				 * Canceled fight in Asgard
@@ -1580,10 +1644,10 @@
 					userId = call.result.response.userId;
 				}
 				/**
-				 * Brawl
-				 * Потасовка
+				 * Endless lives in brawls
+				 * Бесконечные жизни в потасовках
 				 */
-				if (call.ident == callsIdent['brawl_getInfo']) {
+				if (getSaveVal('autoBrawls') && call.ident == callsIdent['brawl_getInfo']) {
 					brawl = call.result.response;
 					if (brawl) {
 						brawl.boughtEndlessLivesToday = 1;
@@ -1880,6 +1944,7 @@
 			case "titan_clan_pvp":
 			case "clan_pvp_titan":
 			case "clan_global_pvp_titan":
+			case "brawl_titan":
 			case "challenge_titan":
 				return "get_titanClanPvp";
 			case "clan_raid": // Asgard Boss // Босс асгарда
@@ -4743,7 +4808,7 @@
 				let oldFunc = Game.BattlePausePopupMediator.prototype[retreatButtonLabel];
 				Game.BattlePausePopupMediator.prototype[retreatButtonLabel] = function () {
 					if (isChecked('passBattle')) {
-						return 'ПРОПУСК';
+						return I18N('BTN_PASS');
 					} else {
 						return oldFunc.call(this);
 					}
@@ -6856,8 +6921,8 @@
 			} catch (error) {
 				console.error(error);
 				if (await popup.confirm(I18N('ERROR_OF_THE_BATTLE_COPY'), [
-					{ msg: 'Нет', result: false },
-					{ msg: 'Да', result: true },
+					{ msg: I18N('BTN_NO'), result: false },
+					{ msg: I18N('BTN_YES'), result: true },
 				])) {
 					this.errorHandling(error, data);
 				}
@@ -6985,6 +7050,210 @@
 			this.resolve();
 		}
 	}
+	/**
+	 * Passage of brawls
+	 *
+	 * Прохождение потасовок
+	 */
+	function testBrawls() {
+		return new Promise((resolve, reject) => {
+			const brawls = new executeBrawls(resolve, reject);
+			brawls.start(brawlsPack);
+		});
+	}
+	/**
+	 * Passage of brawls
+	 *
+	 * Прохождение потасовок
+	 */
+	class executeBrawls {
+		callBrawlQuestGetInfo = {
+			name: "brawl_questGetInfo",
+			args: {},
+			ident: "brawl_questGetInfo"
+		}
+		callBrawlFindEnemies = {
+			name: "brawl_findEnemies",
+			args: {},
+			ident: "brawl_findEnemies"
+		}
+		callBrawlQuestFarm = {
+			name: "brawl_questFarm",
+			args: {},
+			ident: "brawl_questFarm"
+		}
+		callUserGetInfo = {
+			name: "userGetInfo",
+			args: {},
+			ident: "userGetInfo"
+		}
+
+		stats = {
+			win: 0,
+			loss: 0,
+			count: 0,
+		}
+
+		stage = {
+			'3': 1,
+			'7': 2,
+			'12': 3,
+		}
+
+		constructor(resolve, reject) {
+			this.resolve = resolve;
+			this.reject = reject;
+		}
+
+		async start(heroes) {
+			this.heroes = heroes;
+			isCancalBattle = false;
+			this.brawlInfo = await this.getBrawlInfo();
+
+			if (!this.brawlInfo.attempts) {
+				this.end(I18N('DONT_HAVE_LIVES'))
+				return;
+			}
+
+			while (1) {
+				if (!isBrawlsAutoStart) {
+					this.end(I18N('BTN_CANCELED'))
+					return;
+				}
+
+				const maxStage = this.brawlInfo.questInfo.stage;
+				const stage = this.stage[maxStage];
+				const progress = this.brawlInfo.questInfo.progress;
+
+				setProgress(`${I18N('STAGE')} ${stage}: ${progress}/${maxStage}<br>${I18N('FIGHTS')}: ${this.stats.count}<br>${I18N('WINS')}: ${this.stats.win}<br>${I18N('LOSSES')}: ${this.stats.loss}<br>${I18N('STOP')}`, false, function () {
+					isBrawlsAutoStart = false;
+				});
+
+				if (this.brawlInfo.questInfo.canFarm) {
+					const result = await this.questFarm();
+					console.log(result);
+				}
+
+				if (this.brawlInfo.questInfo.stage == 12 && this.brawlInfo.questInfo.progress == 12) {
+					this.end(I18N('SUCCESS'))
+					return;
+				}
+
+				const enemie = Object.values(this.brawlInfo.findEnemies).shift();
+
+				const result = await this.battle(enemie.userId);
+				this.brawlInfo = {
+					questInfo: result[1].result.response,
+					findEnemies: result[2].result.response,
+				}
+			}
+		}
+
+		async questFarm() {
+			const calls = [this.callBrawlQuestFarm];
+			const result = await Send(JSON.stringify({ calls }));
+			return result.results[0].result.response;
+		}
+
+		async getBrawlInfo() {
+			const data = await Send(JSON.stringify({
+				calls: [
+					this.callUserGetInfo,
+					this.callBrawlQuestGetInfo,
+					this.callBrawlFindEnemies,
+				]
+			}));
+
+			let attempts = data.results[0].result.response.refillable.find(n => n.id == 48);
+			return {
+				attempts: attempts.amount,
+				questInfo: data.results[1].result.response,
+				findEnemies: data.results[2].result.response,
+			}
+		}
+
+		/**
+		 * Carrying out a fight
+		 *
+		 * Проведение боя
+		 */
+		async battle(userId) {
+			this.stats.count++;
+			const battle = await this.startBattle(userId, this.heroes);
+			const result = await Calc(battle);
+			console.log(result.result);
+			if (result.result.win) {
+				this.stats.win++;
+				return await this.endBattle(result);
+			}
+			this.stats.loss++;
+			return await this.cancelBattle(result);
+		}
+
+		/**
+		 * Starts a fight
+		 *
+		 * Начинает бой
+		 */
+		async startBattle(userId, heroes) {
+			const calls = [{
+				name: "brawl_startBattle",
+				args: {
+					userId,
+					heroes,
+					favor: {},
+				},
+				ident: "brawl_startBattle"
+			}];
+			const result = await Send(JSON.stringify({ calls }));
+			return result.results[0].result.response;
+		}
+
+		cancelBattle(battle) {
+			const fixBattle = function (heroes) {
+				for (const ids in heroes) {
+					const hero = heroes[ids];
+					hero.energy = random(1, 999);
+					if (hero.hp > 0) {
+						hero.hp = random(1, hero.hp);
+					}
+				}
+			}
+			fixBattle(battle.progress[0].attackers.heroes);
+			fixBattle(battle.progress[0].defenders.heroes);
+			return this.endBattle(battle);
+		}
+
+		/**
+		 * Ends the fight
+		 *
+		 * Заканчивает бой
+		 */
+		async endBattle(battle) {
+			battle.progress[0].attackers.input = ['auto', 0, 0, 'auto', 0, 0];
+			const calls = [{
+				name: "brawl_endBattle",
+				args: {
+					result: battle.result,
+					progress: battle.progress
+				},
+				ident: "brawl_endBattle"
+			},
+			this.callBrawlQuestGetInfo,
+			this.callBrawlFindEnemies,
+			];
+			const result = await Send(JSON.stringify({ calls }));
+			return result.results;
+		}
+
+		end(endReason) {
+			isCancalBattle = true;
+			isBrawlsAutoStart = false;
+			setProgress(endReason, true);
+			console.log(endReason);
+			this.resolve();
+		}
+	}
 })();
 
 /**
@@ -6993,4 +7262,5 @@
  * Добавить проверку правильности пути для приключения
  * Добивание на арене титанов
  * Сбор ежедневных календарных наград
+ * Добавить в подземку проверку варианта когда одна пачка из 2х мертва
  */
