@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.077
+// @version			2.079
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -4553,10 +4553,11 @@
 			{name:"GuiClipContainer", prop:"engine.core.clipgui.GuiClipContainer"},
 			{name:"BattlePausePopupClip", prop:"game.view.popup.battle.BattlePausePopupClip"},
 			{name:"ClipLabel", prop:"game.view.gui.components.ClipLabel"},
+			{name:"ClipLabelBase", prop:"game.view.gui.components.ClipLabelBase"},
 			{name:"Translate", prop:"com.progrestar.common.lang.Translate"},
 			{name:"ClipButtonLabeledCentered", prop:"game.view.gui.components.ClipButtonLabeledCentered"},
 			{name:"BattlePausePopupMediator", prop:"game.mediator.gui.popup.battle.BattlePausePopupMediator"},
-			{name:"SettingToggleButton", prop:"game.view.popup.settings.SettingToggleButton"},
+			{name:"SettingToggleButton", prop:"game.mechanics.settings.popup.view.SettingToggleButton"},
 			{name:"PlayerDungeonData", prop:"game.mechanics.dungeon.model.PlayerDungeonData"},
 			{name:"NextDayUpdatedManager", prop:"game.model.user.NextDayUpdatedManager"},
 			{name:"BattleController", prop:"game.battle.controller.BattleController"},
@@ -4786,19 +4787,31 @@
 						Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
 						this[getProtoFn(Game.BattlePausePopup, 3)]();
 						this[getProtoFn(Game.DisplayObjectContainer, 3)](this.clip[getProtoFn(Game.GuiClipContainer, 2)]());
-						this.clip[getProtoFn(Game.BattlePausePopupClip, 1)][getProtoFn(Game.ClipLabel, 9)](Game.Translate.translate("UI_POPUP_BATTLE_PAUSE"));
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 1)][getProtoFn(Game.ClipLabelBase, 9)](Game.Translate.translate("UI_POPUP_BATTLE_PAUSE"));
 
-						this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](Game.Translate.translate("UI_POPUP_BATTLE_RETREAT"), (q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 15)]))); /** 14 > 15 */
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](Game.Translate.translate("UI_POPUP_BATTLE_RETREAT"), (q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 17)])));
 						this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](
-							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 12)](),
-							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]() ?
-							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 16)])) :
-							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 16)])) /** 15 > 16 */
+							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 14)](),
+							this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 13)]() ?
+							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)])) :
+							(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)]))
 						);
 
-						this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 0)][getProtoFn(Game.ClipLabel, 23)]();
-						this.clip[getProtoFn(Game.BattlePausePopupClip, 3)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 8)]());
-						this.clip[getProtoFn(Game.BattlePausePopupClip, 4)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 9)]());
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 0)][getProtoFn(Game.ClipLabelBase, 24)]();
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 3)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 9)]());
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 4)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 10)]());
+						this.clip[getProtoFn(Game.BattlePausePopupClip, 6)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]());
+						/*
+						Какая-то ненужная фигня
+						if (!HC.lSb()) {
+							this.clip.r6b.g().B(!1);
+							a = this.clip.r6b.g().X() + 7;
+							var b = this.clip.ba.g();
+							b.$(b.X() - a);
+							b = this.clip.IS.g();
+							b.sa(b.Fa() - a)
+						}
+						*/
 					} else {
 						oldPassBattle.call(this, a);
 					}
@@ -4888,9 +4901,9 @@
 			 * Кнопка ускорения без Покровительства Валькирий
 			 */
 			battleFastKey: function () {
-				const BGM_37 = getProtoFn(Game.BattleGuiMediator, 37);
-				const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_37];
-				Game.BattleGuiMediator.prototype[BGM_37] = function () {
+				const BGM_39 = getProtoFn(Game.BattleGuiMediator, 39);
+				const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_39];
+				Game.BattleGuiMediator.prototype[BGM_39] = function () {
 					if (true) {
 						const BGM_8 = getProtoFn(Game.BattleGuiMediator, 8);
 						const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
