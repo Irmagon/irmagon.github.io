@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.081
+// @version			2.082
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -711,6 +711,9 @@
 	 * Получить состояние чекбокса
 	 */
 	function isChecked(checkBox) {
+		if (!(checkBox in checkboxes)) {
+			return false;
+		}
 		return checkboxes[checkBox].cbox?.checked;
 	}
 	/**
@@ -1402,7 +1405,7 @@
 							changeRequest = true;
 						}
 					}
-
+					/*
 					if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
 						if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
 							{ msg: I18N('BTN_NO'), result: false },
@@ -1412,6 +1415,7 @@
 							isBrawlsAutoStart = true;
 						}
 					}
+					*/
 				}
 				/**
 				 * Save pack for Brawls
@@ -6785,7 +6789,7 @@
 				this.terminatеReason = I18N('BTN_CANCELED');
 				return false;
 			}
- 
+
 			let path = answer.split(',');
 			if (path.length < 2) {
 				path = answer.split('-');
@@ -6827,11 +6831,11 @@
 			this.turnsLeft = advUserInfo.turnsLeft;
 			this.currentNode = advUserInfo.currentNode;
 			this.nodes = this.advInfo.nodes;
- 
+
 			if (this.currentNode == 1 && this.path[0] != 1) {
 				this.path.unshift(1);
 			}
- 
+
 			return this.loop();
 		}
 
