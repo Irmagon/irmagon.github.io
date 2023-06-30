@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.079
+// @version			2.081
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -338,7 +338,7 @@
 			ALL_TASK_COMPLETED: 'All tasks completed',
 
 			UNKNOWN: 'unknown',
-			ENTER_THE_PATH: 'Enter the path of the adventure separated by commas',
+			ENTER_THE_PATH: 'Enter the path of adventure using commas or dashes',
 			START_ADVENTURE: 'Start your adventure along this path!',
 			BTN_CANCELED: 'Canceled',
 			MUST_TWO_POINTS: 'The path must contain at least 2 points.',
@@ -550,7 +550,7 @@
 			ALL_TASK_COMPLETED: 'Все задачи выполнены',
 
 			UNKNOWN: 'Неизвестно',
-			ENTER_THE_PATH: 'Введите путь приключения через запятые',
+			ENTER_THE_PATH: 'Введите путь приключения через запятые или дефисы',
 			START_ADVENTURE: 'Начать приключение по этому пути!',
 			BTN_CANCELED: 'Отменено',
 			MUST_TWO_POINTS: 'Путь должен состоять минимум из 2х точек',
@@ -680,6 +680,7 @@
 			title: I18N('DAILY_QUESTS_TITLE'),
 			default: false
 		},
+		/*
 		autoBrawls: {
 			label: I18N('BRAWLS'),
 			cbox: null,
@@ -694,6 +695,7 @@
 				return $result || false;
 			})(),
 		}
+		*/
 		/*
 		getAnswer: {
 			label: I18N('AUTO_QUIZ'),
@@ -6783,7 +6785,11 @@
 				this.terminatеReason = I18N('BTN_CANCELED');
 				return false;
 			}
+ 
 			let path = answer.split(',');
+			if (path.length < 2) {
+				path = answer.split('-');
+			}
 			if (path.length < 2) {
 				this.terminatеReason = I18N('MUST_TWO_POINTS');
 				return false;
@@ -6821,6 +6827,11 @@
 			this.turnsLeft = advUserInfo.turnsLeft;
 			this.currentNode = advUserInfo.currentNode;
 			this.nodes = this.advInfo.nodes;
+ 
+			if (this.currentNode == 1 && this.path[0] != 1) {
+				this.path.unshift(1);
+			}
+ 
 			return this.loop();
 		}
 
