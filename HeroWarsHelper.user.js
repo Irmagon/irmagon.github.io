@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.082
+// @version			2.083
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1958,8 +1958,6 @@
 			case "clan_global_pvp":
 			case "clan_pvp":
 			case "challenge":
-			case "grand":
-			case "arena":
 				return "get_clanPvp";
 			case "titan_tower":
 				return "get_titan";
@@ -1969,6 +1967,8 @@
 				return "get_pve";
 			case "pvp_manual":
 				return "get_pvpManual";
+			case "grand":
+			case "arena":
 			case "pvp":
 				return "get_pvp";
 			case "core":
