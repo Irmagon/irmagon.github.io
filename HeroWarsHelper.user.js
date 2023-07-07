@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.083
+// @version			2.084
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1683,6 +1683,14 @@
 						call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type));
 						isChange = true;
 					}
+				}
+				/**
+				 * Hiding donation offers
+				 * Скрываем предложения доната
+				 */
+				if (call.ident == callsIdent['specialOffer_getAll'] && getSaveVal('noOfferDonat')) {
+					call.result.response = [];
+					isChange = true;
 				}
 				/**
 				 * Copies a quiz question to the clipboard
