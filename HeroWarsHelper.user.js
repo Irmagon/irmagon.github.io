@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.084
+// @version			2.086
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -427,8 +427,8 @@
 			MINIONS_TITLE: 'Атакует прислужников сохраннеными пачками',
 			ADVENTURE: 'Приключение',
 			ADVENTURE_TITLE: 'Проходит приключение по указанному маршруту',
-			STORM: 'Приключение',
-			STORM_TITLE: 'Проходит приключение по указанному маршруту',
+			STORM: 'Буря',
+			STORM_TITLE: 'Проходит бурю по указанному маршруту',
 			SANCTUARY: 'Святилище',
 			SANCTUARY_TITLE: 'Быстрый переход к Святилищу',
 			GUILD_WAR: 'Война',
@@ -841,7 +841,7 @@
 				testAdventure();
 			},
 		},
-		/*
+		
 		testSoloAdventure: {
 			name: I18N('STORM'),
 			title: I18N('STORM_TITLE'),
@@ -849,7 +849,7 @@
 				testAdventure('solo');
 			},
 		},
-		*/
+		
 		goToSanctuary: {
 			name: I18N('SANCTUARY'),
 			title: I18N('SANCTUARY_TITLE'),
@@ -1747,6 +1747,7 @@
 				if ((call.ident == callsIdent['clanWarAttack'] ||
 					call.ident == callsIdent['crossClanWar_startBattle'] ||
 					call.ident == callsIdent['battleGetReplay'] ||
+					call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
 					call.ident == callsIdent['adventure_turnStartBattle']) &&
 					isChecked('preCalcBattle')) {
 					setProgress('Идет прерасчет боя');
