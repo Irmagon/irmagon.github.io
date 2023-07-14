@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.086
+// @version			2.090
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -841,7 +841,7 @@
 				testAdventure();
 			},
 		},
-		
+        /*
 		testSoloAdventure: {
 			name: I18N('STORM'),
 			title: I18N('STORM_TITLE'),
@@ -849,7 +849,7 @@
 				testAdventure('solo');
 			},
 		},
-		
+        */
 		goToSanctuary: {
 			name: I18N('SANCTUARY'),
 			title: I18N('SANCTUARY_TITLE'),
@@ -1474,6 +1474,11 @@
 						delete call.args.isRaid;
 						changeRequest = true;
 					}
+					const attackers = call.args.progress[0].attackers;
+					if (attackers.input.length === 0) {
+						attackers.input = ["auto", 0, 0, "auto", 0, 0];
+						changeRequest = true;
+					}
 				}
 				/**
 				 * Quiz Answer
@@ -1820,7 +1825,32 @@
 						mainReward = call.result.response;
 					}
 				}
+
 				/**
+				 * Sum the result of opening Pet Eggs
+				 * Суммирование результата открытия яиц питомцев
+				 */
+				if (isChecked('countControl') && call.ident == callsIdent['pet_chestOpen']) {
+					const rewards = call.result.response.rewards;
+					rewards.forEach(e => {
+						for (let f in e) {
+							if (!allReward[f]) {
+								allReward[f] = {};
+							}
+							for (let o in e[f]) {
+								if (!allReward[f][o]) {
+									allReward[f][o] = e[f][o];
+								} else {
+									allReward[f][o] += e[f][o];
+								}
+							}
+						}
+					});
+					call.result.response.rewards = [allReward];
+					isChange = true;
+				}
+
+                /**
 				 * Auto-repeat opening matryoshkas
 				 * АвтоПовтор открытия матрешек
 				 */
@@ -3491,7 +3521,8 @@
 			if (battleData.type == "dungeon_titan") {
 				battleType = "get_titan";
 			}
-			BattleCalc(battleData, battleType, function (result) {
+			battleData.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
+            BattleCalc(battleData, battleType, function (result) {
 				result.teamNum = args.teamNum;
 				result.attackerType = args.attackerType;
 				args.resolve(result);
@@ -4661,7 +4692,7 @@
 		this.BattleCalc = function (battleData, battleConfig, callback) {
 			// battleConfig = battleConfig || getBattleType(battleData.type)
 			if (!Game.BattlePresets) throw Error('Use connectGame');
-			battlePresets = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+			battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 			battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
 			battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
 				battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
