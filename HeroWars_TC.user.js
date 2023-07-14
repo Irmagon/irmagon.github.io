@@ -2,7 +2,7 @@
 // @name			HeroWars_TC
 // @name:en			HeroWars_TC
 // @namespace		HeroWars_TC
-// @version			2.1
+// @version			2.2
 // @description		Упрощает и автоматизирует многие аспекты игры Хроники Хаоса
 // @description:en	Simplifies and automates many aspects in the game Hero Wars
 // @author			ZingerY & Goodwin
@@ -479,6 +479,11 @@
 				if (call.name == 'dungeonEndBattle') {
 					if (isChecked('endlessCards') && call.args.isRaid) {
 						delete call.args.isRaid;
+						changeRequest = true;
+					}
+					const attackers = call.args.progress[0].attackers;
+					if (attackers.input.length === 0) {
+						attackers.input = ["auto", 0, 0, "auto", 0, 0];
 						changeRequest = true;
 					}
 				}
@@ -2687,7 +2692,8 @@
         "-400911": {pack: 1200, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 0, 0, "auto", 322, 15.207692307692, "auto", 335, 15.877692383985945, "auto", 335, 15.877692383985945, "cast", 358, 18.4886924450211, 4003, "auto", 358, 18.4886924450211, "auto", 366, 18.751674556213, "cast", 463, 25.641493021040286, 4001, "auto", 480, 26.467492996244754, "auto", 587, 32.67893052104, "cast", 661, 38.42093086245541, 4001, "cast", 694, 41.64393091204647, 4013, "auto", 694, 41.64393091204647, "auto", 748, 44.92456212024166, "cast", 761, 45.820562028688926, 4001, "cast", 827, 50.47856178264095, 4003, "teamCustom", 886, 56.99884532388827, 2, "cast", 895, 58.15084551271578, 4013, "auto", 916, 59.20684550699374]}}]},
 //        "-400712": {pack: 1423, score: 250, progress: [{attackers: {input: ["auto", 274, 15, "cast", 346, 18.2, 4001, "cast", 365, 19.3, 4002, "cast", 372, 19.55, 4003, "cast", 546, 28.9, 4023, "cast", 583, 31.1, 4002, "cast", 651, 34.7, 4003, "auto", 678, 36.1]}}]},
         "-400712": {pack: 1423, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 0, 0, "auto", 258, 14.793333333333, "cast", 372, 19.711666742960944, 4003, "cast", 372, 19.711666742960944, 4023, "cast", 372, 19.711666742960944, 4001, "cast", 446, 23.807666699091925, 4002, "cast", 586, 30.571888785892174, 4003, "cast", 616, 32.40188918643538, 4002, "auto", 720, 38.04088912540023, "auto", 802, 42.293841044224, "auto", 893, 47.949840943134525]}}]},
-        "-400812": {pack: 1400, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 11, 0.2349996566772461, "auto", 214, 10.569743589744, "cast", 324, 17.638744549140362, 4002, "cast", 339, 17.871744589194684, 4003, "cast", 345, 17.98874469219151, 4001, "auto", 361, 18.271744589195, "cast", 572, 28.425165117522, 4002]}}]},
+//        "-400812": {pack: 1400, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 11, 0.2349996566772461, "auto", 214, 10.569743589744, "cast", 324, 17.638744549140362, 4002, "cast", 339, 17.871744589194684, 4003, "cast", 345, 17.98874469219151, 4001, "auto", 361, 18.271744589195, "cast", 572, 28.425165117522, 4002]}}]},
+        "-400812": {pack: 1141, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 59, 3.75, "auto", 250, 12.955, "cast", 322, 15.960085355644082, 4001, "cast", 354, 16.707085334663248, 4003, "cast", 383, 18.80408545673356, 4002, "auto", 401, 20.15508576572404]}}]},
 //        "-400912": {pack: 3120, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "cast", 247, 12.88, 4020, "cast", 281, 14.3, 4013, "cast", 316, 15.5, 4022, "teamCustom", 354, 17.2, 3, "cast", 379, 18.1, 4023, "cast", 488, 21.8, 4021, "cast", 585, 26, 4022, "cast", 636, 27.8, 4013, "auto", 664, 29]}}]},
         "-400912": {pack: 3324, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 0, 0, "auto", 252, 12.879487179487, "cast", 283, 14.279487036435853, 4013, "cast", 342, 16.159486674039613, 4022, "auto", 358, 17.17548670646454, "auto", 613, 26.1744875, "cast", 640, 27.740487484741212, 4013, "cast", 653, 28.123487620162965, 4012, "cast", 653, 28.123487620162965, 4023, "teamCustom", 674, 28.723487524795534, 3, "auto", 674, 28.723487524795534, "auto", 996, 52.38224326129525, "cast", 999, 53.41524325366586, 4023, "auto", 1004, 54.248243198352746]}}]},
         "-400713": {pack: 1423, score: 250, progress: [{attackers: {input: ["auto", 0, 0, "auto", 13, 1.25, "auto", 336, 17.916666666667, "cast", 362, 19.032666842143072, 4002, "cast", 362, 19.032666842143072, 4023, "cast", 372, 19.297666947047247, 4003, "auto", 421, 21.69766632715894, "auto", 508, 25.652006564880622, "cast", 600, 30.702006517196907, 4001, "auto", 600, 30.702006517196907]}}]},
@@ -3496,6 +3502,7 @@
                 if (battleData.type == "dungeon_titan") {
                     battleType = "get_titan";
                 }
+      	        battleData.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
                 BattleCalc(battleData, battleType, function (result) {
                     result.teamNum = args.teamNum;
                     result.attackerType = args.attackerType;
