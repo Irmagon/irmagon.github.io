@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.090
+// @version			2.091
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -990,6 +990,14 @@
 	 * Имя функции открытия ключей или сфер артефактов титанов
 	 */
 	let artifactChestOpenCallName = '';
+	/**
+	 * Data for the last battle in the dungeon
+	 * (Fix endless cards)
+	 * 
+	 * Данные для последнего боя в подземке
+	 * (Исправление бесконечных карт)
+	 */
+	let lastDungeonBattleData = null;
 
 	/**
 	 * Brawl pack
@@ -1469,16 +1477,27 @@
 				 * Disable spending divination cards
 				 * Отключить трату карт предсказаний
 				 */
-				if (call.name == 'dungeonEndBattle') {
-					if (isChecked('endlessCards') && call.args.isRaid) {
+				if (isChecked('endlessCards') && call.name == 'dungeonEndBattle') {
+					if (call.args.isRaid) {
 						delete call.args.isRaid;
-						changeRequest = true;
 					}
+					/**
+					 * Fix endless cards
+					 * Исправление бесконечных карт
+					 */
+					const lastBattle = lastDungeonBattleData;
 					const attackers = call.args.progress[0].attackers;
-					if (attackers.input.length === 0) {
-						attackers.input = ["auto", 0, 0, "auto", 0, 0];
-						changeRequest = true;
+					if (attackers.input.length === 0 && !call.args.isRaid) {
+						//if (lastBattle.type == 'dungeon_titan') {
+						lastBattle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
+						const result = await Calc(lastBattle);
+						call.args.progress = result.progress;
+						call.args.result = result.result;
+						// } else {
+						// 	attackers.input = ["auto", 0, 0, "auto", 0, 0];
+						// }
 					}
+					changeRequest = true;
 				}
 				/**
 				 * Quiz Answer
@@ -1849,7 +1868,6 @@
 					call.result.response.rewards = [allReward];
 					isChange = true;
 				}
-
                 /**
 				 * Auto-repeat opening matryoshkas
 				 * АвтоПовтор открытия матрешек
@@ -1868,6 +1886,14 @@
 						])) {
 						openRussianDoll(lastRussianDollId, newCount);
 					}
+				}
+				/**
+				 * Dungeon recalculation (fix endless cards)
+				 * Прерасчет подземки (исправление бесконечных карт)
+				 */
+				if (isChecked('endlessCards') &&
+					call.ident == callsIdent['dungeonStartBattle']) {
+					lastDungeonBattleData = call.result.response;
 				}
 				/**
 				 * Getting data on quests
@@ -1998,10 +2024,12 @@
 			case "clan_pvp":
 			case "challenge":
 				return "get_clanPvp";
+			case "dungeon_titan":
 			case "titan_tower":
 				return "get_titan";
 			case "tower":
 				return "get_tower";
+			case "clan_dungeon":
 			case "pve":
 				return "get_pve";
 			case "pvp_manual":
