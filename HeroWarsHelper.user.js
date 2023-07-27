@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.091
+// @version			2.093
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -590,7 +590,7 @@
 		const isFacebook = location.pathname.includes('facebook');
 		const browserLang = (navigator.language || navigator.userLanguage).substr(0, 2);
 		if (
-			(html && html.lang == 'ru') ||
+			(html && html.lang == 'ru') || 
 			(isFacebook && browserLang == 'ru')
 		) {
 			selectLang = 'ru';
@@ -1002,7 +1002,7 @@
 	/**
 	 * Brawl pack
 	 *
-	 * Пачка для потасовок
+	 * Пачка для потасовок 
 	 */
 	let brawlsPack = null;
 	/**
@@ -1251,7 +1251,7 @@
 				getAutoGifts();
 
 				cheats.activateHacks();
-
+			
 				justInfo();
 				if (isChecked('dailyQuests')) {
 					testDailyQuests();
@@ -1425,9 +1425,9 @@
 					}
 					*/
 				}
-				/**
+				/** 
 				 * Save pack for Brawls
-				 *
+				 * 
 				 * Сохраняем пачку для потасовок
 				 */
 				if (call.name == 'brawl_startBattle') {
@@ -1465,7 +1465,7 @@
 				}
 				/**
 				 * Saving the request to start the last battle
-				 * Сохранение запроса начала последнего боя
+				 * Сохранение запроса начала последнего боя 
 				 */
 				if (call.name == 'clanWarAttack' ||
 					call.name == 'crossClanWar_startBattle' ||
@@ -1635,7 +1635,7 @@
 
 			let signature = headers['X-Auth-Signature'];
 			if (signature) {
-				this.setRequestHeader('X-Auth-Signature', signature, true);
+				original.setRequestHeader.call(this, 'X-Auth-Signature', signature)
 			}
 		} catch (err) {
 			console.log("Request(send, " + this.uniqid + "):\n", sourceData, "Error:\n", err);
@@ -1701,20 +1701,14 @@
 				 * Hiding donation offers
 				 * Скрываем предложения доната
 				 */
-				if (call.ident == callsIdent['offerGetAll'] && getSaveVal('noOfferDonat')) {
-					const offers = call.result.response;
+				if (getSaveVal('noOfferDonat') &&
+					(call.ident == callsIdent['offerGetAll'] ||
+					call.ident == callsIdent['specialOffer_getAll'])) {
+					let offers = call.result.response;
 					if (offers) {
 						call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type));
 						isChange = true;
 					}
-				}
-				/**
-				 * Hiding donation offers
-				 * Скрываем предложения доната
-				 */
-				if (call.ident == callsIdent['specialOffer_getAll'] && getSaveVal('noOfferDonat')) {
-					call.result.response = [];
-					isChange = true;
 				}
 				/**
 				 * Copies a quiz question to the clipboard
@@ -1844,9 +1838,9 @@
 						mainReward = call.result.response;
 					}
 				}
-
-				/**
-				 * Sum the result of opening Pet Eggs
+				
+				/** 
+				 * Sum the result of opening Pet Eggs 
 				 * Суммирование результата открытия яиц питомцев
 				 */
 				if (isChecked('countControl') && call.ident == callsIdent['pet_chestOpen']) {
@@ -1868,7 +1862,7 @@
 					call.result.response.rewards = [allReward];
 					isChange = true;
 				}
-                /**
+				/**
 				 * Auto-repeat opening matryoshkas
 				 * АвтоПовтор открытия матрешек
 				 */
@@ -2146,342 +2140,434 @@
 	 * Расчитывает HASH MD5 из строки
 	 */
 	function md5(r){for(var a=(r,n,t,e,o,u)=>f(c(f(f(n,r),f(e,u)),o),t),n=(r,n,t,e,o,u,f)=>a(n&t|~n&e,r,n,o,u,f),t=(r,n,t,e,o,u,f)=>a(n&e|t&~e,r,n,o,u,f),e=(r,n,t,e,o,u,f)=>a(n^t^e,r,n,o,u,f),o=(r,n,t,e,o,u,f)=>a(t^(n|~e),r,n,o,u,f),f=function(r,n){var t=(65535&r)+(65535&n);return(r>>16)+(n>>16)+(t>>16)<<16|65535&t},c=(r,n)=>r<<n|r>>>32-n,u=Array(r.length>>2),h=0;h<u.length;h++)u[h]=0;for(h=0;h<8*r.length;h+=8)u[h>>5]|=(255&r.charCodeAt(h/8))<<h%32;len=8*r.length,u[len>>5]|=128<<len%32,u[14+(len+64>>>9<<4)]=len;var l=1732584193,i=-271733879,g=-1732584194,v=271733878;for(h=0;h<u.length;h+=16){var A=l,d=i,C=g,m=v;i=o(i=o(i=o(i=o(i=e(i=e(i=e(i=e(i=t(i=t(i=t(i=t(i=n(i=n(i=n(i=n(i,g=n(g,v=n(v,l=n(l,i,g,v,u[h+0],7,-680876936),i,g,u[h+1],12,-389564586),l,i,u[h+2],17,606105819),v,l,u[h+3],22,-1044525330),g=n(g,v=n(v,l=n(l,i,g,v,u[h+4],7,-176418897),i,g,u[h+5],12,1200080426),l,i,u[h+6],17,-1473231341),v,l,u[h+7],22,-45705983),g=n(g,v=n(v,l=n(l,i,g,v,u[h+8],7,1770035416),i,g,u[h+9],12,-1958414417),l,i,u[h+10],17,-42063),v,l,u[h+11],22,-1990404162),g=n(g,v=n(v,l=n(l,i,g,v,u[h+12],7,1804603682),i,g,u[h+13],12,-40341101),l,i,u[h+14],17,-1502002290),v,l,u[h+15],22,1236535329),g=t(g,v=t(v,l=t(l,i,g,v,u[h+1],5,-165796510),i,g,u[h+6],9,-1069501632),l,i,u[h+11],14,643717713),v,l,u[h+0],20,-373897302),g=t(g,v=t(v,l=t(l,i,g,v,u[h+5],5,-701558691),i,g,u[h+10],9,38016083),l,i,u[h+15],14,-660478335),v,l,u[h+4],20,-405537848),g=t(g,v=t(v,l=t(l,i,g,v,u[h+9],5,568446438),i,g,u[h+14],9,-1019803690),l,i,u[h+3],14,-187363961),v,l,u[h+8],20,1163531501),g=t(g,v=t(v,l=t(l,i,g,v,u[h+13],5,-1444681467),i,g,u[h+2],9,-51403784),l,i,u[h+7],14,1735328473),v,l,u[h+12],20,-1926607734),g=e(g,v=e(v,l=e(l,i,g,v,u[h+5],4,-378558),i,g,u[h+8],11,-2022574463),l,i,u[h+11],16,1839030562),v,l,u[h+14],23,-35309556),g=e(g,v=e(v,l=e(l,i,g,v,u[h+1],4,-1530992060),i,g,u[h+4],11,1272893353),l,i,u[h+7],16,-155497632),v,l,u[h+10],23,-1094730640),g=e(g,v=e(v,l=e(l,i,g,v,u[h+13],4,681279174),i,g,u[h+0],11,-358537222),l,i,u[h+3],16,-722521979),v,l,u[h+6],23,76029189),g=e(g,v=e(v,l=e(l,i,g,v,u[h+9],4,-640364487),i,g,u[h+12],11,-421815835),l,i,u[h+15],16,530742520),v,l,u[h+2],23,-995338651),g=o(g,v=o(v,l=o(l,i,g,v,u[h+0],6,-198630844),i,g,u[h+7],10,1126891415),l,i,u[h+14],15,-1416354905),v,l,u[h+5],21,-57434055),g=o(g,v=o(v,l=o(l,i,g,v,u[h+12],6,1700485571),i,g,u[h+3],10,-1894986606),l,i,u[h+10],15,-1051523),v,l,u[h+1],21,-2054922799),g=o(g,v=o(v,l=o(l,i,g,v,u[h+8],6,1873313359),i,g,u[h+15],10,-30611744),l,i,u[h+6],15,-1560198380),v,l,u[h+13],21,1309151649),g=o(g,v=o(v,l=o(l,i,g,v,u[h+4],6,-145523070),i,g,u[h+11],10,-1120210379),l,i,u[h+2],15,718787259),v,l,u[h+9],21,-343485551),l=f(l,A),i=f(i,d),g=f(g,C),v=f(v,m)}var y=Array(l,i,g,v),b="";for(h=0;h<32*y.length;h+=8)b+=String.fromCharCode(y[h>>5]>>>h%32&255);var S="0123456789abcdef",j="";for(h=0;h<b.length;h++)u=b.charCodeAt(h),j+=S.charAt(u>>>4&15)+S.charAt(15&u);return j}
+
+	/**
+	 * Sending a request
+	 *
+	 * Отправка запроса
+	 */
+	function send(json, callback, pr) {
+		/**
+		 * We get the headlines of the previous intercepted request
+		 * Получаем заголовки предыдущего перехваченого запроса
+		 */
+		let headers = lastHeaders;
+		/**
+		 * We increase the header of the query Certifier by 1
+		 * Увеличиваем заголовок идетификатора запроса на 1
+		 */
+		headers["X-Request-Id"]++;
+		/**
+		 * We calculate the title with the signature
+		 * Расчитываем заголовок с сигнатурой
+		 */
+		headers["X-Auth-Signature"] = getSignature(headers, json);
+		/**
+		 * Create a new ajax request
+		 * Создаем новый AJAX запрос
+		 */
+		let xhr = new XMLHttpRequest;
+		/**
+		 * Indicate the previously saved URL for API queries
+		 * Указываем ранее сохраненный URL для API запросов
+		 */
+		xhr.open('POST', apiUrl, true);
+		/**
+		 * Add the function to the event change event
+		 * Добавляем функцию к событию смены статуса запроса
+		 */
+		xhr.onreadystatechange = function() {
+			/**
+			 * If the result of the request is obtained, we call the flask function
+			 * Если результат запроса получен вызываем колбек функцию
+			 */
+			if(xhr.readyState == 4) {
+				let randTimeout = Math.random() * 200 + 200;
+				setTimeout(callback, randTimeout, xhr.response, pr);
+			}
+		};
+		/**
+		 * Indicate the type of request
+		 * Указываем тип запроса
+		 */
+		xhr.responseType = 'json';
+		/**
+		 * We set the request headers
+		 * Задаем заголовки запроса
+		 */
+		for(let nameHeader in headers) {
+			let head = headers[nameHeader];
+			xhr.setRequestHeader(nameHeader, head);
+		}
+		/**
+		 * Sending a request
+		 * Отправляем запрос
+		 */
+		xhr.send(json);
+	}
+
+	let hideTimeoutProgress = 0;
+	/**
+	 * Hide progress
+	 *
+	 * Скрыть прогресс
+	 */
+	function hideProgress(timeout) {
+		timeout = timeout || 0;
+		clearTimeout(hideTimeoutProgress);
+		hideTimeoutProgress = setTimeout(function () {
+			scriptMenu.setStatus('');
+		}, timeout);
+	}
+	/**
+	 * Progress display
+	 *
+	 * Отображение прогресса
+	 */
+	function setProgress(text, hide, onclick) {
+		scriptMenu.setStatus(text, onclick);
+		hide = hide || false;
+		if (hide) {
+			hideProgress(3000);
+		}
+	}
+
 	/**
 	 * Script for beautiful dialog boxes
 	 *
 	 * Скрипт для красивых диалоговых окошек
 	 */
 	const popup = new (function () {
-		this.popUp,
-			this.downer,
-			this.middle,
-			this.msgText,
-			this.buttons = [];
-		this.checkboxes = [];
+	this.popUp,
+	this.downer,
+	this.middle,
+	this.msgText,
+	this.buttons = [];
+	this.checkboxes = [];
 
-		function init() {
-			addStyle();
-			addBlocks();
+	function init() {
+		addStyle();
+		addBlocks();
+	}
+
+	const addStyle = () => {
+		let style = document.createElement('style');
+		style.innerText = `
+	.PopUp_ {
+		position: absolute;
+		min-width: 300px;
+		max-width: 500px;
+		max-height: 400px;
+		background-color: #190e08e6;
+		z-index: 10001;
+		top: 169px;
+		left: 345px;
+		border: 3px #ce9767 solid;
+		border-radius: 10px;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-around;
+	}
+
+	.PopUp_back {
+		position: absolute;
+		background-color: #00000066;
+		width: 100%;
+		height: 100%;
+		z-index: 10000;
+		top: 0;
+		left: 0;
+	}
+
+	.PopUp_blocks {
+		width: 100%;
+		height: 50%;
+		display: flex;
+		justify-content: space-evenly;
+		align-items: center;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.PopUp_blocks:last-child {
+		margin-top: 5px;
+	}
+
+	.PopUp_buttons {
+		display: flex;
+		margin: 10px 10px;
+		flex-direction: column;
+	}
+
+	.PopUp_button {
+		background-color: #52A81C;
+		border-radius: 10px;
+		box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
+		cursor: pointer;
+		padding: 1px 10px 1px;
+	}
+
+	.PopUp_input {
+		text-align: center;
+		font-size: 16px;
+		height: 27px;
+		border: 1px solid #cf9250;
+		border-radius: 9px 9px 0px 0px;
+		background: transparent;
+		color: #fce1ac;
+		padding: 1px 10px;
+		box-sizing: border-box;
+		box-shadow: 0px 0px 4px, 0px 0px 0px 3px #ce9767;
+	}
+
+	.PopUp_checkboxes {
+		display: flex;
+		flex-direction: column;
+		margin: 5px 10px -5px 10px;
+		align-items: flex-start;
+	}
+
+	.PopUp_ContCheckbox {
+		margin: 1px 0px;
+	}
+
+	.PopUp_checkbox {
+		position: absolute;
+		z-index: -1;
+		opacity: 0;
+	}
+	.PopUp_checkbox+label {
+		display: inline-flex;
+		align-items: center;
+		user-select: none;
+		font-family: sans-serif;
+		font-stretch: condensed;
+		letter-spacing: 1px;
+		color: #fce1ac;
+		text-shadow: 0px 0px 1px;
+	}
+	.PopUp_checkbox+label::before {
+		content: '';
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		border: 1px solid #cf9250;
+		border-radius: 7px;
+		margin-right: 7px;
+	}
+	.PopUp_checkbox:checked+label::before {
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
+	}
+
+	.PopUp_input::placeholder {
+		color: #fce1ac75;
+	}
+
+	.PopUp_input:focus {
+		outline: 0;
+	}
+
+	.PopUp_input + .PopUp_button {
+		border-radius: 0px 0px 5px 5px;
+		padding: 2px 18px 5px;
+	}
+
+	.PopUp_button:hover {
+		filter: brightness(1.2);
+	}
+
+	.PopUp_text {
+		font-family: sans-serif;
+		font-stretch: condensed;
+		letter-spacing: 1px;
+		text-align: center;
+	}
+
+	.PopUp_buttonText {
+		color: #E4FF4C;
+		text-shadow: 0px 1px 2px black;
+	}
+
+	.PopUp_msgText {
+		color: #FDE5B6;
+		text-shadow: 0px 0px 2px;
+	}
+
+	.PopUp_hideBlock {
+		display: none;
+	}
+	`;
+		document.head.appendChild(style);
+	}
+
+	const addBlocks = () => {
+		this.back = document.createElement('div');
+		this.back.classList.add('PopUp_back');
+		this.back.classList.add('PopUp_hideBlock');
+		document.body.append(this.back);
+
+		this.popUp = document.createElement('div');
+		this.popUp.classList.add('PopUp_');
+		this.back.append(this.popUp);
+
+		let upper = document.createElement('div')
+		upper.classList.add('PopUp_blocks');
+		this.popUp.append(upper);
+
+		this.middle = document.createElement('div')
+		this.middle.classList.add('PopUp_blocks');
+		this.middle.classList.add('PopUp_checkboxes');
+		this.popUp.append(this.middle);
+
+		this.downer = document.createElement('div')
+		this.downer.classList.add('PopUp_blocks');
+		this.popUp.append(this.downer);
+
+		this.msgText = document.createElement('div');
+		this.msgText.classList.add('PopUp_text', 'PopUp_msgText');
+		upper.append(this.msgText);
+	}
+
+	this.showBack = function () {
+		this.back.classList.remove('PopUp_hideBlock');
+	}
+
+	this.hideBack = function () {
+		this.back.classList.add('PopUp_hideBlock');
+	}
+
+	this.show = function () {
+		if (this.checkboxes.length) {
+			this.middle.classList.remove('PopUp_hideBlock');
 		}
+		this.showBack();
+		this.popUp.classList.remove('PopUp_hideBlock');
+		this.popUp.style.left = (window.innerWidth - this.popUp.offsetWidth) / 2 + 'px';
+		this.popUp.style.top = (window.innerHeight - this.popUp.offsetHeight) / 3 + 'px';
+	}
 
-		const addStyle = () => {
-			let style = document.createElement('style');
-			style.innerText = `
-		.PopUp_ {
-			position: absolute;
-			min-width: 300px;
-			max-width: 500px;
-			max-height: 400px;
-			background-color: #190e08e6;
-			z-index: 10001;
-			top: 169px;
-			left: 345px;
-			border: 3px #ce9767 solid;
-			border-radius: 10px;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-around;
+	this.hide = function () {
+		this.hideBack();
+		this.popUp.classList.add('PopUp_hideBlock');
+	}
+
+	this.addButton = (option, buttonClick) => {
+		const contButton = document.createElement('div');
+		contButton.classList.add('PopUp_buttons');
+		this.downer.append(contButton);
+
+		let inputField = {
+			value: option.result || option.default
 		}
-
-		.PopUp_back {
-			position: absolute;
-			background-color: #00000066;
-			width: 100%;
-			height: 100%;
-			z-index: 10000;
-			top: 0;
-			left: 0;
-		}
-
-		.PopUp_blocks {
-			width: 100%;
-			height: 50%;
-			display: flex;
-			justify-content: space-evenly;
-			align-items: center;
-			flex-wrap: wrap;
-			justify-content: center;
-		}
-
-		.PopUp_blocks:last-child {
-			margin-top: 5px;
-		}
-
-		.PopUp_buttons {
-			display: flex;
-			margin: 10px 10px;
-			flex-direction: column;
-		}
-
-		.PopUp_button {
-			background-color: #52A81C;
-			border-radius: 10px;
-			box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
-			cursor: pointer;
-			padding: 1px 10px 1px;
-		}
-
-		.PopUp_input {
-			text-align: center;
-			font-size: 16px;
-			height: 27px;
-			border: 1px solid #cf9250;
-			border-radius: 9px 9px 0px 0px;
-			background: transparent;
-			color: #fce1ac;
-			padding: 1px 10px;
-			box-sizing: border-box;
-			box-shadow: 0px 0px 4px, 0px 0px 0px 3px #ce9767;
-		}
-
-		.PopUp_checkboxes {
-			display: flex;
-			flex-direction: column;
-			margin: 5px 10px -5px 10px;
-			align-items: flex-start;
-		}
-
-		.PopUp_ContCheckbox {
-			margin: 1px 0px;
-		}
-
-		.PopUp_checkbox {
-			position: absolute;
-			z-index: -1;
-			opacity: 0;
-		}
-		.PopUp_checkbox+label {
-			display: inline-flex;
-			align-items: center;
-			user-select: none;
-			font-family: sans-serif;
-			font-stretch: condensed;
-			letter-spacing: 1px;
-			color: #fce1ac;
-			text-shadow: 0px 0px 1px;
-		}
-		.PopUp_checkbox+label::before {
-			content: '';
-			display: inline-block;
-			width: 20px;
-			height: 20px;
-			border: 1px solid #cf9250;
-			border-radius: 7px;
-			margin-right: 7px;
-		}
-		.PopUp_checkbox:checked+label::before {
-			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2388cb13' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
-		}
-
-		.PopUp_input::placeholder {
-			color: #fce1ac75;
-		}
-
-		.PopUp_input:focus {
-			outline: 0;
-		}
-
-		.PopUp_input + .PopUp_button {
-			border-radius: 0px 0px 5px 5px;
-			padding: 2px 18px 5px;
-		}
-
-		.PopUp_button:hover {
-			filter: brightness(1.2);
-		}
-
-		.PopUp_text {
-			font-family: sans-serif;
-			font-stretch: condensed;
-			letter-spacing: 1px;
-			text-align: center;
-		}
-
-		.PopUp_buttonText {
-			color: #E4FF4C;
-			text-shadow: 0px 1px 2px black;
-		}
-
-		.PopUp_msgText {
-			color: #FDE5B6;
-			text-shadow: 0px 0px 2px;
-		}
-
-		.PopUp_hideBlock {
-			display: none;
-		}
-		`;
-			document.head.appendChild(style);
-		}
-
-		const addBlocks = () => {
-			this.back = document.createElement('div');
-			this.back.classList.add('PopUp_back');
-			this.back.classList.add('PopUp_hideBlock');
-			document.body.append(this.back);
-
-			this.popUp = document.createElement('div');
-			this.popUp.classList.add('PopUp_');
-			this.back.append(this.popUp);
-
-			let upper = document.createElement('div')
-			upper.classList.add('PopUp_blocks');
-			this.popUp.append(upper);
-
-			this.middle = document.createElement('div')
-			this.middle.classList.add('PopUp_blocks');
-			this.middle.classList.add('PopUp_checkboxes');
-			this.popUp.append(this.middle);
-
-			this.downer = document.createElement('div')
-			this.downer.classList.add('PopUp_blocks');
-			this.popUp.append(this.downer);
-
-			this.msgText = document.createElement('div');
-			this.msgText.classList.add('PopUp_text', 'PopUp_msgText');
-			upper.append(this.msgText);
-		}
-
-		this.showBack = function () {
-			this.back.classList.remove('PopUp_hideBlock');
-		}
-
-		this.hideBack = function () {
-			this.back.classList.add('PopUp_hideBlock');
-		}
-
-		this.show = function () {
-			if (this.checkboxes.length) {
-				this.middle.classList.remove('PopUp_hideBlock');
+		if (option.isInput) {
+			inputField = document.createElement('input');
+			inputField.type = 'text';
+			if (option.placeholder) {
+				inputField.placeholder = option.placeholder;
 			}
-			this.showBack();
-			this.popUp.classList.remove('PopUp_hideBlock');
-			this.popUp.style.left = (window.innerWidth - this.popUp.offsetWidth) / 2 + 'px';
-			this.popUp.style.top = (window.innerHeight - this.popUp.offsetHeight) / 3 + 'px';
-		}
-
-		this.hide = function () {
-			this.hideBack();
-			this.popUp.classList.add('PopUp_hideBlock');
-		}
-
-		this.addButton = (option, buttonClick) => {
-			const contButton = document.createElement('div');
-			contButton.classList.add('PopUp_buttons');
-			this.downer.append(contButton);
-
-			let inputField = {
-				value: option.result || option.default
+			if (option.default) {
+				inputField.value = option.default;
 			}
+			inputField.classList.add('PopUp_input');
+			contButton.append(inputField);
+		}
+
+		const button = document.createElement('div');
+		button.classList.add('PopUp_button');
+		contButton.append(button);
+
+		button.addEventListener('click', () => {
+			let result = '';
 			if (option.isInput) {
-				inputField = document.createElement('input');
-				inputField.type = 'text';
-				if (option.placeholder) {
-					inputField.placeholder = option.placeholder;
-				}
-				if (option.default) {
-					inputField.value = option.default;
-				}
-				inputField.classList.add('PopUp_input');
-				contButton.append(inputField);
+				result = inputField.value;
 			}
+			buttonClick(result);
+		});
 
-			const button = document.createElement('div');
-			button.classList.add('PopUp_button');
-			contButton.append(button);
+		const buttonText = document.createElement('div');
+		buttonText.classList.add('PopUp_text', 'PopUp_buttonText');
+		buttonText.innerText = option.msg;
+		button.append(buttonText);
 
-			button.addEventListener('click', () => {
-				let result = '';
-				if (option.isInput) {
-					result = inputField.value;
-				}
-				buttonClick(result);
+		this.buttons.push(contButton);
+	}
+
+	this.clearButtons = () => {
+		while (this.buttons.length) {
+			this.buttons.pop().remove();
+		}
+	}
+
+	this.addCheckBox = (checkBox) => {
+		const contCheckbox = document.createElement('div');
+		contCheckbox.classList.add('PopUp_ContCheckbox');
+		this.middle.append(contCheckbox);
+
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.id = 'PopUpCheckbox' + this.checkboxes.length;
+		checkbox.dataset.name = checkBox.name;
+		checkbox.checked = checkBox.checked;
+		checkbox.label = checkBox.label;
+		checkbox.classList.add('PopUp_checkbox');
+		contCheckbox.appendChild(checkbox)
+
+		const checkboxLabel = document.createElement('label');
+		checkboxLabel.innerText = checkBox.label;
+		checkboxLabel.setAttribute('for', checkbox.id);
+		contCheckbox.appendChild(checkboxLabel);
+
+		this.checkboxes.push(checkbox);
+	}
+
+	this.clearCheckBox = () => {
+		this.middle.classList.add('PopUp_hideBlock');
+		while (this.checkboxes.length) {
+			this.checkboxes.pop().parentNode.remove();
+		}
+	}
+
+	this.setMsgText = (text) => {
+		this.msgText.innerHTML = text;
+	}
+
+	this.getCheckBoxes = () => {
+		const checkBoxes = [];
+
+		for (const checkBox of this.checkboxes) {
+			checkBoxes.push({
+				name: checkBox.dataset.name,
+				label: checkBox.label,
+				checked: checkBox.checked
 			});
-
-			const buttonText = document.createElement('div');
-			buttonText.classList.add('PopUp_text', 'PopUp_buttonText');
-			buttonText.innerText = option.msg;
-			button.append(buttonText);
-
-			this.buttons.push(contButton);
 		}
 
-		this.clearButtons = () => {
-			while (this.buttons.length) {
-				this.buttons.pop().remove();
+		return checkBoxes;
+	}
+
+	this.confirm = async (msg, buttOpt, checkBoxes = []) => {
+		this.clearButtons();
+		this.clearCheckBox();
+		return new Promise((complete, failed) => {
+			this.setMsgText(msg);
+			if (!buttOpt) {
+				buttOpt = [{ msg: 'Ok', result: true, isInput: false }];
 			}
-		}
-
-		this.addCheckBox = (checkBox) => {
-			const contCheckbox = document.createElement('div');
-			contCheckbox.classList.add('PopUp_ContCheckbox');
-			this.middle.append(contCheckbox);
-
-			const checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.id = 'PopUpCheckbox' + this.checkboxes.length;
-			checkbox.dataset.name = checkBox.name;
-			checkbox.checked = checkBox.checked;
-			checkbox.label = checkBox.label;
-			checkbox.classList.add('PopUp_checkbox');
-			contCheckbox.appendChild(checkbox)
-
-			const checkboxLabel = document.createElement('label');
-			checkboxLabel.innerText = checkBox.label;
-			checkboxLabel.setAttribute('for', checkbox.id);
-			contCheckbox.appendChild(checkboxLabel);
-
-			this.checkboxes.push(checkbox);
-		}
-
-		this.clearCheckBox = () => {
-			this.middle.classList.add('PopUp_hideBlock');
-			while (this.checkboxes.length) {
-				this.checkboxes.pop().parentNode.remove();
+			for (const checkBox of checkBoxes) {
+				this.addCheckBox(checkBox);
 			}
-		}
-
-		this.setMsgText = (text) => {
-			this.msgText.innerHTML = text;
-		}
-
-		this.getCheckBoxes = () => {
-			const checkBoxes = [];
-
-			for (const checkBox of this.checkboxes) {
-				checkBoxes.push({
-					name: checkBox.dataset.name,
-					label: checkBox.label,
-					checked: checkBox.checked
+			for (let butt of buttOpt) {
+				this.addButton(butt, (result) => {
+					result = result || butt.result;
+					complete(result);
+					popup.hide();
 				});
 			}
+			this.show();
+		});
+	}
 
-			return checkBoxes;
-		}
-
-		this.confirm = async (msg, buttOpt, checkBoxes = []) => {
-			this.clearButtons();
-			this.clearCheckBox();
-			return new Promise((complete, failed) => {
-				this.setMsgText(msg);
-				if (!buttOpt) {
-					buttOpt = [{ msg: 'Ok', result: true, isInput: false }];
-				}
-				for (const checkBox of checkBoxes) {
-					this.addCheckBox(checkBox);
-				}
-				for (let butt of buttOpt) {
-					this.addButton(butt, (result) => {
-						result = result || butt.result;
-						complete(result);
-						popup.hide();
-					});
-				}
-				this.show();
-			});
-		}
-
-		document.addEventListener('DOMContentLoaded', init);
+	document.addEventListener('DOMContentLoaded', init);
 	});
 	/**
 	 * Script control panel
@@ -3082,7 +3168,7 @@
 	/**
 	 * Opens or migrates to a database
 	 *
-	 * Открывает или мигрирует в базу данных
+	 * Открывает или мигрирует в базу данных 
 	 */
 	async function openOrMigrateDatabase(userId) {
 		storage.userId = userId;
@@ -3251,70 +3337,6 @@
 			setProgress(I18N('EXPEDITIONS_SENT'), true);
 			this.resolve()
 		}
-	}
-	/**
-	 * Sending a request
-	 *
-	 * Отправка запроса
-	 */
-	function send(json, callback, pr) {
-		/**
-		 * We get the headlines of the previous intercepted request
-		 * Получаем заголовки предыдущего перехваченого запроса
-		 */
-		let headers = lastHeaders;
-		/**
-		 * We increase the header of the query Certifier by 1
-		 * Увеличиваем заголовок идетификатора запроса на 1
-		 */
-		headers["X-Request-Id"]++;
-		/**
-		 * We calculate the title with the signature
-		 * Расчитываем заголовок с сигнатурой
-		 */
-		headers["X-Auth-Signature"] = getSignature(headers, json);
-		/**
-		 * Create a new ajax request
-		 * Создаем новый AJAX запрос
-		 */
-		let xhr = new XMLHttpRequest;
-		/**
-		 * Indicate the previously saved URL for API queries
-		 * Указываем ранее сохраненный URL для API запросов
-		 */
-		xhr.open('POST', apiUrl, true);
-		/**
-		 * Add the function to the event change event
-		 * Добавляем функцию к событию смены статуса запроса
-		 */
-		xhr.onreadystatechange = function() {
-			/**
-			 * If the result of the request is obtained, we call the flask function
-			 * Если результат запроса получен вызываем колбек функцию
-			 */
-			if(xhr.readyState == 4) {
-				let randTimeout = Math.random() * 200 + 200;
-				setTimeout(callback, randTimeout, xhr.response, pr);
-			}
-		};
-		/**
-		 * Indicate the type of request
-		 * Указываем тип запроса
-		 */
-		xhr.responseType = 'json';
-		/**
-		 * We set the request headers
-		 * Задаем заголовки запроса
-		 */
-		for(let nameHeader in headers) {
-			let head = headers[nameHeader];
-			xhr.setRequestHeader(nameHeader, head);
-		}
-		/**
-		 * Sending a request
-		 * Отправляем запрос
-		 */
-		xhr.send(json);
 	}
 
 	/**
@@ -3550,7 +3572,7 @@
 				battleType = "get_titan";
 			}
 			battleData.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
-            BattleCalc(battleData, battleType, function (result) {
+			BattleCalc(battleData, battleType, function (result) {
 				result.teamNum = args.teamNum;
 				result.attackerType = args.attackerType;
 				args.resolve(result);
@@ -3598,7 +3620,7 @@
 		/**
 		 * Returns the coefficient of condition of the
 		 * difference in titanium before and after the battle
-		 *
+		 * 
 		 * Возвращает коэффициент состояния титанов после боя
 		 */
 		function getState(result) {
@@ -4572,31 +4594,7 @@
 			resolve();
 		}
 	}
-	let hideTimeoutProgress = 0;
-	/**
-	 * Hide progress
-	 *
-	 * Скрыть прогресс
-	 */
-	function hideProgress(timeout) {
-		timeout = timeout || 0;
-		clearTimeout(hideTimeoutProgress);
-		hideTimeoutProgress = setTimeout(function () {
-			scriptMenu.setStatus('');
-		}, timeout);
-	}
-	/**
-	 * Progress display
-	 *
-	 * Отображение прогресса
-	 */
-	function setProgress(text, hide, onclick) {
-		scriptMenu.setStatus(text, onclick);
-		hide = hide || false;
-		if (hide) {
-			hideProgress(3000);
-		}
-	}
+
 	function hackGame() {
 		selfGame = null;
 		bindId = 1e9;
@@ -5061,6 +5059,7 @@
 
 		connectGame();
 	}
+
 	/**
 	 * Auto collection of gifts
 	 *
@@ -5125,6 +5124,7 @@
 			}
 		)
 	}
+
 	/**
 	 * To fill the kills in the Forge of Souls
 	 *
@@ -5219,6 +5219,7 @@
 		console.log(resultBattles);
 		rewardBossRatingEvent();
 	}
+
 	/**
 	 * Collecting Rewards from the Forge of Souls
 	 *
@@ -5270,6 +5271,7 @@
 			});
 		});
 	}
+
 	/**
 	 * Collect Easter eggs and event rewards
 	 *
@@ -5301,6 +5303,7 @@
 			});
 		});
 	}
+
 	/**
 	 * Assemble Outland
 	 *
@@ -5359,6 +5362,7 @@
 			});
 		});
 	}
+
 	/**
 	 * Collect all rewards
 	 *
@@ -5405,6 +5409,236 @@
 				});
 			});
 		})
+	}
+
+	/**
+	 * Mission auto repeat
+	 *
+	 * Автоповтор миссии
+	 * isStopSendMission = false;
+	 * isSendsMission = true;
+	 **/
+	this.sendsMission = async function (param) {
+		if (isStopSendMission) {
+			isSendsMission = false;
+			console.log(I18N('STOPPED'));
+			setProgress('');
+			await popup.confirm(`${I18N('STOPPED')}<br>${I18N('REPETITIONS')}: ${param.count}`, [{
+				msg: 'Ok',
+				result: true
+			}, ])
+			return;
+		}
+
+		let missionStartCall = {
+			"calls": [{
+				"name": "missionStart",
+				"args": lastMissionStart,
+				"ident": "body"
+			}]
+		}
+		/**
+		 * Mission Request
+		 *
+		 * Запрос на выполнение мисии
+		 */
+		SendRequest(JSON.stringify(missionStartCall), async e => {
+			if (e['error']) {
+				isSendsMission = false;
+				console.log(e['error']);
+				setProgress('');
+				let msg = e['error'].name + ' ' + e['error'].description + `<br>${I18N('REPETITIONS')}: ${param.count}`;
+				await popup.confirm(msg, [
+					{msg: 'Ok', result: true},
+				])
+				return;
+			}
+			/**
+			 * Mission data calculation
+			 *
+			 * Расчет данных мисии
+			 */
+			BattleCalc(e.results[0].result.response, 'get_tower', async r => {
+
+				let missionEndCall = {
+					"calls": [{
+						"name": "missionEnd",
+						"args": {
+							"id": param.id,
+							"result": r.result,
+							"progress": r.progress
+						},
+						"ident": "body"
+					}]
+				}
+				/**
+				 * Mission Completion Request
+				 *
+				 * Запрос на завершение миссии
+				 */
+				SendRequest(JSON.stringify(missionEndCall), async (e) => {
+					if (e['error']) {
+						isSendsMission = false;
+						console.log(e['error']);
+						setProgress('');
+						let msg = e['error'].name + ' ' + e['error'].description + `<br>${I18N('REPETITIONS')}: ${param.count}`;
+						await popup.confirm(msg, [
+							{msg: 'Ok', result: true},
+						])
+						return;
+					}
+					r = e.results[0].result.response;
+					if (r['error']) {
+						isSendsMission = false;
+						console.log(r['error']);
+						setProgress('');
+						await popup.confirm(`<br>${I18N('REPETITIONS')}: ${param.count}` + ' 3 ' + r['error'], [
+							{msg: 'Ok', result: true},
+						])
+						return;
+					}
+
+					param.count++;
+					setProgress(`${I18N('MISSIONS_PASSED')}: ${param.count} (${I18N('STOP')})`, false, () => {
+						isStopSendMission = true;
+					});
+					setTimeout(sendsMission, 1, param);
+				});
+			})
+		});
+	}
+
+	/**
+	 * Recursive opening of matryoshka dolls
+	 *
+	 * Рекурсивное открытие матрешек
+	 */
+	function openRussianDoll(id, count, sum) {
+		sum = sum || 0;
+		sum += count;
+		send('{"calls":[{"name":"consumableUseLootBox","args":{"libId":'+id+',"amount":'+count+'},"ident":"body"}]}', e => {
+			setProgress(`${I18N('OPEN')} ${count}`, true);
+			let result = e.results[0].result.response;
+			let newCount = 0;
+			for(let n of result) {
+				if (n?.consumable && n.consumable[id]) {
+					newCount += n.consumable[id]
+				}
+			}
+			if (newCount) {
+				openRussianDoll(id, newCount, sum);
+			} else {
+				popup.confirm(`${I18N('TOTAL_OPEN')} ${sum}`);
+			}
+		})
+	}
+
+	/**
+	 * Collect all mail, except letters with energy and charges of the portal
+	 *
+	 * Собрать всю почту, кроме писем с энергией и зарядами портала
+	 */
+	function mailGetAll() {
+		const getMailInfo = '{"calls":[{"name":"mailGetAll","args":{},"ident":"body"}]}';
+
+		return Send(getMailInfo).then(dataMail => {
+			const letters = dataMail.results[0].result.response.letters;
+			const letterIds = lettersFilter(letters);
+			if (!letterIds.length) {
+				setProgress(I18N('NOTHING_TO_COLLECT'), true);
+				return;
+			}
+
+			const calls = [
+				{ name: "mailFarm", args: { letterIds }, ident: "body" }
+			];
+
+			return Send(JSON.stringify({ calls })).then(res => {
+				const lettersIds = res.results[0].result.response;
+				if (lettersIds) {
+					const countLetters = Object.keys(lettersIds).length;
+					setProgress(`${I18N('RECEIVED')} ${countLetters} ${I18N('LETTERS')}`, true);
+				}
+			});
+		});
+	}
+
+	/**
+	 * Filters received emails
+	 *
+	 * Фильтрует получаемые письма
+	 */
+	function lettersFilter(letters) {
+		const lettersIds = [];
+		for (let l in letters) {
+			letter = letters[l];
+			const reward = letter.reward;
+			/**
+			 * Mail Collection Exceptions
+			 *
+			 * Исключения на сбор писем
+			 */
+			const isFarmLetter = !(
+				/** Portals // сферы портала */
+				(reward?.refillable ? reward.refillable[45] : false) ||
+				/** Energy // энергия */
+				(reward?.stamina ? reward.stamina : false) ||
+				/** accelerating energy gain // ускорение набора энергии */
+				(reward?.buff ? true : false) ||
+				/** VIP Points // вип очки */
+				(reward?.vipPoints ? reward.vipPoints : false) ||
+				/** souls of heroes // душы героев */
+				(reward?.fragmentHero ? true : false) ||
+				/** heroes // герои */
+				(reward?.bundleHeroReward ? true : false)
+			);
+			if (isFarmLetter) {
+				lettersIds.push(~~letter.id);
+			}
+		}
+		return lettersIds;
+	}
+
+	/**
+	 * Displaying information about the areas of the portal and attempts on the VG
+	 *
+	 * Отображение информации о сферах портала и попытках на ВГ
+	 */
+	async function justInfo() {
+		return new Promise(async (resolve, reject) => {
+			const calls = [{
+				name: "userGetInfo",
+				args: {},
+				ident: "userGetInfo"
+			},
+			{
+				name: "clanWarGetInfo",
+				args: {},
+				ident: "clanWarGetInfo"
+			}];
+			const result = await Send(JSON.stringify({ calls }));
+			const infos = result.results;
+			const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
+			const clanWarMyTries = infos[1].result.response?.myTries ?? 0;
+			const sanctuaryButton = buttons['goToSanctuary'].button;
+			const clanWarButton = buttons['goToClanWar'].button;
+			if (portalSphere.amount) {
+				sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
+				sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
+			} else {
+				sanctuaryButton.style.color = '';
+				sanctuaryButton.title = I18N('SANCTUARY_TITLE');
+			}
+			if (clanWarMyTries) {
+				clanWarButton.style.color = 'red';
+				clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
+			} else {
+				clanWarButton.style.color = '';
+				clanWarButton.title = I18N('GUILD_WAR_TITLE');
+			}
+			setProgress('<img src="https://zingery.ru/heroes/portal.png" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
+			resolve();
+		});
 	}
 
 	/**
@@ -5655,126 +5889,6 @@
 			console.log(reason, info);
 			resolve();
 		}
-	}
-	/**
-	 * Mission auto repeat
-	 *
-	 * Автоповтор миссии
-	 * isStopSendMission = false;
-	 * isSendsMission = true;
-	 **/
-	this.sendsMission = async function (param) {
-		if (isStopSendMission) {
-			isSendsMission = false;
-			console.log(I18N('STOPPED'));
-			setProgress('');
-			await popup.confirm(`${I18N('STOPPED')}<br>${I18N('REPETITIONS')}: ${param.count}`, [{
-				msg: 'Ok',
-				result: true
-			}, ])
-			return;
-		}
-
-		let missionStartCall = {
-			"calls": [{
-				"name": "missionStart",
-				"args": lastMissionStart,
-				"ident": "body"
-			}]
-		}
-		/**
-		 * Mission Request
-		 *
-		 * Запрос на выполнение мисии
-		 */
-		SendRequest(JSON.stringify(missionStartCall), async e => {
-			if (e['error']) {
-				isSendsMission = false;
-				console.log(e['error']);
-				setProgress('');
-				let msg = e['error'].name + ' ' + e['error'].description + `<br>${I18N('REPETITIONS')}: ${param.count}`;
-				await popup.confirm(msg, [
-					{msg: 'Ok', result: true},
-				])
-				return;
-			}
-			/**
-			 * Mission data calculation
-			 *
-			 * Расчет данных мисии
-			 */
-			BattleCalc(e.results[0].result.response, 'get_tower', async r => {
-
-				let missionEndCall = {
-					"calls": [{
-						"name": "missionEnd",
-						"args": {
-							"id": param.id,
-							"result": r.result,
-							"progress": r.progress
-						},
-						"ident": "body"
-					}]
-				}
-				/**
-				 * Mission Completion Request
-				 *
-				 * Запрос на завершение миссии
-				 */
-				SendRequest(JSON.stringify(missionEndCall), async (e) => {
-					if (e['error']) {
-						isSendsMission = false;
-						console.log(e['error']);
-						setProgress('');
-						let msg = e['error'].name + ' ' + e['error'].description + `<br>${I18N('REPETITIONS')}: ${param.count}`;
-						await popup.confirm(msg, [
-							{msg: 'Ok', result: true},
-						])
-						return;
-					}
-					r = e.results[0].result.response;
-					if (r['error']) {
-						isSendsMission = false;
-						console.log(r['error']);
-						setProgress('');
-						await popup.confirm(`<br>${I18N('REPETITIONS')}: ${param.count}` + ' 3 ' + r['error'], [
-							{msg: 'Ok', result: true},
-						])
-						return;
-					}
-
-					param.count++;
-					setProgress(`${I18N('MISSIONS_PASSED')}: ${param.count} (${I18N('STOP')})`, false, () => {
-						isStopSendMission = true;
-					});
-					setTimeout(sendsMission, 1, param);
-				});
-			})
-		});
-	}
-	/**
-	 * Recursive opening of matryoshka dolls
-	 *
-	 * Рекурсивное открытие матрешек
-	 */
-	function openRussianDoll(id, count, sum) {
-		sum = sum || 0;
-		sum += count;
-		send('{"calls":[{"name":"consumableUseLootBox","args":{"libId":'+id+',"amount":'+count+'},"ident":"body"}]}', e => {
-			setProgress(`${I18N('OPEN')} ${count}`, true);
-			let result = e.results[0].result.response;
-			let newCount = 0;
-			for(let n of result) {
-				if (n?.consumable && n.consumable[id]) {
-					newCount += n.consumable[id]
-				}
-			}
-			if (newCount) {
-				openRussianDoll(id, newCount, sum);
-			} else {
-				popup.confirm(`${I18N('TOTAL_OPEN')} ${sum}`);
-			}
-		})
 	}
 
 	/**
@@ -6204,111 +6318,6 @@
 			resolve();
 		}
 	}
-	/**
-	 * Collect all mail, except letters with energy and charges of the portal
-	 *
-	 * Собрать всю почту, кроме писем с энергией и зарядами портала
-	 */
-	function mailGetAll() {
-		const getMailInfo = '{"calls":[{"name":"mailGetAll","args":{},"ident":"body"}]}';
-
-		return Send(getMailInfo).then(dataMail => {
-			const letters = dataMail.results[0].result.response.letters;
-			const letterIds = lettersFilter(letters);
-			if (!letterIds.length) {
-				setProgress(I18N('NOTHING_TO_COLLECT'), true);
-				return;
-			}
-
-			const calls = [
-				{ name: "mailFarm", args: { letterIds }, ident: "body" }
-			];
-
-			return Send(JSON.stringify({ calls })).then(res => {
-				const lettersIds = res.results[0].result.response;
-				if (lettersIds) {
-					const countLetters = Object.keys(lettersIds).length;
-					setProgress(`${I18N('RECEIVED')} ${countLetters} ${I18N('LETTERS')}`, true);
-				}
-			});
-		});
-	}
-	/**
-	 * Filters received emails
-	 *
-	 * Фильтрует получаемые письма
-	 */
-	function lettersFilter(letters) {
-		const lettersIds = [];
-		for (let l in letters) {
-			letter = letters[l];
-			const reward = letter.reward;
-			/**
-			 * Mail Collection Exceptions
-			 *
-			 * Исключения на сбор писем
-			 */
-			const isFarmLetter = !(
-				/** Portals // сферы портала */
-				(reward?.refillable ? reward.refillable[45] : false) ||
-				/** Energy // энергия */
-				(reward?.stamina ? reward.stamina : false) ||
-				/** accelerating energy gain // ускорение набора энергии */
-				(reward?.buff ? true : false) ||
-				/** VIP Points // вип очки */
-				(reward?.vipPoints ? reward.vipPoints : false) ||
-				/** souls of heroes // душы героев */
-				(reward?.fragmentHero ? true : false) ||
-				/** heroes // герои */
-				(reward?.bundleHeroReward ? true : false)
-			);
-			if (isFarmLetter) {
-				lettersIds.push(~~letter.id);
-			}
-		}
-		return lettersIds;
-	}
-	/**
-	 * Displaying information about the areas of the portal and attempts on the VG
-	 *
-	 * Отображение информации о сферах портала и попытках на ВГ
-	 */
-	async function justInfo() {
-		return new Promise(async (resolve, reject) => {
-			const calls = [{
-				name: "userGetInfo",
-				args: {},
-				ident: "userGetInfo"
-			},
-			{
-				name: "clanWarGetInfo",
-				args: {},
-				ident: "clanWarGetInfo"
-			}];
-			const result = await Send(JSON.stringify({ calls }));
-			const infos = result.results;
-			const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
-			const clanWarMyTries = infos[1].result.response?.myTries ?? 0;
-			const sanctuaryButton = buttons['goToSanctuary'].button;
-			const clanWarButton = buttons['goToClanWar'].button;
-			if (portalSphere.amount) {
-				sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
-				sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
-			} else {
-				sanctuaryButton.style.color = '';
-				sanctuaryButton.title = I18N('SANCTUARY_TITLE');
-			}
-			if (clanWarMyTries) {
-				clanWarButton.style.color = 'red';
-				clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
-			} else {
-				clanWarButton.style.color = '';
-				clanWarButton.title = I18N('GUILD_WAR_TITLE');
-			}
-			setProgress('<img src="https://zingery.ru/heroes/portal.png" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
-			resolve();
-		});
-	}
 
 	function testDailyQuests() {
 		return new Promise((resolve, reject) => {
@@ -6316,6 +6325,7 @@
 			bossBattle.start();
 		});
 	}
+
 	/**
 	 * Automatic completion of daily quests
 	 *
@@ -6524,7 +6534,7 @@
 					if (!this.dataQuests[quest.id].isWeCanDo(this.questInfo)) {
 						continue;
 					}
-
+				
 					weCanDo.push({
 						name: quest.id,
 						label: I18N(`QUEST_${quest.id}`),
@@ -6601,6 +6611,7 @@
 			doIt.start();
 		});
 	}
+
 	/**
 	 * Do everything button
 	 *
@@ -6747,6 +6758,7 @@
 			this.resolve();
 		}
 	}
+
 	/**
 	 * Passing the adventure along the specified route
 	 *
@@ -6758,6 +6770,7 @@
 			bossBattle.start(type);
 		});
 	}
+
 	/**
 	 * Passing the adventure along the specified route
 	 *
@@ -7146,6 +7159,7 @@
 			this.resolve();
 		}
 	}
+
 	/**
 	 * Passage of brawls
 	 *
@@ -7359,4 +7373,5 @@
  * Добивание на арене титанов
  * Сбор ежедневных календарных наград
  * Добавить в подземку проверку варианта когда одна пачка из 2х мертва
+ * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
  */
