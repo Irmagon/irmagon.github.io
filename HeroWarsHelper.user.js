@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.093
+// @version			2.095
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -590,7 +590,7 @@
 		const isFacebook = location.pathname.includes('facebook');
 		const browserLang = (navigator.language || navigator.userLanguage).substr(0, 2);
 		if (
-			(html && html.lang == 'ru') || 
+			(html && html.lang == 'ru') ||
 			(isFacebook && browserLang == 'ru')
 		) {
 			selectLang = 'ru';
@@ -993,7 +993,7 @@
 	/**
 	 * Data for the last battle in the dungeon
 	 * (Fix endless cards)
-	 * 
+	 *
 	 * Данные для последнего боя в подземке
 	 * (Исправление бесконечных карт)
 	 */
@@ -1002,7 +1002,7 @@
 	/**
 	 * Brawl pack
 	 *
-	 * Пачка для потасовок 
+	 * Пачка для потасовок
 	 */
 	let brawlsPack = null;
 	/**
@@ -1239,6 +1239,7 @@
 			if (headers["X-Request-Id"] > 2 && !isLoadGame) {
 				isLoadGame = true;
 				await openOrMigrateDatabase(userInfo.id);
+				await lib.load(cheats.libGame);
 				addControls();
 				addControlButtons();
 				addBottomUrls();
@@ -1251,7 +1252,7 @@
 				getAutoGifts();
 
 				cheats.activateHacks();
-			
+
 				justInfo();
 				if (isChecked('dailyQuests')) {
 					testDailyQuests();
@@ -1425,9 +1426,9 @@
 					}
 					*/
 				}
-				/** 
+				/**
 				 * Save pack for Brawls
-				 * 
+				 *
 				 * Сохраняем пачку для потасовок
 				 */
 				if (call.name == 'brawl_startBattle') {
@@ -1465,7 +1466,7 @@
 				}
 				/**
 				 * Saving the request to start the last battle
-				 * Сохранение запроса начала последнего боя 
+				 * Сохранение запроса начала последнего боя
 				 */
 				if (call.name == 'clanWarAttack' ||
 					call.name == 'crossClanWar_startBattle' ||
@@ -1838,9 +1839,9 @@
 						mainReward = call.result.response;
 					}
 				}
-				
-				/** 
-				 * Sum the result of opening Pet Eggs 
+
+				/**
+				 * Sum the result of opening Pet Eggs
 				 * Суммирование результата открытия яиц питомцев
 				 */
 				if (isChecked('countControl') && call.ident == callsIdent['pet_chestOpen']) {
@@ -3008,6 +3009,40 @@
 		}
 	});
 	/**
+	 * Game Library
+	 * 
+	 * Игровая библиотека
+	 */
+	class Library {
+		defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1008/lib/lib.json';
+ 
+		constructor() {
+			if (!Library.instance) {
+				Library.instance = this;
+			}
+ 
+			return Library.instance;
+		}
+ 
+		async load(data) {
+			if (data) {
+				this.data = data;
+				return;
+			}
+			try {
+				this.data = await fetch(this.defaultLibUrl).then(e => e.json())
+			} catch (error) {
+				console.error('Не удалось загрузить библиотеку')
+			}
+		}
+ 
+		getData(id) {
+			return this.data[id];
+		}
+	}
+ 
+	this.lib = new Library();
+	/**
 	 * Database
 	 *
 	 * База данных
@@ -3168,7 +3203,7 @@
 	/**
 	 * Opens or migrates to a database
 	 *
-	 * Открывает или мигрирует в базу данных 
+	 * Открывает или мигрирует в базу данных
 	 */
 	async function openOrMigrateDatabase(userId) {
 		storage.userId = userId;
@@ -3499,7 +3534,19 @@
 				promises = [];
 				for (let teamNum in floorChoices) {
 					attackerType = floorChoices[teamNum].attackerType;
+					if (attackerType == 'neutral') {
+						const titans = titanGetAll.filter(e => !titansStates[e.id]?.isDead)
+						teams[attackerType].heroes = titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
+					}
+					const titans = fixTitanTeam(teams[attackerType]);
+					if (!titans.heroes.length) {
+						continue;
+					}
 					promises.push(startBattle(teamNum, attackerType));
+				}
+				if (!promises.length) {
+					endDungeon('endDungeon', 'All Dead');
+					return;
 				}
 				Promise.all(promises)
 					.then(processingPromises);
@@ -3546,6 +3593,10 @@
 			return new Promise(function (resolve, reject) {
 				args = fixTitanTeam(teams[attackerType]);
 				args.teamNum = teamNum;
+				if (attackerType == 'neutral') {
+					const titans = titanGetAll.filter(e => !titansStates[e.id]?.isDead)
+					args.heroes = titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
+				}
 				startBattleCall = {
 					calls: [{
 						name: "dungeonStartBattle",
@@ -3620,7 +3671,7 @@
 		/**
 		 * Returns the coefficient of condition of the
 		 * difference in titanium before and after the battle
-		 * 
+		 *
 		 * Возвращает коэффициент состояния титанов после боя
 		 */
 		function getState(result) {
@@ -3680,7 +3731,7 @@
 		}
 
 		function endDungeon(reason, info) {
-			console.log(reason, info);
+			console.warn(reason, info);
 			setProgress(`${I18N('DUNGEON')} ${I18N('COMPLETED')}`, true);
 			resolve();
 		}
@@ -4596,8 +4647,10 @@
 	}
 
 	function hackGame() {
+		self = this;
 		selfGame = null;
 		bindId = 1e9;
+		this.libGame = null;
 		/**
 		 * List of correspondence of used classes to their names
 		 *
@@ -5057,7 +5110,42 @@
 			new clanWarSelect(player).open();
 		}
 
+		/**
+		 * Game library availability tracker
+		 *
+		 * Отслеживание доступности игровой библиотеки
+		 */
+		function checkLibLoad() {
+			timeout = setTimeout(() => {
+				if (Game.GameModel) {
+					changeLib();
+				} else {
+					checkLibLoad();
+				}
+			}, 100)
+		}
+ 
+		/**
+		 * Game library data spoofing
+		 *
+		 * Подмена данных игровой библиотеки
+		 */
+		function changeLib() {
+			console.log('lib connect');
+			const originalStartFunc = Game.GameModel.prototype.start;
+			Game.GameModel.prototype.start = function (a, b, c) {
+				self.libGame = b.raw;
+				try {
+					b.raw.shop[26].requirements = null;
+				} catch (e) {
+					console.warn(e);
+				}
+				originalStartFunc.call(this, a, b, c);
+			}
+		}
+ 
 		connectGame();
+		checkLibLoad();
 	}
 
 	/**
@@ -6534,7 +6622,7 @@
 					if (!this.dataQuests[quest.id].isWeCanDo(this.questInfo)) {
 						continue;
 					}
-				
+
 					weCanDo.push({
 						name: quest.id,
 						label: I18N(`QUEST_${quest.id}`),
