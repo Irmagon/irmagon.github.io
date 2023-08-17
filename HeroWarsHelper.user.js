@@ -2,17 +2,17 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace		HWH
-// @version			2.095
-// @description		Automation of actions for the game Hero Wars
-// @description:en	Automation of actions for the game Hero Wars
-// @description:ru	Автоматизация действий для игры Хроники Хаоса
+// @namespace			HWH
+// @version			2.099
+// @description			Automation of actions for the game Hero Wars
+// @description:en		Automation of actions for the game Hero Wars
+// @description:ru		Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY (forked by ThomasGaud)
-// @license 		Copyright ZingerY
-// @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
+// @license 			Copyright ZingerY
+// @homepage			http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
-// @encoding		utf-8
+// @encoding			utf-8
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
 // @match			https://www.solfors.com/
@@ -181,6 +181,7 @@
 			DAILY_QUESTS_TITLE: 'Complete daily quests',
 			AUTO_QUIZ: 'AutoQuiz',
 			AUTO_QUIZ_TITLE: 'Automatically receive correct answers to quiz questions',
+		    SECRET_WEALTH_CHECKBOX: 'Automatic purchase in the store "Secret Wealth" when entering the game',
 			/* Input fields */
 			HOW_MUCH_TITANITE: 'How much titanite to farm',
 			COMBAT_SPEED: 'Combat Speed Multiplier',
@@ -220,6 +221,8 @@
 			SANCTUARY_TITLE: 'Fast travel to Sanctuary',
 			GUILD_WAR: 'Guild War',
 			GUILD_WAR_TITLE: 'Fast travel to Guild War',
+		    SECRET_WEALTH: 'Secret Wealth',
+		    SECRET_WEALTH_TITLE: 'Buy something in the store "Secret Wealth"',
 			/* Misc */
 			BOTTOM_URLS: '<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank">tg</a>',
 			GIFTS_SENT: 'Gifts sent!',
@@ -256,7 +259,7 @@
 			TITANIT: 'Titanit',
 			COMPLETED: 'completed',
 			FLOOR: 'Floor',
-			LEVEL: 'Уровень',
+		    LEVEL: 'Level',
 			BATTLES: 'battles',
 			EVENT: 'Event',
 			NOT_AVAILABLE: 'not available',
@@ -369,6 +372,12 @@
 			FIGHTS: 'Fights',
 			STAGE: 'Stage',
 			DONT_HAVE_LIVES: 'You don\'t have lives',
+			SECRET_WEALTH_ALREADY: 'Secret Wealth: Item for Pet Potions already purchased',
+			SECRET_WEALTH_NOT_ENOUGH: 'Secret Wealth: Not Enough Pet Potion, You Have {available}, Need {need}',
+			SECRET_WEALTH_UPGRADE_NEW_PET: 'Secret Wealth: After purchasing the Pet Potion, it will not be enough to upgrade a new pet',
+			SECRET_WEALTH_PURCHASED: 'Secret wealth: Purchased {count} {name}',
+			SECRET_WEALTH_CANCELED: 'Secret Wealth: Purchase Canceled',
+			SECRET_WEALTH_BUY: 'You have {available} Pet Potion.<br>Do you want to buy {countBuy} {name} for {price} Pet Potion?',
 		},
 		ru: {
 			/* Чекбоксы */
@@ -394,6 +403,7 @@
 			DAILY_QUESTS_TITLE: 'Выполнять ежедневные квесты',
 			AUTO_QUIZ: 'АвтоВикторина',
 			AUTO_QUIZ_TITLE: 'Автоматическое получение правильных ответов на вопросы викторины',
+			SECRET_WEALTH_CHECKBOX: 'Автоматическая покупка в магазине "Тайное Богатство" при заходе в игру',
 			/* Поля ввода */
 			HOW_MUCH_TITANITE: 'Сколько фармим титанита',
 			COMBAT_SPEED: 'Множитель ускорения боя',
@@ -433,6 +443,8 @@
 			SANCTUARY_TITLE: 'Быстрый переход к Святилищу',
 			GUILD_WAR: 'Война',
 			GUILD_WAR_TITLE: 'Быстрый переход к Войне гильдий',
+			SECRET_WEALTH: 'Тайное богатство',
+			SECRET_WEALTH_TITLE: 'Купить что-то в магазине "Тайное богатство"',
 			/* Разное */
 			BOTTOM_URLS: '<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>',
 			GIFTS_SENT: 'Подарки отправлены!',
@@ -581,6 +593,12 @@
 			FIGHTS: 'Боев',
 			STAGE: 'Стадия',
 			DONT_HAVE_LIVES: 'У Вас нет жизней',
+			SECRET_WEALTH_ALREADY: 'Тайное богатство: товар за Зелья питомцев уже куплен',
+			SECRET_WEALTH_NOT_ENOUGH: 'Тайное богатство: Не достаточно Зелье Питомца, у Вас {available}, нужно {need}',
+			SECRET_WEALTH_UPGRADE_NEW_PET: 'Тайное богатство: После покупки Зелье Питомца будет не достаточно для прокачки нового питомца',
+			SECRET_WEALTH_PURCHASED: 'Тайное богатство: Куплено {count} {name}',
+			SECRET_WEALTH_CANCELED: 'Тайное богатство: покупка отменена',
+			SECRET_WEALTH_BUY: 'У вас {available} Зелье Питомца.<br>Вы хотите купить {countBuy} {name} за {price} Зелье Питомца?',
 		}
 	}
 
@@ -600,11 +618,34 @@
 	}
 	checkLang();
 
-	this.I18N = function (constant) {
+this.I18N = function (constant, replace) {
 		if (constant && constant in i18nLangData[selectLang]) {
-			return i18nLangData[selectLang][constant];
+		const result = i18nLangData[selectLang][constant];
+		if (replace) {
+			return result.sprintf(replace);
 		}
+		return result;
+	}
 		return `% ${constant} %`;
+	};
+
+String.prototype.sprintf = String.prototype.sprintf ||
+	function () {
+		"use strict";
+		var str = this.toString();
+		if (arguments.length) {
+			var t = typeof arguments[0];
+			var key;
+			var args = ("string" === t || "number" === t) ?
+				Array.prototype.slice.call(arguments)
+				: arguments[0];
+
+			for (key in args) {
+				str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), args[key]);
+			}
+		}
+
+		return str;
 	};
 
 	/**
@@ -680,6 +721,12 @@
 			title: I18N('DAILY_QUESTS_TITLE'),
 			default: false
 		},
+		secretWealth: {
+			label: I18N('SECRET_WEALTH'),
+			cbox: null,
+			title: I18N('SECRET_WEALTH_CHECKBOX'),
+			default: false
+	},
 		/*
 		autoBrawls: {
 			label: I18N('BRAWLS'),
@@ -860,11 +907,16 @@
 			title: I18N('GUILD_WAR_TITLE'),
 			func: cheats.goClanWar,
 		},
-		getOutland: {
-			name: I18N('TO_DO_EVERYTHING'),
-			title: I18N('TO_DO_EVERYTHING_TITLE'),
-			func: testDoYourBest,
+		secretWealth: {
+			name: I18N('SECRET_WEALTH'),
+			title: I18N('SECRET_WEALTH_TITLE'),
+			func: buyWithPetExperience,
 		},
+        getOutland: {
+            name: I18N('TO_DO_EVERYTHING'),
+            title: I18N('TO_DO_EVERYTHING_TITLE'),
+            func: testDoYourBest,
+        },
 	}
 	/**
 	 * Display buttons
@@ -1257,6 +1309,10 @@
 				if (isChecked('dailyQuests')) {
 					testDailyQuests();
 				}
+
+			if (isChecked('secretWealth')) {
+				buyWithPetExperienceAuto();
+			}
 			}
 			/**
 			 * Outgoing request data processing
@@ -1636,7 +1692,7 @@
 
 			let signature = headers['X-Auth-Signature'];
 			if (signature) {
-				original.setRequestHeader.call(this, 'X-Auth-Signature', signature)
+				original.setRequestHeader.call(this, 'X-Auth-Signature', signature);
 			}
 		} catch (err) {
 			console.log("Request(send, " + this.uniqid + "):\n", sourceData, "Error:\n", err);
@@ -1686,8 +1742,8 @@
 					}
 				}
 				/**
-				 * Hiding donation offers
-				 * Скрываем предложения доната
+                 * Hiding donation offers 1
+                 * Скрываем предложения доната 1
 				 */
 				if (call.ident == callsIdent['billingGetAll'] && getSaveVal('noOfferDonat')) {
 					const billings = call.result.response?.billings;
@@ -1699,8 +1755,8 @@
 					}
 				}
 				/**
-				 * Hiding donation offers
-				 * Скрываем предложения доната
+                 * Hiding donation offers 2
+                 * Скрываем предложения доната 2
 				 */
 				if (getSaveVal('noOfferDonat') &&
 					(call.ident == callsIdent['offerGetAll'] ||
@@ -1712,6 +1768,14 @@
 					}
 				}
 				/**
+                 * Hiding donation offers 3
+                 * Скрываем предложения доната 3
+                 */
+                if (call.result?.bundleUpdate) {
+                    delete call.result.bundleUpdate;
+                    isChange = true;
+                }
+                /**
 				 * Copies a quiz question to the clipboard
 				 * Копирует вопрос викторины в буфер обмена и получает на него ответ если есть
 				 */
@@ -3010,20 +3074,20 @@
 	});
 	/**
 	 * Game Library
-	 * 
+	 *
 	 * Игровая библиотека
 	 */
 	class Library {
 		defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1008/lib/lib.json';
- 
+
 		constructor() {
 			if (!Library.instance) {
 				Library.instance = this;
 			}
- 
+
 			return Library.instance;
 		}
- 
+
 		async load(data) {
 			if (data) {
 				this.data = data;
@@ -3035,12 +3099,12 @@
 				console.error('Не удалось загрузить библиотеку')
 			}
 		}
- 
+
 		getData(id) {
 			return this.data[id];
 		}
 	}
- 
+
 	this.lib = new Library();
 	/**
 	 * Database
@@ -3124,6 +3188,7 @@
 			});
 		}
 	}
+
 	/**
 	 * Returns the stored value
 	 *
@@ -3133,6 +3198,7 @@
 		const result = storage.get(saveName, def);
 		return result;
 	}
+
 	/**
 	 * Stores value
 	 *
@@ -3141,12 +3207,14 @@
 	function setSaveVal(saveName, value) {
 		storage.set(saveName, value);
 	}
+
 	/**
 	 * Database initialization
 	 *
 	 * Инициализация базы данных
 	 */
 	const db = new Database(GM_info.script.name, 'settings');
+
 	/**
 	 * Data store
 	 *
@@ -3183,6 +3251,7 @@
 			delete localStorage[this.name + ':' + key];
 		}
 	}
+
 	/**
 	 * Returns all keys from localStorage that start with prefix (for migration)
 	 *
@@ -3200,6 +3269,7 @@
 		}
 		return values;
 	}
+
 	/**
 	 * Opens or migrates to a database
 	 *
@@ -4651,6 +4721,7 @@
 		selfGame = null;
 		bindId = 1e9;
 		this.libGame = null;
+
 		/**
 		 * List of correspondence of used classes to their names
 		 *
@@ -4694,6 +4765,7 @@
 			{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
 			{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
 		];
+
 		/**
 		 * Contains the game classes needed to write and override game methods
 		 *
@@ -4715,6 +4787,7 @@
 				return c
 			},
 		};
+
 		/**
 		 * Connects to game objects via the object creation event
 		 *
@@ -4743,6 +4816,7 @@
 				});
 			}
 		}
+
 		/**
 		 * Game.BattlePresets
 		 * @param {bool} a isReplay
@@ -5004,6 +5078,7 @@
 					}
 				}
 			},
+
 			/**
 			 * Remove the rare shop
 			 *
@@ -5020,6 +5095,7 @@
 					}
 				}
 			},
+
 			/**
 			 * Acceleration button without Valkyries favor
 			 *
@@ -5041,6 +5117,7 @@
 				}
 			}
 		}
+
 		/**
 		 * Starts replacing recorded functions
 		 *
@@ -5052,6 +5129,7 @@
 				replaceFunction[func]();
 			}
 		}
+
 		/**
 		 * Returns the game object
 		 *
@@ -5060,6 +5138,7 @@
 		this.getSelfGame = function () {
 			return selfGame;
 		}
+
 		/**
 		 * Updates game data
 		 *
@@ -5083,13 +5162,14 @@
 		this.goNavigtor = function (windowName) {
 			let mechanicStorage = selfGame["game.data.storage.mechanic.MechanicStorage"];
 			let window = mechanicStorage[windowName];
-			let event = selfGame["game.mediator.gui.popup.PopupStashEventParams"]('');
+			let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
 			let Game = selfGame['Game'];
 			let navigator = getF(Game, "get_navigator")
 			let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
 			let instance = getFnP(Game, 'get_instance');
 			Game[instance]()[navigator]()[navigate](window, event);
 		}
+
 		/**
 		 * Move to the sanctuary cheats.goSanctuary()
 		 *
@@ -5098,6 +5178,7 @@
 		this.goSanctuary = () => {
 			this.goNavigtor("SANCTUARY");
 		}
+
 		/**
 		 * Go to Guild War
 		 *
@@ -5111,6 +5192,24 @@
 		}
 
 		/**
+         * Go to BrawlShop
+         *
+         * Переместиться в BrawlShop
+         */
+        this.goBrawlShop = () => {
+            const instance = getFnP(selfGame["game.model.GameModel"], 'get_instance')
+            const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
+            const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
+            const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
+            const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+
+            const player = selfGame["game.model.GameModel"][instance]().A;
+            const shop = player[P_36][PSD_0][IM_0][1038][PSDE_4];
+            const shopPopup = new selfGame["game.mechanics.brawl.mediator.BrawlShopPopupMediator"](player, shop)
+            shopPopup.open(new selfGame["game.mediator.gui.popup.PopupStashEventParams"])
+        }
+
+        /**
 		 * Game library availability tracker
 		 *
 		 * Отслеживание доступности игровой библиотеки
@@ -5124,7 +5223,7 @@
 				}
 			}, 100)
 		}
- 
+
 		/**
 		 * Game library data spoofing
 		 *
@@ -5143,7 +5242,18 @@
 				originalStartFunc.call(this, a, b, c);
 			}
 		}
- 
+
+        /**
+         * Returns the value of a language constant
+         *
+         * Возвращает значение языковой константы
+         * @param {*} langConst language constant // языковая константа
+         * @returns
+         */
+        this.translate = function (langConst) {
+            return Game.Translate.translate(langConst);
+        }
+
 		connectGame();
 		checkLibLoad();
 	}
@@ -5729,6 +5839,120 @@
 		});
 	}
 
+    async function buyWithPetExperience() {
+        const itemLib = lib.getData('inventoryItem');
+        const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
+        const inventory = result[0];
+        const shop = result[1];
+        const slot = shop.slots[2];
+
+        const currentCount = inventory.consumable[85];
+        const price = slot.cost.consumable[85];
+
+        const typeBuyItem = Object.keys(slot.reward).pop();
+        const itemIdBuyItem = Object.keys(slot.reward[typeBuyItem]).pop();
+        const countBuyItem = slot.reward[typeBuyItem][itemIdBuyItem];
+        const itemName = cheats.translate(`LIB_${typeBuyItem.toUpperCase()}_NAME_${itemIdBuyItem}`);
+
+        if (slot.bought) {
+            await popup.confirm(I18N('SECRET_WEALTH_ALREADY'), [
+                { msg: 'Ok', result: true },
+            ]);
+            return;
+        }
+
+        const purchaseMsg = I18N('SECRET_WEALTH_BUY', { available: currentCount, countBuy: countBuyItem, name: itemName, price })
+        const answer = await popup.confirm(purchaseMsg, [
+            { msg: I18N('BTN_NO'), result: false },
+            { msg: I18N('BTN_YES'), result: true },
+        ]);
+
+        if (!answer) {
+            setProgress(I18N('SECRET_WEALTH_CANCELED'), true);
+            return;
+        }
+
+        if (currentCount < price) {
+            const msg = I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
+            await popup.confirm(msg, [
+                { msg: 'Ok', result: true },
+            ]);
+            return;
+        }
+
+        const calls = [{
+            name: "shopBuy",
+            args: {
+                shopId: 26,
+                slot: 2,
+                cost: slot.cost,
+                reward: slot.reward
+            },
+            ident: "body"
+        }];
+        const bought = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
+
+        const type = Object.keys(bought).pop();
+        const itemId = Object.keys(bought[type]).pop();
+        const count = bought[type][itemId];
+
+        const resultMsg = I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
+        await popup.confirm(resultMsg, [
+            { msg: 'Ok', result: true },
+        ]);
+    }
+
+    async function buyWithPetExperienceAuto() {
+        const itemLib = lib.getData('inventoryItem');
+        const minCount = 450551;
+        const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
+        const inventory = result[0];
+        const shop = result[1];
+        const slot = shop.slots[2];
+
+        const currentCount = inventory.consumable[85];
+        const price = slot.cost.consumable[85];
+
+        if (slot.bought) {
+            console.log(I18N('SECRET_WEALTH_ALREADY'));
+            setProgress(I18N('SECRET_WEALTH_ALREADY'), true);
+            return;
+        }
+
+        if (currentCount < price) {
+            const msg = I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
+            console.log(msg);
+            setProgress(msg, true);
+            return;
+        }
+
+        if ((currentCount - price) < minCount) {
+            console.log(I18N('SECRET_WEALTH_UPGRADE_NEW_PET'));
+            setProgress(I18N('SECRET_WEALTH_UPGRADE_NEW_PET'), true);
+            return;
+        }
+
+        const calls = [{
+            name: "shopBuy",
+            args: {
+                shopId: 26,
+                slot: 2,
+                cost: slot.cost,
+                reward: slot.reward
+            },
+            ident: "body"
+        }];
+        const bought = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
+
+        const type = Object.keys(bought).pop();
+        const itemId = Object.keys(bought[type]).pop();
+        const count = bought[type][itemId];
+        const itemName = itemLib[type][itemId].label;
+
+        const resultMsg = I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
+        console.log(resultMsg, bought);
+        setProgress(resultMsg, true);
+    }
 	/**
 	 * Attack of the minions of Asgard
 	 *
@@ -7462,4 +7686,7 @@
  * Сбор ежедневных календарных наград
  * Добавить в подземку проверку варианта когда одна пачка из 2х мертва
  * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
+ * добавить отображение урона на авто перед боем для босса Асгарда
+ * Добавить ввод количества для рейдов в кампании
+ * Удалить progress боя при прерасчете реплеев
  */
