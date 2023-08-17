@@ -2,17 +2,17 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace			HWH
-// @version			2.099
-// @description			Automation of actions for the game Hero Wars
-// @description:en		Automation of actions for the game Hero Wars
-// @description:ru		Автоматизация действий для игры Хроники Хаоса
+// @namespace		HWH
+// @version			2.101
+// @description		Automation of actions for the game Hero Wars
+// @description:en	Automation of actions for the game Hero Wars
+// @description:ru	Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY (forked by ThomasGaud)
-// @license 			Copyright ZingerY
-// @homepage			http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
+// @license 		Copyright ZingerY
+// @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
-// @encoding			utf-8
+// @encoding		utf-8
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
 // @match			https://www.solfors.com/
@@ -378,6 +378,7 @@
 			SECRET_WEALTH_PURCHASED: 'Secret wealth: Purchased {count} {name}',
 			SECRET_WEALTH_CANCELED: 'Secret Wealth: Purchase Canceled',
 			SECRET_WEALTH_BUY: 'You have {available} Pet Potion.<br>Do you want to buy {countBuy} {name} for {price} Pet Potion?',
+			DAILY_BONUS: 'Daily bonus',
 		},
 		ru: {
 			/* Чекбоксы */
@@ -399,7 +400,7 @@
 			REPEAT_CAMPAIGN_TITLE: 'Автоповтор боев в кампании',
 			DISABLE_DONAT: 'Отключить донат',
 			DISABLE_DONAT_TITLE: 'Убирает все предложения доната',
-			DAILY_QUESTS: 'Ежедневные квесты',
+			DAILY_QUESTS: 'Ежедневка',
 			DAILY_QUESTS_TITLE: 'Выполнять ежедневные квесты',
 			AUTO_QUIZ: 'АвтоВикторина',
 			AUTO_QUIZ_TITLE: 'Автоматическое получение правильных ответов на вопросы викторины',
@@ -599,6 +600,7 @@
 			SECRET_WEALTH_PURCHASED: 'Тайное богатство: Куплено {count} {name}',
 			SECRET_WEALTH_CANCELED: 'Тайное богатство: покупка отменена',
 			SECRET_WEALTH_BUY: 'У вас {available} Зелье Питомца.<br>Вы хотите купить {countBuy} {name} за {price} Зелье Питомца?',
+			DAILY_BONUS: 'Ежедневка',
 		}
 	}
 
@@ -907,12 +909,23 @@ String.prototype.sprintf = String.prototype.sprintf ||
 			title: I18N('GUILD_WAR_TITLE'),
 			func: cheats.goClanWar,
 		},
+	/*
 		secretWealth: {
 			name: I18N('SECRET_WEALTH'),
 			title: I18N('SECRET_WEALTH_TITLE'),
 			func: buyWithPetExperience,
 		},
-        getOutland: {
+	*/
+        dailyQuests: {
+            name: I18N('DAILY_QUESTS'),
+            title: I18N('DAILY_QUESTS_TITLE'),
+            func: async function () {
+                const quests = new dailyQuests(() => { }, () => { });
+                await quests.autoInit();
+                quests.start();
+           },
+         },
+		getOutland: {
             name: I18N('TO_DO_EVERYTHING'),
             title: I18N('TO_DO_EVERYTHING_TITLE'),
             func: testDoYourBest,
@@ -1682,6 +1695,20 @@ String.prototype.sprintf = String.prototype.sprintf ||
 						changeRequest = true;
 					}
 				}
+			/**
+			 * Adding a request to receive 26 store
+			 * Добавление запроса на получение 26 магазина
+			 */
+			if (call.name == 'registration') {
+				testData.calls.push({
+					name: "shopGet",
+					args: {
+						shopId: "26"
+					},
+					ident: "shopGet"
+				});
+				changeRequest = true;
+			}
 			}
 
 			let headers = requestHistory[this.uniqid].headers;
@@ -1722,13 +1749,22 @@ String.prototype.sprintf = String.prototype.sprintf ||
 			}
 			let mainReward = null;
 			const allReward = {};
+		let readQuestInfo = false;
 			for (const call of respond.results) {
 				/**
+			 * Obtaining initial data for completing quests
+			 * Получение исходных данных для выполнения квестов
+			 */
+			if (readQuestInfo) {
+				questsInfo[call.ident] = call.result.response;
+			}
+			/**
 				 * Getting a user ID
 				 * Получение идетификатора пользователя
 				 */
 				if (call.ident == callsIdent['registration']) {
 					userId = call.result.response.userId;
+				readQuestInfo = true;
 				}
 				/**
 				 * Endless lives in brawls
@@ -1955,39 +1991,14 @@ String.prototype.sprintf = String.prototype.sprintf ||
 					lastDungeonBattleData = call.result.response;
 				}
 				/**
-				 * Getting data on quests
-				 * Получение данных по квестам
+			 * Adding 26 store to other stores
+			 * Добавление 26 магазина к остальным магазинам
 				 */
-				if (call.ident == callsIdent['questGetAll']) {
-					if (!questsInfo['questGetAll']) {
-						questsInfo['questGetAll'] = call.result.response;
-					}
-				}
-				/**
-				 * Getting Inventory Data for Quests
-				 * Получение данных инвентаря для квестов
-				 */
-				if (call.ident == callsIdent['inventoryGet']) {
-					if (!questsInfo['inventoryGet']) {
-						questsInfo['inventoryGet'] = call.result.response;
-					}
-				}
-				/**
-				 * Obtaining Hero Data for Quests
-				 * Получение данных героев для квестов
-				 */
-				if (call.ident == callsIdent['heroGetAll']) {
-					if (!questsInfo['heroGetAll']) {
-						questsInfo['heroGetAll'] = call.result.response;
-					}
-				}
-				/**
-				 * Obtaining titan data for quests
-				 * Получение данных титанов для квестов
-				 */
-				if (call.ident == callsIdent['titanGetAll']) {
-					if (!questsInfo['titanGetAll']) {
-						questsInfo['titanGetAll'] = call.result.response;
+			if (call.ident == callsIdent['shopGetAll']) {
+				const shop26 = respond.results.find(e => e.ident == callsIdent['shopGet']);
+				if (shop26) {
+					call.result.response[26] = shop26.result.response;
+					isChange = true;
 					}
 				}
 			}
@@ -5953,6 +5964,56 @@ String.prototype.sprintf = String.prototype.sprintf ||
         console.log(resultMsg, bought);
         setProgress(resultMsg, true);
     }
+
+async function getDailyBonus() {
+	const dailyBonusInfo = await Send(JSON.stringify({
+		calls: [{
+			name: "dailyBonusGetInfo",
+			args: {},
+			ident: "body"
+		}]
+	})).then(e => e.results[0].result.response);
+	const { availableToday, availableVip, currentDay } = dailyBonusInfo;
+
+	if (!availableToday) {
+		console.log('Уже собрано');
+		return;
+	}
+
+	const currentVipPoints = +userInfo.vipPoints;
+	const dailyBonusStat = lib.getData('dailyBonusStatic');
+	const vipInfo = lib.getData('level').vip;
+	let currentVipLevel = 0;
+	for (let i in vipInfo) {
+		vipLvl = vipInfo[i];
+		if (currentVipPoints >= vipLvl.vipPoints) {
+			currentVipLevel = vipLvl.level;
+		}
+	}
+	const vipLevelDouble = dailyBonusStat[`${currentDay}_0_0`].vipLevelDouble;
+
+	const calls = [{
+		name: "dailyBonusFarm",
+		args: {
+			vip: availableVip && currentVipLevel >= vipLevelDouble ? 1 : 0
+		},
+		ident: "body"
+	}];
+
+	const result = await Send(JSON.stringify({ calls }));
+	if (result.error) {
+		console.error(result.error);
+		return;
+	}
+
+	const reward = result.results[0].result.response;
+	const type = Object.keys(reward).pop();
+	const itemId = Object.keys(reward[type]).pop();
+	const count = reward[type][itemId];
+	const itemName = cheats.translate(`LIB_${type.toUpperCase()}_NAME_${itemId}`);
+
+	console.log(`Ежедневная награда: Получено ${count} ${itemName}`, reward);
+}
 	/**
 	 * Attack of the minions of Asgard
 	 *
@@ -6633,8 +6694,9 @@ String.prototype.sprintf = String.prototype.sprintf ||
 
 	function testDailyQuests() {
 		return new Promise((resolve, reject) => {
-			const bossBattle = new dailyQuests(resolve, reject, questsInfo);
-			bossBattle.start();
+		const quests = new dailyQuests(resolve, reject);
+		quests.init(questsInfo);
+		quests.start();
 		});
 	}
 
@@ -6645,20 +6707,39 @@ String.prototype.sprintf = String.prototype.sprintf ||
 	 */
 	class dailyQuests {
 		/**
+	 * Send(' {"calls":[{"name":"userGetInfo","args":{},"ident":"body"}]}').then(e => console.log(e))
 		 * Send(' {"calls":[{"name":"heroGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
 		 * Send(' {"calls":[{"name":"titanGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
 		 * Send(' {"calls":[{"name":"inventoryGet","args":{},"ident":"body"}]}').then(e => console.log(e))
 		 * Send(' {"calls":[{"name":"questGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
 		 */
+	callsList = [
+		"userGetInfo",
+		"heroGetAll",
+		"titanGetAll",
+		"inventoryGet",
+		"questGetAll",
+	]
+
 		dataQuests = {
 			10001: {
-				/**
-				 * TODO: Watch heroes and money
-				 * TODO: Смотреть героев и деньги
-				 */
-				description: 'Улучши умения героев 3 раза', //
-				isWeCanDo: () => false,
+			description: 'Улучши умения героев 3 раза', // ++++++++++++++++
+			doItCall: () => {
+				const upgradeSkills = this.getUpgradeSkills();
+				return upgradeSkills.map(({ heroId, skill }, index) => ({ name: "heroUpgradeSkill", args: { heroId, skill }, "ident": `heroUpgradeSkill_${index}` }));
 			},
+			isWeCanDo: () => {
+				const upgradeSkills = this.getUpgradeSkills();
+				let sumGold = 0;
+				for (const skill of upgradeSkills) {
+					sumGold += this.skillCost(skill.value);
+					if (!skill.heroId) {
+						return false;
+					}
+				}
+				return this.questInfo['userGetInfo'].gold > sumGold;
+			},
+		},
 			10002: {
 				description: 'Пройди 10 миссий', // --------------
 				isWeCanDo: () => false,
@@ -6673,20 +6754,20 @@ String.prototype.sprintf = String.prototype.sprintf ||
 			},
 			10006: {
 				description: 'Используй обмен изумрудов 1 раз',
-				doItCall: [{ name: "refillableAlchemyUse", args: { multi: false }, ident: "refillableAlchemyUse" }],
+			doItCall: () => [{ name: "refillableAlchemyUse", args: { multi: false }, ident: "refillableAlchemyUse" }],
 				isWeCanDo: () => false,
 			},
 			10007: {
 				description: 'Открой 1 сундук', // ++++++++++++++++
-				doItCall: [{ name: "chestBuy", args: { chest: "town", free: true, pack: false }, ident: "chestBuy" }],
-				isWeCanDo: (info) => {
-					const chestInfo = info['userGetInfo'].refillable.find(e => e.id == 37);
+			doItCall: () => [{ name: "chestBuy", args: { chest: "town", free: true, pack: false }, ident: "chestBuy" }],
+			isWeCanDo: () => {
+				const chestInfo = this.questInfo['userGetInfo'].refillable.find(e => e.id == 37);
 					return chestInfo.amount > 0;
 				},
 			},
 			10016: {
 				description: 'Отправь подарки согильдийцам', // ++++++++++++++++
-				doItCall: [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
+			doItCall: () => [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
 				isWeCanDo: () => true,
 			},
 			10018: {
@@ -6699,7 +6780,7 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				 * Spends a bank of experience on Galahard
 				 * Тратит банку опыта на Галахарда
 				 */
-				doItCall: [{ name: "consumableUseHeroXp", args: { heroId: 2, libId: 10, amount: 1 }, ident: "consumableUseHeroXp" }],
+			doItCall: () => [{ name: "consumableUseHeroXp", args: { heroId: 2, libId: 10, amount: 1 }, ident: "consumableUseHeroXp" }],
 				isWeCanDo: () => false,
 			},
 			10019: {
@@ -6730,20 +6811,32 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				 * Upgrade and Reset Gift of the Elements to Galahard
 				 * Улучшение и сброс дара стихий Галахарду
 				*/
-				doItCall: [
+			doItCall: () => [
 					{ name: "heroTitanGiftLevelUp", args: { heroId: 2 }, ident: "heroTitanGiftLevelUp" },
 					{ name: "heroTitanGiftDrop", args: { heroId: 2 }, ident: "heroTitanGiftDrop" }
 				],
 				isWeCanDo: () => false,
 			},
 			10024: {
-				/**
-				 * TODO: Watch Heroes
-				 * TODO: Смотреть героев
-				 */
-				description: 'Повысь уровень любого артефакта один раз',
-				isWeCanDo: () => false,
+			description: 'Повысь уровень любого артефакта один раз', // Готово
+			doItCall: () => {
+				const upArtifact = this.getUpgradeArtifact();
+				return [
+					{
+						name: "heroArtifactLevelUp",
+						args: {
+							heroId: upArtifact.heroId,
+							slotId: upArtifact.slotId
 			},
+						ident: `heroArtifactLevelUp`
+					}
+				];
+			},
+			isWeCanDo: () => {
+				const upgradeArtifact = this.getUpgradeArtifact();
+				return upgradeArtifact.heroId;
+			},
+		},
 			10025: {
 				description: 'Начни 1 Экспедицию',
 				doItFunc: checkExpedition,
@@ -6760,28 +6853,52 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				isWeCanDo: () => false,
 			},
 			10028: {
-				/**
-				 * TODO: Смотреть титанов, можно качать арты за золото если золота больше 5 лямов
-				 * TODO: Watch titans, you can download arts for gold if there is more than 5kk gold
-				 */
-				description: 'Повысь уровень любого артефакта титанов',
-				isWeCanDo: () => false,
+			description: 'Повысь уровень любого артефакта титанов', // Готово
+			doItCall: () => {
+				const upTitanArtifact = this.getUpgradeTitanArtifact();
+				return [
+					{
+						name: "titanArtifactLevelUp",
+						args: {
+							titanId: upTitanArtifact.titanId,
+							slotId: upTitanArtifact.slotId
 			},
+						ident: `titanArtifactLevelUp`
+					}
+				];
+			},
+			isWeCanDo: () => {
+				const upgradeTitanArtifact = this.getUpgradeTitanArtifact();
+				return upgradeTitanArtifact.titanId;
+			},
+		},
 			10029: {
 				description: 'Открой сферу артефактов титанов', // ++++++++++++++++
-				doItCall: [{ name: "titanArtifactChestOpen", args: { amount: 1, free: true }, ident: "titanArtifactChestOpen" }],
-				isWeCanDo: (info) => {
-					return info['inventoryGet']?.consumable[55] > 0
+			doItCall: () => [{ name: "titanArtifactChestOpen", args: { amount: 1, free: true }, ident: "titanArtifactChestOpen" }],
+			isWeCanDo: () => {
+				return this.questInfo['inventoryGet']?.consumable[55] > 0
 				},
 			},
 			10030: {
-				/**
-				 * TODO: Watch Heroes
-				 * TODO: Смотреть героев
-				 */
-				description: 'Улучши облик любого героя 1 раз',
-				isWeCanDo: () => false,
+			description: 'Улучши облик любого героя 1 раз', // Готово
+			doItCall: () => {
+				const upSkin = this.getUpgradeSkin();
+				return [
+					{
+						name: "heroSkinUpgrade",
+						args: {
+							heroId: upSkin.heroId,
+							skinId: upSkin.skinId
 			},
+						ident: `heroSkinUpgrade`
+					}
+				];
+			},
+			isWeCanDo: () => {
+				const upgradeSkin = this.getUpgradeSkin();
+				return upgradeSkin.heroId;
+			},
+		},
 			10031: {
 				description: 'Победи в 6 боях Турнира Стихий', // --------------
 				doItFunc: testTitanArena,
@@ -6793,9 +6910,9 @@ String.prototype.sprintf = String.prototype.sprintf ||
 			},
 			10044: {
 				description: 'Воспользуйся призывом питомцев 1 раз', // ++++++++++++++++
-				doItCall: [{ name: "pet_chestOpen", args: { amount: 1, paid: false }, ident: "pet_chestOpen" }],
-				isWeCanDo: (info) => {
-					return info['inventoryGet']?.consumable[90] > 0
+			doItCall: () => [{ name: "pet_chestOpen", args: { amount: 1, paid: false }, ident: "pet_chestOpen" }],
+			isWeCanDo: () => {
+				return this.questInfo['inventoryGet']?.consumable[90] > 0
 				},
 			},
 			10046: {
@@ -6807,25 +6924,51 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				isWeCanDo: () => false,
 			},
 			10047: {
-				/**
-				 * TODO: Watch heroes and runes consumable 1, 2, 3, 4
-				 * TODO: Смотреть героев и руны consumable 1, 2, 3, 4
-				 */
-				description: 'Набери 150 очков активности в Гильдии',
-				/**
-				 * Upgrade the rune Galahard
-				 * Прокачать руну Галахарду
-				 */
-				doItCall: [{ name: "heroEnchantRune", args: { heroId: 2, tier: 0, items: { consumable: { '1': 1 } } }, ident: "heroEnchantRune" }],
-				isWeCanDo: () => false,
+			description: 'Набери 150 очков активности в Гильдии', // Готово
+			doItCall: () => {
+				const enchantRune = this.getEnchantRune();
+				return [
+					{
+						name: "heroEnchantRune",
+						args: {
+							heroId: enchantRune.heroId,
+							tier: enchantRune.tier,
+							items: {
+								consumable: { [enchantRune.itemId]: 1 }
+							}
 			},
+						ident: `heroEnchantRune`
+					}
+				];
+			},
+			isWeCanDo: () => {
+				const userInfo = this.questInfo['userGetInfo'];
+				const enchantRune = this.getEnchantRune();
+				return enchantRune.heroId && userInfo.gold > 1e3;
+			},
+		},
 		};
 
 		constructor(resolve, reject, questInfo) {
 			this.resolve = resolve;
 			this.reject = reject;
-			this.questInfo = questInfo
 		}
+
+	init(questInfo) {
+		this.questInfo = questInfo;
+	}
+
+	async autoInit() {
+		const quests = {};
+		const calls = this.callsList.map(name => ({
+			name, args: {}, ident: name
+		}))
+		const result = await Send(JSON.stringify({ calls })).then(e => e.results);
+		for (const call of result) {
+			quests[call.ident] = call.result.response;
+		}
+		this.questInfo = quests;
+	}
 
 		async start() {
 			/**
@@ -6843,7 +6986,9 @@ String.prototype.sprintf = String.prototype.sprintf ||
 							checked: false
 						}
 					}
-					if (!this.dataQuests[quest.id].isWeCanDo(this.questInfo)) {
+
+				const isWeCanDo = this.dataQuests[quest.id].isWeCanDo;
+				if (!isWeCanDo.call(this)) {
 						continue;
 					}
 
@@ -6884,7 +7029,8 @@ String.prototype.sprintf = String.prototype.sprintf ||
 					console.log(quest.description);
 
 					if (quest.doItCall) {
-						calls.push(...quest.doItCall);
+					const doItCall = quest.doItCall.call(this);
+					calls.push(...doItCall);
 					}
 				}
 			}
@@ -6894,7 +7040,10 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				return;
 			}
 
-			await Send(JSON.stringify({ calls }));
+		const result = await Send(JSON.stringify({ calls }));
+		if (result.error) {
+			console.error(result.error)
+		}
 			this.end(`${I18N('COMPLETED_QUESTS')}: ${countChecked}`);
 		}
 
@@ -6910,6 +7059,257 @@ String.prototype.sprintf = String.prototype.sprintf ||
 			}
 			copyText(errorInfo);
 		}
+
+	skillCost(lvl) {
+		return 573 * lvl ** 0.9 + lvl ** 2.379;
+	}
+
+	getUpgradeSkills() {
+		const heroes = Object.values(this.questInfo['heroGetAll']);
+		const upgradeSkills = [
+			{ heroId: 0, slotId: 0, value: 130 },
+			{ heroId: 0, slotId: 0, value: 130 },
+			{ heroId: 0, slotId: 0, value: 130 },
+		];
+		const skillLib = lib.getData('skill');
+		/**
+		 * color - 1 (белый) открывает 1 навык
+		 * color - 2 (зеленый) открывает 2 навык
+		 * color - 4 (синий) открывает 3 навык
+		 * color - 7 (фиолетовый) открывает 4 навык
+		 */
+		const colors = [1, 2, 4, 7];
+		for (const hero of heroes) {
+			const level = hero.level;
+			const color = hero.color;
+			for (let skillId in hero.skills) {
+				const tier = skillLib[skillId].tier;
+				const sVal = hero.skills[skillId];
+				if (color < colors[tier] || tier < 1 || tier > 4) {
+					continue;
+				}
+				for (let upSkill of upgradeSkills) {
+					if (sVal < upSkill.value && sVal < level) {
+						upSkill.value = sVal;
+						upSkill.heroId = hero.id;
+						upSkill.skill = tier;
+						break;
+					}
+				}
+			}
+		}
+		return upgradeSkills;
+	}
+
+	getUpgradeArtifact() {
+		const heroes = Object.values(this.questInfo['heroGetAll']);
+		const inventory = this.questInfo['inventoryGet'];
+		const upArt = { heroId: 0, slotId: 0, level: 100 };
+
+		const heroLib = lib.getData('hero');
+		const artifactLib = lib.getData('artifact');
+
+		for (const hero of heroes) {
+			const heroInfo = heroLib[hero.id];
+			const level = hero.level
+			if (level < 20) {
+				continue;
+			}
+
+			for (let slotId in hero.artifacts) {
+				const art = hero.artifacts[slotId];
+				/* Текущая звезданость арта */
+				const star = art.star;
+				if (!star) {
+					continue;
+				}
+				/* Текущий уровень арта */
+				const level = art.level;
+				if (level >= 100) {
+					continue;
+				}
+				/* Идентификатор арта в библиотеке */
+				const artifactId = heroInfo.artifacts[slotId];
+				const artInfo = artifactLib.id[artifactId];
+				const costNextLevel = artifactLib.type[artInfo.type].levels[level + 1].cost;
+
+				const costСurrency = Object.keys(costNextLevel).pop();
+				const costValues = Object.keys(costNextLevel[costСurrency]).pop();
+				const costId = costValues[0];
+				const costValue = +costValues[1];
+
+				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
+				if (level < upArt.level && inventory[costСurrency][costId] >= costValue) {
+					upArt.level = level;
+					upArt.heroId = hero.id;
+					upArt.slotId = slotId;
+					break;
+				}
+			}
+		}
+		return upArt;
+	}
+
+	getUpgradeSkin() {
+		const heroes = Object.values(this.questInfo['heroGetAll']);
+		const inventory = this.questInfo['inventoryGet'];
+		const upSkin = { heroId: 0, skinId: 0, level: 60 };
+
+		const skinLib = lib.getData('skin');
+
+		for (const hero of heroes) {
+			const level = hero.level
+			if (level < 20) {
+				continue;
+			}
+
+			for (let skinId in hero.skins) {
+				/* Текущий уровень скина */
+				const level = hero.skins[skinId];
+				if (level >= 60) {
+					continue;
+				}
+				/* Идентификатор скина в библиотеке */
+				const skinInfo = skinLib[skinId];
+				const costNextLevel = skinInfo.statData.levels[level + 1].cost;
+
+				const costСurrency = Object.keys(costNextLevel).pop();
+				const costСurrencyId = Object.keys(costNextLevel[costСurrency]).pop();
+				const costValue = +costNextLevel[costСurrency][costСurrencyId];
+
+				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
+				if (level < upSkin.level && inventory[costСurrency][costСurrencyId] >= costValue) {
+					upSkin.level = level;
+					upSkin.heroId = hero.id;
+					upSkin.skinId = skinId;
+					break;
+				}
+			}
+		}
+		return upSkin;
+	}
+
+	getUpgradeTitanArtifact() {
+		const titans = Object.values(this.questInfo['titanGetAll']);
+		const inventory = this.questInfo['inventoryGet'];
+		const userInfo = this.questInfo['userGetInfo'];
+		const upArt = { titanId: 0, slotId: 0, level: 120 };
+
+		const titanLib = lib.getData('titan');
+		const artTitanLib = lib.getData('titanArtifact');
+
+		for (const titan of titans) {
+			const titanInfo = titanLib[titan.id];
+			// const level = titan.level
+			// if (level < 20) {
+			// 	continue;
+			// }
+
+			for (let slotId in titan.artifacts) {
+				const art = titan.artifacts[slotId];
+				/* Текущая звезданость арта */
+				const star = art.star;
+				if (!star) {
+					continue;
+				}
+				/* Текущий уровень арта */
+				const level = art.level;
+				if (level >= 120) {
+					continue;
+				}
+				/* Идентификатор арта в библиотеке */
+				const artifactId = titanInfo.artifacts[slotId];
+				const artInfo = artTitanLib.id[artifactId];
+				const costNextLevel = artTitanLib.type[artInfo.type].levels[level + 1].cost;
+
+				const costСurrency = Object.keys(costNextLevel).pop();
+				let costValue = 0;
+				let currentValue = 0;
+				const costValues = Object.keys(costNextLevel[costСurrency]).pop();
+				if (costСurrency == 'gold') {
+					costValue = costValues;
+					currentValue = userInfo.gold;
+				} else {
+					const costId = costValues[0];
+					costValue = +costValues[1];
+					currentValue = inventory[costСurrency][costId];
+				}
+
+				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
+				if (level < upArt.level && currentValue >= costValue) {
+					upArt.level = level;
+					upArt.titanId = titan.id;
+					upArt.slotId = slotId;
+					break;
+				}
+			}
+		}
+		return upArt;
+	}
+
+	getEnchantRune() {
+		const heroes = Object.values(this.questInfo['heroGetAll']);
+		const inventory = this.questInfo['inventoryGet'];
+		const enchRune = { heroId: 0, tier: 0, exp: 43750, itemId: 0 };
+		for (let i = 1; i <= 4; i++) {
+			if (inventory.consumable[i] > 0) {
+				enchRune.itemId = i;
+				break;
+			}
+		}
+
+		const runeLib = lib.getData('rune');
+		const runeLvls = Object.values(runeLib.level);
+		/**
+		 * color - 4 (синий) открывает 1 и 2 символ
+		 * color - 7 (фиолетовый) открывает 3 символ
+		 * color - 8 (фиолетовый +1) открывает 4 символ
+		 * color - 9 (фиолетовый +2) открывает 5 символ
+		 */
+		// TODO: кажется надо учесть уровень команды
+		const colors = [4, 4, 7, 8, 9];
+		for (const hero of heroes) {
+			const color = hero.color;
+
+
+			for (let runeTier in hero.runes) {
+				/* Проверка на доступность руны */
+				if (color < colors[runeTier]) {
+					continue;
+				}
+				/* Текущий опыт руны */
+				const exp = hero.runes[runeTier];
+				if (exp >= 43750) {
+					continue;
+				}
+
+				let level = 0;
+				if (exp) {
+					for (let lvl of runeLvls) {
+						if (exp >= lvl.enchantValue) {
+							level = lvl.level;
+						} else {
+							break;
+						}
+					}
+				}
+				/** Уровень героя необходимый для уровня руны */
+				const heroLevel = runeLib.level[level].heroLevel;
+				if (hero.level < heroLevel) {
+					continue;
+				}
+
+				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
+				if (exp < enchRune.exp) {
+					enchRune.exp = exp;
+					enchRune.heroId = hero.id;
+					enchRune.tier = runeTier;
+					break;
+				}
+			}
+		}
+		return enchRune;
+	}
 
 		end(status) {
 			setProgress(status, true);
@@ -6968,6 +7368,11 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				checked: false
 			},
 			{
+			name: 'getDailyBonus',
+			label: I18N('DAILY_BONUS'),
+			checked: false
+		},
+		{
 				name: 'questAllFarm',
 				label: I18N('COLLECT_QUEST_REWARDS'),
 				checked: false
@@ -6990,6 +7395,7 @@ String.prototype.sprintf = String.prototype.sprintf ||
 				await offerFarmAllReward();
 				await Send('{"calls":[{"name":"subscriptionFarm","args":{},"ident":"body"},{"name":"zeppelinGiftFarm","args":{},"ident":"zeppelinGiftFarm"},{"name":"grandFarmCoins","args":{},"ident":"grandFarmCoins"}]}');
 			},
+			getDailyBonus,
 			questAllFarm,
 			synchronization: async () => {
 				cheats.refreshGame();
@@ -7683,7 +8089,6 @@ String.prototype.sprintf = String.prototype.sprintf ||
  * Получение всех уровней при сборе всех наград (квест на титанит и на энку)
  * Добавить проверку правильности пути для приключения
  * Добивание на арене титанов
- * Сбор ежедневных календарных наград
  * Добавить в подземку проверку варианта когда одна пачка из 2х мертва
  * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
  * добавить отображение урона на авто перед боем для босса Асгарда
