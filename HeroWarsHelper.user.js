@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.102
+// @version			2.103
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1807,7 +1807,7 @@ String.prototype.sprintf = String.prototype.sprintf ||
                  * Hiding donation offers 3
                  * Скрываем предложения доната 3
                  */
-                if (call.result?.bundleUpdate) {
+                if (getSaveVal('noOfferDonat') && call.result?.bundleUpdate) {
                     delete call.result.bundleUpdate;
                     isChange = true;
                 }
