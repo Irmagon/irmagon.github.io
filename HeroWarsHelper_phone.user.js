@@ -2549,6 +2549,34 @@ const popup = new (function () {
 		left: 0;
 	}
 
+	.PopUp_close {
+		width: 25px;
+		height: 25px;
+		position: absolute;
+		right: -3px;
+		top: -3px;
+		border: 3px solid #c18550;
+		border-radius: 20px;
+		background: radial-gradient(circle, rgba(190,30,35,1) 0%, rgba(0,0,0,1) 100%);
+		background-position-y: 3px;
+		box-shadow: -1px 1px 3px black;
+		cursor: pointer;
+		box-sizing: border-box;
+	}
+
+	.PopUp_close:hover {
+		filter: brightness(1.2);
+	}
+
+	.PopUp_crossClose {
+		width: 100%;
+		height: 100%;
+		background-size: 65%;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23f4cd73' d='M 0.826 12.559 C 0.431 12.963 3.346 15.374 3.74 14.97 C 4.215 15.173 8.167 10.457 7.804 10.302 C 7.893 10.376 11.454 14.64 11.525 14.372 C 12.134 15.042 15.118 12.086 14.638 11.689 C 14.416 11.21 10.263 7.477 10.402 7.832 C 10.358 7.815 11.731 7.101 14.872 3.114 C 14.698 2.145 13.024 1.074 12.093 1.019 C 11.438 0.861 8.014 5.259 8.035 5.531 C 7.86 5.082 3.61 1.186 3.522 1.59 C 2.973 1.027 0.916 4.611 1.17 4.873 C 0.728 4.914 5.088 7.961 5.61 7.995 C 5.225 7.532 0.622 12.315 0.826 12.559 Z'/%3e%3c/svg%3e")
+	}
+
 	.PopUp_blocks {
 		width: 90%;
 		height: 50%;
