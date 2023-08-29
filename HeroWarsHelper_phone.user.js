@@ -907,21 +907,6 @@ const buttons = {
 		title: I18N('REWARDS_AND_MAIL_TITLE'),
 		func: rewardsAndMailFarm
 	},
-    sendExpedition: {
-        name: I18N('EXPEDITIONS'),
-        title: I18N('EXPEDITIONS_TITLE'),
-        func: checkExpedition
-    },
-	testTitanArena: {
-		name: I18N('TITAN_ARENA'),
-		title: I18N('TITAN_ARENA_TITLE'),
-		func: testTitanArena
-	},
-	testDungeon: {
-		name: I18N('DUNGEON'),
-		title: I18N('DUNGEON_TITLE'),
-		func: testDungeon
-	},
 	/*
 	bossRatingEvent: {
 		name: I18N('ARCHDEMON'),
@@ -979,11 +964,21 @@ const buttons = {
 					result: testTower,
 					title: I18N('TOWER_TITLE'),
 				},
-				{
-					msg: I18N('EXPEDITIONS'),
-					result: checkExpedition,
-					title: I18N('EXPEDITIONS_TITLE'),
-				},
+                {
+                    msg: I18N('EXPEDITIONS'),
+                    title: I18N('EXPEDITIONS_TITLE'),
+                    result: checkExpedition
+                },
+                {
+                    msg: I18N('TITAN_ARENA'),
+                    title: I18N('TITAN_ARENA_TITLE'),
+                    result: testTitanArena
+                },
+                {
+                    msg: I18N('DUNGEON'),
+                    title: I18N('DUNGEON_TITLE'),
+                    result: testDungeon
+                },
 				{
 					msg: I18N('MINIONS'),
 					result: testRaidNodes,
@@ -1013,6 +1008,15 @@ const buttons = {
 					result: mailGetAll,
 					title: I18N('MAIL_TITLE'),
 				},
+               {
+                   msg: I18N('DAILY_QUESTS'),
+                   title: I18N('DAILY_QUESTS_TITLE'),
+                   result: async function () {
+                       const quests = new dailyQuests(() => { }, () => { });
+                       await quests.autoInit();
+                       quests.start();
+                   },
+               },
 			];
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1020,15 +1024,6 @@ const buttons = {
 				answer();
 			}
 		}
-	},
-	dailyQuests: {
-		name: I18N('DAILY_QUESTS'),
-		title: I18N('DAILY_QUESTS_TITLE'),
-		func: async function () {
-			const quests = new dailyQuests(() => { }, () => { });
-			await quests.autoInit();
-			quests.start();
-		},
 	},
 	doOthers: {
 		name: I18N('OTHERS'),
@@ -2529,7 +2524,7 @@ const popup = new (function () {
 		position: absolute;
 		background-color: #190e08e6;
 		z-index: 10001;
-		top: 169px;
+		top: 190px;
 		left: 345px;
         width: 400;
 		border: 3px #ce9767 solid;
@@ -2972,14 +2967,14 @@ const scriptMenu = new (function () {
 			position: absolute;
 			max-width: 285px;
 			z-index: 9999;
-			top: 50%;
-			transform: translateY(-45%);
+			top: 40%;
+			transform: translateY(-23%);
 			background: #190e08e6;
 			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
 			box-sizing: border-box;
-		font-size: 12px;
+            font-size: 12px;
 			font-family: sans-serif;
 			font-stretch: condensed;
 			color: #fce1ac;
@@ -3032,8 +3027,8 @@ const scriptMenu = new (function () {
 			width: 25px;
 			height: 25px;
 			position: absolute;
-			right: -2px;
-			top: -2px;
+			right: -1px;
+			top: -1px;
 			border: 2px solid #c18550;
 			border-radius: 20px;
 			background: radial-gradient(circle, rgba(190,30,35,1) 0%, rgba(0,0,0,1) 100%);
@@ -3071,8 +3066,8 @@ const scriptMenu = new (function () {
 			text-align: center;
 		}
 		.scriptMenu_header {
-			text-align: center;
-			align-self: center;
+			text-align: left;
+			align-self: flex-start;
 			font-size: 10px;
 			margin: 0px 15px;
 		}
@@ -3083,6 +3078,7 @@ const scriptMenu = new (function () {
 		.scriptMenu_InputText {
 			text-align: center;
 			width: 120px;
+            font-size: 10px;
 			height: 20px;
 			border: 1px solid #cf9250;
 			border-radius: 9px;
