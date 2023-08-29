@@ -2967,14 +2967,14 @@ const scriptMenu = new (function () {
 			position: absolute;
 			max-width: 285px;
 			z-index: 9999;
-			top: 35%;
-			transform: translateY(-20%);
+			top: 40%;
+			transform: translateY(-23%);
 			background: #190e08e6;
 			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
 			box-sizing: border-box;
-            		font-size: 12px;
+            font-size: 12px;
 			font-family: sans-serif;
 			font-stretch: condensed;
 			color: #fce1ac;
@@ -6695,7 +6695,8 @@ function rewardsAndMailFarm() {
 				ident: "mailGetAll"
 			}]
 		}
-		send(JSON.stringify(questGetAllCall), function (data) {
+		send(JSON.stringify(questGetAllCall), function (res) {
+			let data = getJson(res);
 			if (!data) return;
 			let questGetAll = data?.results[0]?.result?.response;
 
