@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace		HWH_Phone
-// @version		2.111
+// @version		2.112
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -7517,6 +7517,7 @@ class dailyQuests {
 				return starMoney >= 20;
 			},
 		},
+		/*
 		10007: {
 			description: 'Открой 1 сундук', // ++++++++++++++++
 			doItCall: () => [{ name: "chestBuy", args: { chest: "town", free: true, pack: false }, ident: "chestBuy" }],
@@ -7525,6 +7526,7 @@ class dailyQuests {
 				return chestInfo.amount > 0;
 			},
 		},
+  		*/
 		10016: {
 			description: 'Отправь подарки согильдийцам', // ++++++++++++++++
 			doItCall: () => [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
