@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace		HWH_Phone
-// @version		2.114
+// @version		2.117
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -712,23 +712,22 @@ const i18nLangData = {
 	}
 }
 
-let selectLang = 'en';
-function checkLang() {
-	const html = document.querySelector('html')
-	const isFacebook = location.pathname.includes('facebook');
-	const browserLang = (navigator.language || navigator.userLanguage).substr(0, 2);
-	if (
-		(html && html.lang == 'ru') ||
-		(isFacebook && browserLang == 'ru')
-	) {
-		selectLang = 'ru';
-	} else {
-		selectLang = 'en';
+function getLang() {
+	let lang = '';
+	if (typeof NXFlashVars !== 'undefined') {
+		lang = NXFlashVars.interface_lang
 	}
+	if (!lang) {
+		lang = (navigator.language || navigator.userLanguage).substr(0, 2);
 }
-checkLang();
+	if (lang == 'ru') {
+		return lang;
+	}
+	return 'en';
+}
 
 this.I18N = function (constant, replace) {
+	const selectLang = getLang();
 	if (constant && constant in i18nLangData[selectLang]) {
 		const result = i18nLangData[selectLang][constant];
 		if (replace) {
@@ -853,14 +852,12 @@ const checkboxes = {
 		})(),
 	}
 	*/
-	/*
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
 		default: false
-	}
-	*/
+	},
 };
 /**
  * Get checkbox state
@@ -983,8 +980,8 @@ const buttons = {
 				},
                 {
                     msg: I18N('EXPEDITIONS'),
+					result: checkExpedition,
                     title: I18N('EXPEDITIONS_TITLE'),
-                    result: checkExpedition
                 },
                 {
                     msg: I18N('TITAN_ARENA'),
@@ -2109,7 +2106,7 @@ async function checkChangeResponse(response) {
 				if (isChecked('preCalcBattle')) {
 					const result = await Calc(lastBossBattleInfo).then(e => e.progress[0].defenders.heroes[1].extra);
 					const bossDamage = result.damageTaken + result.damageTakenNextLevel;
-					setProgress(I18N('BOSS_DAMAGE') + bossDamage, false, hideProgress);
+					setProgress(I18N('BOSS_DAMAGE') + bossDamage.toLocaleString(), false, hideProgress);
 				}
 			}
 			/**
@@ -3361,7 +3358,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1008/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1032/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
