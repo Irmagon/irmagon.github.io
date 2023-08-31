@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.112
+// @version			2.114
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -295,7 +295,7 @@ const i18nLangData = {
 		QUEST_10003: 'Complete 3 heroic missions',
 		QUEST_10004: 'Fight 3 times in the Arena or Grand Arena',
 		QUEST_10006: 'Use the exchange of emeralds 1 time',
-		QUEST_10007: 'Open 1 chest',
+		QUEST_10007: 'Perform 1 summon in the Solu Atrium',
 		QUEST_10016: 'Send gifts to guildmates',
 		QUEST_10018: 'Use an experience potion',
 		QUEST_10019: 'Open 1 chest in the Tower',
@@ -327,7 +327,8 @@ const i18nLangData = {
 		COMPLETE_TOE: 'Complete ToE',
 		COMPLETE_DUNGEON: 'Complete the dungeon',
 		COLLECT_MAIL: 'Collect mail',
-		COLLECT_MISC: 'Collect Easter Eggs, Skin Gems, Keys, Arena Coins and Soul Crystal',
+		COLLECT_MISC: 'Collect some bullshit',
+		COLLECT_MISC_TITLE: 'Collect Easter Eggs, Skin Gems, Keys, Arena Coins and Soul Crystal',
 		COLLECT_QUEST_REWARDS: 'Collect quest rewards',
 		MAKE_A_SYNC: 'Make a sync',
 
@@ -425,6 +426,13 @@ const i18nLangData = {
 		REWARDS_AND_MAIL: 'Rewars and Mail',
 		REWARDS_AND_MAIL_TITLE: 'Collects rewards and mail',
 		COLLECT_REWARDS_AND_MAIL: 'Collected {countQuests} rewards and {countMail} letters',
+		TIMER_ALREADY: 'Timer already started',
+		NO_ATTEMPTS_TIMER_START: 'No attempts, timer started',
+		EPIC_BRAWL_RESULT: 'Wins: {wins}/{attempts}, Coins: {coins}, Streak: {progress}/{nextStage} [Close]{end}',
+		ATTEMPT_ENDED: '<br>Attempts ended, timer started',
+		EPIC_BRAWL: 'Cosmic Battle',
+		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
+		RELOAD_GAME: 'Reload game',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -563,7 +571,7 @@ const i18nLangData = {
 		QUEST_10003: 'Пройди 3 героические миссии',
 		QUEST_10004: 'Сразись 3 раза на Арене или Гранд Арене',
 		QUEST_10006: 'Используй обмен изумрудов 1 раз',
-		QUEST_10007: 'Открой 1 сундук',
+		QUEST_10007: 'Соверши 1 призыв в Атриуме Душ',
 		QUEST_10016: 'Отправь подарки согильдийцам',
 		QUEST_10018: 'Используй зелье опыта',
 		QUEST_10019: 'Открой 1 сундук в Башне',
@@ -595,7 +603,8 @@ const i18nLangData = {
 		COMPLETE_TOE: 'Пройти Турнир Стихий',
 		COMPLETE_DUNGEON: 'Пройти подземелье',
 		COLLECT_MAIL: 'Собрать почту',
-		COLLECT_MISC: 'Собрать пасхалки, камни облика, ключи, монеты арены и Хрусталь души',
+		COLLECT_MISC: 'Собрать всякую херню',
+		COLLECT_MISC_TITLE: 'Собрать пасхалки, камни облика, ключи, монеты арены и Хрусталь души',
 		COLLECT_QUEST_REWARDS: 'Собрать награды за квесты',
 		MAKE_A_SYNC: 'Сделать синхронизацю',
 
@@ -607,6 +616,7 @@ const i18nLangData = {
 		COPY_ERROR: 'Скопировать в буфер информацию об ошибке',
 		BTN_YES: 'Да',
 		ALL_TASK_COMPLETED: 'Все задачи выполнены',
+
 		UNKNOWN: 'Неизвестно',
 		ENTER_THE_PATH: 'Введите путь приключения через запятые или дефисы',
 		START_ADVENTURE: 'Начать приключение по этому пути!',
@@ -692,6 +702,13 @@ const i18nLangData = {
 		REWARDS_AND_MAIL: 'Собрать',
 		REWARDS_AND_MAIL_TITLE: 'Собирает награды и почту',
 		COLLECT_REWARDS_AND_MAIL: 'Собрано {countQuests} наград и {countMail} писем',
+		TIMER_ALREADY: 'Таймер уже запущен',
+		NO_ATTEMPTS_TIMER_START: 'Попыток нет, запущен таймер',
+		EPIC_BRAWL_RESULT: '{i} Победы: {wins}/{attempts}, Монеты: {coins}, Серия: {progress}/{nextStage} [Закрыть]{end}',
+		ATTEMPT_ENDED: '<br>Попытки закончились, запущен таймер',
+		EPIC_BRAWL: 'Вселенская битва',
+		EPIC_BRAWL_TITLE: 'Тратит попытки во Вселенской битве',
+		RELOAD_GAME: 'Перезагрузить игру',
 	}
 }
 
@@ -994,7 +1011,17 @@ const buttons = {
 					result: offerFarmAllReward,
 					title: I18N('ESTER_EGGS_TITLE'),
 				},
-				{
+                {
+                    msg: I18N('EPIC_BRAWL'),
+                    result: async function () {
+                            confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
+                                const brawl = new epicBrawl;
+                                brawl.start();
+                            });
+                        },
+                    title: I18N('EPIC_BRAWL_TITLE'),
+                },
+                {
 					msg: I18N('STORM'),
 					result: function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('STORM')}?`, () => {
@@ -1075,6 +1102,11 @@ const buttons = {
 					msg: I18N('CLAN_STAT'),
 					result: clanStatistic,
 					title: I18N('CLAN_STAT_TITLE'),
+				},
+				{
+					msg: I18N('SECRET_WEALTH'),
+					result: buyWithPetExperience,
+					title: I18N('SECRET_WEALTH_TITLE'),
 				},
 			];
 			popupButtons.push({ result: false, isClose: true })
@@ -6325,7 +6357,9 @@ async function fillActive() {
 	const quest = quests.find(e => e.id > 10046 && e.id < 10051);
 	if (quest) {
 		countGetActive = 1750 - quest.progress;
-	} else {
+	}
+
+	if (countGetActive <= 0) {
 		countGetActive = maxActive;
 	}
 	console.log(countGetActive);
@@ -6701,14 +6735,22 @@ function rewardsAndMailFarm() {
 		}
 		send(JSON.stringify(questGetAllCall), function (data) {
 			if (!data) return;
-			let questGetAll = data?.results[0]?.result?.response;
+			let questGetAll = data.results[0].result.response.filter(e => e.state == 2);
+			const questBattlePass = lib.getData('quest').battlePass;
+			const questChainBPass = lib.getData('battlePass').questChain;
 
 			const questAllFarmCall = {
 				calls: []
 			}
 			let number = 0;
 			for (let quest of questGetAll) {
-				if (quest.id < 1e6 && quest.state == 2) {
+				if (quest.id > 1e6) {
+					const questInfo = questBattlePass[quest.id];
+					const chain = questChainBPass[questInfo.chain];
+					if (chain.requirement?.battlePassTicket) {
+						continue;
+					}
+				}
 					questAllFarmCall.calls.push({
 						name: "questFarm",
 						args: {
@@ -6718,7 +6760,6 @@ function rewardsAndMailFarm() {
 					});
 					number++;
 				}
-			}
 
 			let letters = data?.results[1]?.result?.response?.letters;
 			letterIds = lettersFilter(letters);
@@ -6766,6 +6807,97 @@ function rewardsAndMailFarm() {
 			});
 		});
 	})
+}
+
+class epicBrawl {
+	timeout = null;
+	time = null;
+
+	constructor() {
+		if (epicBrawl.inst) {
+			return epicBrawl.inst;
+		}
+		epicBrawl.inst = this;
+		return this;
+	}
+
+	check() {
+		console.log(new Date(this.time))
+		if (Date.now() > this.time) {
+			this.timeout = null;
+			this.start()
+			return;
+		}
+		this.timeout = setTimeout(this.check, 6e4);
+	}
+
+	async start() {
+		if (this.timeout) {
+			console.log(new Date(this.time))
+			setProgress(I18N('TIMER_ALREADY'), 3000);
+			return;
+		}
+		setProgress(I18N('EPIC_BRAWL'), true);
+		const teamInfo = await Send('{"calls":[{"name":"teamGetAll","args":{},"ident":"teamGetAll"},{"name":"teamGetFavor","args":{},"ident":"teamGetFavor"},{"name":"userGetInfo","args":{},"ident":"userGetInfo"}]}').then(e => e.results.map(n => n.result.response));
+		const refill = teamInfo[2].refillable.find(n => n.id == 52)
+		this.time = (refill.lastRefill + 3600) * 1000
+		const attempts = refill.amount;
+		if (!attempts) {
+			console.log(new Date(this.time));
+			this.check();
+			setProgress(I18N('NO_ATTEMPTS_TIMER_START'), 3000);
+			return;
+		}
+
+		const args = {
+			heroes: teamInfo[0].epic_brawl.filter(e => e < 1000),
+			pet: teamInfo[0].epic_brawl.filter(e => e > 6000).pop(),
+			favor: teamInfo[1].epic_brawl,
+		}
+
+		let wins = 0;
+		let coins = 0;
+		let streak = { progress: 0, nextStage: 0 };
+		for (let i = attempts; i > 0; i--) {
+			const info = await Send(JSON.stringify({
+				calls: [
+					{ name: "epicBrawl_getEnemy", args: {}, ident: "epicBrawl_getEnemy" }, { name: "epicBrawl_startBattle", args, ident: "epicBrawl_startBattle" }
+				]
+			})).then(e => e.results.map(n => n.result.response));
+
+			const { progress, result } = await Calc(info[1].battle);
+			const endResult = await Send(JSON.stringify({ calls: [{ name: "epicBrawl_endBattle", args: { progress, result }, ident: "epicBrawl_endBattle" }, { name: "epicBrawl_getWinStreak", args: {}, ident: "epicBrawl_getWinStreak" }] })).then(e => e.results.map(n => n.result.response));
+
+			const resultInfo = endResult[0].result;
+			streak = endResult[1];
+
+			wins += resultInfo.win;
+			coins += resultInfo.reward ? resultInfo.reward.coin[39] : 0;
+
+			console.log(endResult[0].result)
+			if (endResult[1].progress == endResult[1].nextStage) {
+				const farm = await Send('{"calls":[{"name":"epicBrawl_farmWinStreak","args":{},"ident":"body"}]}').then(e => e.results[0].result.response);
+				coins += farm.coin[39];
+			}
+
+			setProgress(I18N('EPIC_BRAWL_RESULT', {
+				i, wins, attempts, coins,
+				progress: streak.progress,
+				nextStage: streak.nextStage,
+				end: '',
+			}), false, hideProgress);
+		}
+
+		console.log(new Date(this.time));
+		this.check();
+		setProgress(I18N('EPIC_BRAWL_RESULT', {
+			wins, attempts, coins,
+			i: '',
+			progress: streak.progress,
+			nextStage: streak.nextStage,
+			end: I18N('ATTEMPT_ENDED'),
+		}), false, hideProgress);
+	}
 }
 
 /**
@@ -7520,16 +7652,14 @@ class dailyQuests {
 				return starMoney >= 20;
 			},
 		},
-		/*
 		10007: {
-			description: 'Открой 1 сундук', // ++++++++++++++++
-			doItCall: () => [{ name: "chestBuy", args: { chest: "town", free: true, pack: false }, ident: "chestBuy" }],
+			description: 'Соверши 1 призыв в Атриуме Душ', // ++++++++++++++++
+		doItCall: () => [{ name: "gacha_open", args: { ident: "heroGacha", free: true, pack: false }, ident: "gacha_open" }],
 			isWeCanDo: () => {
-				const chestInfo = this.questInfo['userGetInfo'].refillable.find(e => e.id == 37);
-				return chestInfo.amount > 0;
+				const soulCrystal =  this.questInfo['inventoryGet'].coin[38];
+				return soulCrystal > 0;
 			},
 		},
-  		*/
 		10016: {
 			description: 'Отправь подарки согильдийцам', // ++++++++++++++++
 			doItCall: () => [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
@@ -7825,7 +7955,7 @@ class dailyQuests {
 
 		const result = await Send(JSON.stringify({ calls }));
 		if (result.error) {
-			console.error(result.error)
+			console.error(result.error, result.error.call)
 		}
 		this.end(`${I18N('COMPLETED_QUESTS')}: ${countChecked}`);
 	}
@@ -7926,7 +8056,6 @@ class dailyQuests {
 					upArt.level = level;
 					upArt.heroId = hero.id;
 					upArt.slotId = slotId;
-					break;
 				}
 			}
 		}
@@ -7936,7 +8065,7 @@ class dailyQuests {
 	getUpgradeSkin() {
 		const heroes = Object.values(this.questInfo['heroGetAll']);
 		const inventory = this.questInfo['inventoryGet'];
-		const upSkin = { heroId: 0, skinId: 0, level: 60 };
+		const upSkin = { heroId: 0, skinId: 0, level: 60, cost: 1500 };
 
 		const skinLib = lib.getData('skin');
 
@@ -7961,11 +8090,13 @@ class dailyQuests {
 				const costValue = +costNextLevel[costСurrency][costСurrencyId];
 
 				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
-				if (level < upSkin.level && inventory[costСurrency][costСurrencyId] >= costValue) {
+				if (level < upSkin.level &&
+					costValue < upSkin.cost &&
+					inventory[costСurrency][costСurrencyId] >= costValue) {
+					upSkin.cost = costValue;
 					upSkin.level = level;
 					upSkin.heroId = hero.id;
 					upSkin.skinId = skinId;
-					break;
 				}
 			}
 		}
@@ -8039,6 +8170,7 @@ class dailyQuests {
 				enchRune.itemId = i;
 				break;
 			}
+			return enchRune;
 		}
 
 		const runeLib = lib.getData('rune');
@@ -8196,6 +8328,8 @@ class dailyQuests {
 	}
 }
 
+this.questRun = dailyQuests;
+
 function testDoYourBest() {
 	return new Promise((resolve, reject) => {
 		const doIt = new doYourBest(resolve, reject);
@@ -8244,6 +8378,7 @@ class doYourBest {
 		{
 			name: 'collectAllStuff',
 			label: I18N('COLLECT_MISC'),
+			title: I18N('COLLECT_MISC_TITLE'),
 			checked: false
 		},
 		{
@@ -8264,6 +8399,11 @@ class doYourBest {
 		{
 			name: 'synchronization',
 			label: I18N('MAKE_A_SYNC'),
+			checked: false
+		},
+		{
+			name: 'reloadGame',
+			label: I18N('RELOAD_GAME'),
 			checked: false
 		},
 	];
@@ -8288,6 +8428,9 @@ class doYourBest {
 		questAllFarm,
 		synchronization: async () => {
 			cheats.refreshGame();
+		},
+		reloadGame: async () => {
+			location.reload();
 		}
 	}
 
