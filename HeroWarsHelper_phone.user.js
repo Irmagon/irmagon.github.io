@@ -2021,6 +2021,10 @@ async function checkChangeResponse(response) {
 				console.log(quest.question);
 				copyText(quest.question);
 				setProgress(I18N('QUESTION_COPY'), true);
+				quest.lang = null;
+				if (typeof NXFlashVars !== 'undefined') {
+					quest.lang = NXFlashVars.interface_lang;
+				}
 				lastQuestion = quest;
 				if (isChecked('getAnswer')) {
 					const answer = await getAnswer(lastQuestion);
@@ -2042,7 +2046,11 @@ async function checkChangeResponse(response) {
 				if (lastQuestion) {
 					const answerInfo = {
 						answer,
-						question: lastQuestion
+						question: lastQuestion,
+						lang: null,
+					}
+					if (typeof NXFlashVars !== 'undefined') {
+						answerInfo.lang = NXFlashVars.interface_lang;
 					}
 					lastQuestion = null;
 					setTimeout(sendAnswerInfo, 0, answerInfo);
