@@ -2,8 +2,8 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace		HWH
-// @version			2.117
+// @namespace			HWH
+// @version			2.119
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -2026,6 +2026,10 @@ async function checkChangeResponse(response) {
 				console.log(quest.question);
 				copyText(quest.question);
 				setProgress(I18N('QUESTION_COPY'), true);
+				quest.lang = null;
+				if (typeof NXFlashVars !== 'undefined') {
+					quest.lang = NXFlashVars.interface_lang;
+				}
 				lastQuestion = quest;
 				if (isChecked('getAnswer')) {
 					const answer = await getAnswer(lastQuestion);
@@ -2047,7 +2051,11 @@ async function checkChangeResponse(response) {
 				if (lastQuestion) {
 					const answerInfo = {
 						answer,
-						question: lastQuestion
+						question: lastQuestion,
+						lang: null,
+					}
+					if (typeof NXFlashVars !== 'undefined') {
+						answerInfo.lang = NXFlashVars.interface_lang;
 					}
 					lastQuestion = null;
 					setTimeout(sendAnswerInfo, 0, answerInfo);
