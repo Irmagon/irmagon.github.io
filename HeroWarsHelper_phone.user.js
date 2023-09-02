@@ -5453,7 +5453,7 @@ function hackGame() {
 		let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
 		let Game = selfGame['Game'];
 		let navigator = getF(Game, "get_navigator")
-		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
+		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 17)
 		let instance = getFnP(Game, 'get_instance');
 		Game[instance]()[navigator]()[navigate](window, event);
 	}
