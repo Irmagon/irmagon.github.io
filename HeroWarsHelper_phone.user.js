@@ -5372,7 +5372,8 @@ function hackGame() {
 		 *
 		 * Удаление торговца редкими товарами
 		 */
-		/*removeWelcomeShop: function () {
+		/*
+  		   removeWelcomeShop: function () {
 			let SSM_3 = getProtoFn(Game.SpecialShopModel, 3);
 			const oldWelcomeShop = Game.SpecialShopModel.prototype[SSM_3];
 			Game.SpecialShopModel.prototype[SSM_3] = function () {
@@ -5382,8 +5383,8 @@ function hackGame() {
 					return oldWelcomeShop.call(this);
 				}
 			}
-		},*/
-
+		},
+  */
 		/**
 		 * Acceleration button without Valkyries favor
 		 *
