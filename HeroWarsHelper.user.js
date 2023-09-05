@@ -2,8 +2,8 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace			HWH
-// @version			2.119
+// @namespace		HWH
+// @version			2.121
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -3370,7 +3370,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1032/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1039/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -5376,7 +5376,7 @@ function hackGame() {
 		 *
 		 * Удаление торговца редкими товарами
 		 */
-		removeWelcomeShop: function () {
+		/*removeWelcomeShop: function () {
 			let SSM_3 = getProtoFn(Game.SpecialShopModel, 3);
 			const oldWelcomeShop = Game.SpecialShopModel.prototype[SSM_3];
 			Game.SpecialShopModel.prototype[SSM_3] = function () {
@@ -5386,8 +5386,7 @@ function hackGame() {
 					return oldWelcomeShop.call(this);
 				}
 			}
-		},
-
+		},*/
 		/**
 		 * Acceleration button without Valkyries favor
 		 *
