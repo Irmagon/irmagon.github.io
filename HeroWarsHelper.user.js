@@ -2,8 +2,8 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace		HWH
-// @version			2.121
+// @namespace			HWH
+// @version			2.123
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -433,6 +433,7 @@ const i18nLangData = {
 		EPIC_BRAWL: 'Cosmic Battle',
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
 		RELOAD_GAME: 'Reload game',
+		TIMER: 'Timer:',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -709,6 +710,7 @@ const i18nLangData = {
 		EPIC_BRAWL: 'Вселенская битва',
 		EPIC_BRAWL_TITLE: 'Тратит попытки во Вселенской битве',
 		RELOAD_GAME: 'Перезагрузить игру',
+		TIMER: 'Таймер:',
 	}
 }
 
@@ -1264,7 +1266,12 @@ let brawlsPack = null;
  * Автопотасовка запущена
  */
 let isBrawlsAutoStart = false;
-
+/**
+ * Timer
+ *
+ * Таймер
+ */
+this.timerMS = 20e3;
 /**
  * Copies the text to the clipboard
  *
@@ -1756,6 +1763,7 @@ async function checkChangeSend(sourceData, tempData) {
 					const result = await Calc(lastBattle);
 					call.args.progress = result.progress;
 					call.args.result = result.result;
+					await countdownTimer(timerMS / 1e3);
 					// } else {
 					// 	attackers.input = ["auto", 0, 0, "auto", 0, 0];
 					// }
@@ -2350,8 +2358,28 @@ function getClass(obj) {
  * Расчитывает сигнатуру запроса
  */
 this.getSignature = function(headers, data) {
-	let signatureStr = [headers["X-Request-Id"], headers["X-Auth-Token"], headers["X-Auth-Session-Id"], data, 'LIBRARY-VERSION=1'].join(':');
-	return md5(signatureStr);
+	const sign = {
+		signature: '',
+		length: 0,
+		add: function (text) {
+			this.signature += text;
+			if (this.length < this.signature.length) {
+				this.length = 3 * (this.signature.length + 1) >> 1;
+}
+		},
+	}
+	sign.add(headers["X-Request-Id"]);
+	sign.add(':');
+	sign.add(headers["X-Auth-Token"]);
+	sign.add(':');
+	sign.add(headers["X-Auth-Session-Id"]);
+	sign.add(':');
+	sign.add(data);
+	sign.add(':');
+	sign.add('LIBRARY-VERSION=1');
+	sign.add('UNIQUE-SESSION-ID=' + headers["X-Env-Unique-Session-Id"]);
+
+	return md5(sign.signature);
 }
 /**
  * Creates an interface
@@ -2441,6 +2469,17 @@ function addControls() {
  * Отправка запроса
  */
 function send(json, callback, pr) {
+	if (typeof json == 'string') {
+		json = JSON.parse(json);
+	}
+	for (const call of json.calls) {
+		if (!call?.context?.actionTs) {
+			call.context = {
+				actionTs: performance.now()
+			}
+		}
+	}
+	json = JSON.stringify(json);
 	/**
 	 * We get the headlines of the previous intercepted request
 	 * Получаем заголовки предыдущего перехваченого запроса
@@ -2866,11 +2905,13 @@ const popup = new (function () {
 		checkbox.dataset.name = checkBox.name;
 		checkbox.checked = checkBox.checked;
 		checkbox.label = checkBox.label;
+		checkbox.title = checkBox.title || '';
 		checkbox.classList.add('PopUp_checkbox');
 		contCheckbox.appendChild(checkbox)
 
 		const checkboxLabel = document.createElement('label');
 		checkboxLabel.innerText = checkBox.label;
+		checkboxLabel.title = checkBox.title || '';
 		checkboxLabel.setAttribute('for', checkbox.id);
 		contCheckbox.appendChild(checkboxLabel);
 
@@ -3370,7 +3411,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1039/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1040/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -3882,7 +3923,7 @@ function executeDungeon(resolve, reject) {
 			return;
 		}
 		// console.log(dungeonInfo, dungeonActivity);
-		setProgress(`${I18N('DUNGEON')}: ${I18N('TITANIT')} ` + dungeonActivity + '/' + maxDungeonActivity);
+		setProgress(`${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
 		if (dungeonActivity >= maxDungeonActivity) {
 			endDungeon('endDungeon');
 			return;
@@ -3996,8 +4037,9 @@ function executeDungeon(resolve, reject) {
 	 *
 	 * Заканчиваем бой
 	 */
-	function endBattle(battleInfo) {
+	async function endBattle(battleInfo) {
 		if (battleInfo.result.win) {
+			await countdownTimer(timerMS / 1e3, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
 			endBattleCall = {
 				calls: [{
 					name: "dungeonEndBattle",
@@ -5376,7 +5418,8 @@ function hackGame() {
 		 *
 		 * Удаление торговца редкими товарами
 		 */
-		/*removeWelcomeShop: function () {
+		/*
+		removeWelcomeShop: function () {
 			let SSM_3 = getProtoFn(Game.SpecialShopModel, 3);
 			const oldWelcomeShop = Game.SpecialShopModel.prototype[SSM_3];
 			Game.SpecialShopModel.prototype[SSM_3] = function () {
@@ -5386,7 +5429,9 @@ function hackGame() {
 					return oldWelcomeShop.call(this);
 				}
 			}
-		},*/
+		},
+		*/
+
 		/**
 		 * Acceleration button without Valkyries favor
 		 *
@@ -6902,6 +6947,25 @@ class epicBrawl {
 			end: I18N('ATTEMPT_ENDED'),
 		}), false, hideProgress);
 	}
+}
+
+function Sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+function countdownTimer(seconds, message) {
+	message = message || I18N('TIMER');
+	const stopTimer = Date.now() + seconds * 1e3
+	return new Promise(resolve => {
+		const interval = setInterval(async () => {
+			const now = Date.now();
+			setProgress(`${message} ${((stopTimer - now) / 1000).toFixed(2)}`, false);
+			if (now > stopTimer) {
+				clearInterval(interval);
+				setProgress('', 1);
+				resolve();
+			}
+		}, 100);
+	});
 }
 
 /**
