@@ -2,7 +2,7 @@
 // @name			HeroWars_TC
 // @name:en			HeroWars_TC
 // @namespace		HeroWars_TC
-// @version			2.12
+// @version			2.13
 // @description		Упрощает и автоматизирует многие аспекты игры Хроники Хаоса
 // @description:en	Simplifies and automates many aspects in the game Hero Wars
 // @author			ZingerY & Goodwin
@@ -930,10 +930,29 @@
 		return {}.toString.call(obj).slice(8, -1);
 	}
 	/** Расчитывает сигнатуру запроса */
-	this.getSignature = function(headers, data) {
-		let signatureStr = [headers["X-Request-Id"], headers["X-Auth-Token"], headers["X-Auth-Session-Id"], data, 'LIBRARY-VERSION=1'].join(':');
-		return md5(signatureStr);
-	}
+    function getSignature(headers, data) {
+        const sign = {
+            signature: '',
+            length: 0,
+            add: function(text) {
+                this.signature += text;
+                if (this.length < this.signature.length) {
+                    this.length = 3 * (this.signature.length + 1) >> 1;
+                }
+            }
+        };
+        sign.add(headers["X-Request-Id"]);
+        sign.add(':');
+        sign.add(headers["X-Auth-Token"]);
+        sign.add(':');
+        sign.add(headers["X-Auth-Session-Id"]);
+        sign.add(':');
+        sign.add(data);
+        sign.add(':');
+        sign.add('LIBRARY-VERSION=1');
+        sign.add('UNIQUE-SESSION-ID=' + headers["X-Env-Unique-Session-Id"]);
+        return md5(sign.signature);
+    }
 	/** Создает интерфейс */
 	function createInterface() {
 		scriptMenu.init({
