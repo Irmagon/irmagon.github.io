@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.127
+// @version			2.129
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1289,7 +1289,7 @@ let isBrawlsAutoStart = false;
  *
  * Делитель таймера
  */
-this.timerDiv = 1.3;
+this.timerDiv = 1.5;
 /**
  * Copies the text to the clipboard
  *
@@ -1785,7 +1785,7 @@ async function checkChangeSend(sourceData, tempData) {
 					const result = await Calc(lastBattle);
 					call.args.progress = result.progress;
 					call.args.result = result.result;
-					const timer = result.battleTime / timerDiv;
+					const timer = Math.max(result.battleTime / timerDiv + 1.5, 3);
 					console.log(timer);
 					await countdownTimer(timer);
 					// } else {
@@ -2267,7 +2267,7 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['subscriptionGetInfo']) {
 				if (call.result.response.subscription) {
-					timerDiv = 2;
+					timerDiv = 5;
 				}
 		}
 		}
@@ -2367,8 +2367,8 @@ function getBattleType(strBattleType) {
 		case "titan_tower":
 			return "get_titan";
 		case "tower":
-			return "get_tower";
 		case "clan_dungeon":
+			return "get_tower";
 		case "pve":
 			return "get_pve";
 		case "pvp_manual":
@@ -2379,6 +2379,10 @@ function getBattleType(strBattleType) {
 			return "get_pvp";
 		case "core":
 			return "get_core";
+		case "boss_10":
+		case "boss_11":
+		case "boss_12":
+			return "get_boss";
 		default:
 			return "get_clanPvp";
 	}
@@ -4100,7 +4104,7 @@ function executeDungeon(resolve, reject) {
 				args.isRaid = true;
 				countCard--;
 		} else {
-				const timer = battleInfo.battleTime / timerDiv;
+				const timer = Math.max(battleInfo.battleTime / timerDiv + 1.5, 3);
 				console.log(timer);
 				await countdownTimer(timer, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
 			}
