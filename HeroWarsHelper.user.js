@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.123
+// @version			2.127
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -161,8 +161,8 @@ const i18nLangData = {
 		/* Checkboxes */
 		SKIP_FIGHTS: 'Skip battle',
 		SKIP_FIGHTS_TITLE: 'Skip battle in Outland and the arena of the titans, auto-pass in the tower and campaign',
-		ENDLESS_CARDS: 'Endless cards',
-		ENDLESS_CARDS_TITLE: 'Endless Prediction Cards',
+		ENDLESS_CARDS: 'Infinite cards',
+		ENDLESS_CARDS_TITLE: 'Disable Divination Cards wasting',
 		AUTO_EXPEDITION: 'Auto Expedition',
 		AUTO_EXPEDITION_TITLE: 'Auto-sending expeditions',
 		CANCEL_FIGHT: 'Cancel battle',
@@ -434,13 +434,16 @@ const i18nLangData = {
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
 		RELOAD_GAME: 'Reload game',
 		TIMER: 'Timer:',
+		SHOW_ERRORS: 'Show errors',
+		SHOW_ERRORS_TITLE: 'Show server request errors',
+		ERROR_MSG: 'Error: {name}<br>{desciption}',
 	},
 	ru: {
 		/* Чекбоксы */
 		SKIP_FIGHTS: 'Пропуск боев',
 		SKIP_FIGHTS_TITLE: 'Пропуск боев в запределье и арене титанов, автопропуск в башне и кампании',
 		ENDLESS_CARDS: 'Бесконечные карты',
-		ENDLESS_CARDS_TITLE: 'Бесконечные карты предсказаний',
+		ENDLESS_CARDS_TITLE: 'Отключить трату карт предсказаний',
 		AUTO_EXPEDITION: 'АвтоЭкспедиции',
 		AUTO_EXPEDITION_TITLE: 'Автоотправка экспедиций',
 		CANCEL_FIGHT: 'Отмена боя',
@@ -612,7 +615,7 @@ const i18nLangData = {
 		RUN_FUNCTION: 'Выполнить следующие функции?',
 		BTN_GO: 'Погнали!',
 		PERFORMED: 'Выполняется',
-		DONE: 'Выполено',
+		DONE: 'Выполнено',
 		ERRORS_OCCURRES: 'Призошли ошибки при выполнении',
 		COPY_ERROR: 'Скопировать в буфер информацию об ошибке',
 		BTN_YES: 'Да',
@@ -711,6 +714,9 @@ const i18nLangData = {
 		EPIC_BRAWL_TITLE: 'Тратит попытки во Вселенской битве',
 		RELOAD_GAME: 'Перезагрузить игру',
 		TIMER: 'Таймер:',
+		SHOW_ERRORS: 'Отображать ошибки',
+		SHOW_ERRORS_TITLE: 'Отображать ошибки запросов к серверу',
+		ERROR_MSG: 'Ошибка: {name}<br>{description}',
 	}
 }
 
@@ -854,10 +860,24 @@ const checkboxes = {
 		})(),
 	}
 	*/
+	/*
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
+		default: false
+	},
+	*/
+	showErrors: {
+		label: I18N('SHOW_ERRORS'),
+		cbox: null,
+		title: I18N('SHOW_ERRORS_TITLE'),
+		default: true
+	},
+	buyForGold: {
+		label: I18N('BUY_FOR_GOLD'),
+		cbox: null,
+		title: I18N('BUY_FOR_GOLD_TITLE'),
 		default: false
 	},
 };
@@ -1023,9 +1043,7 @@ const buttons = {
                 {
 					msg: I18N('STORM'),
 					result: function () {
-						confShow(`${I18N('RUN_SCRIPT')} ${I18N('STORM')}?`, () => {
 							testAdventure('solo');
-						});
 					},
 					title: I18N('STORM_TITLE'),
 				},
@@ -1267,11 +1285,11 @@ let brawlsPack = null;
  */
 let isBrawlsAutoStart = false;
 /**
- * Timer
+ * Timer divider
  *
- * Таймер
+ * Делитель таймера
  */
-this.timerMS = 20e3;
+this.timerDiv = 1.3;
 /**
  * Copies the text to the clipboard
  *
@@ -1521,6 +1539,10 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 			if (isChecked('secretWealth')) {
 				buyWithPetExperienceAuto();
 			}
+ 
+			if (isChecked('buyForGold')) {
+				buyInStoreForGold();
+			}
 		}
 		/**
 		 * Outgoing request data processing
@@ -1763,7 +1785,9 @@ async function checkChangeSend(sourceData, tempData) {
 					const result = await Calc(lastBattle);
 					call.args.progress = result.progress;
 					call.args.result = result.result;
-					await countdownTimer(timerMS / 1e3);
+					const timer = result.battleTime / timerDiv;
+					console.log(timer);
+					await countdownTimer(timer);
 					// } else {
 					// 	attackers.input = ["auto", 0, 0, "auto", 0, 0];
 					// }
@@ -1958,6 +1982,12 @@ async function checkChangeResponse(response) {
 		if (respond.error) {
 			isChange = true;
 			console.error(respond.error);
+			if (isChecked('showErrors')) {
+				popup.confirm(I18N('ERROR_MSG', {
+					name: respond.error.name,
+					description: respond.error.description,
+				}));
+			}
 			delete respond.error;
 			respond.results = [];
 		}
@@ -2231,6 +2261,15 @@ async function checkChangeResponse(response) {
 					isChange = true;
 				}
 			}
+			/**
+			 * Getting subscription status
+			 * Получение состояния подписки
+			 */
+			if (call.ident == callsIdent['subscriptionGetInfo']) {
+				if (call.result.response.subscription) {
+					timerDiv = 2;
+				}
+		}
 		}
 
 		if (mainReward && artifactChestOpen) {
@@ -3798,6 +3837,7 @@ function testDungeon() {
 function executeDungeon(resolve, reject) {
 	dungeonActivity = 0;
 	maxDungeonActivity = 150;
+	countCard = 0;
 
 	titanGetAll = [];
 
@@ -3834,6 +3874,10 @@ function executeDungeon(resolve, reject) {
 			name: "titanGetAll",
 			args: {},
 			ident: "titanGetAll"
+		}, {
+			name: "inventoryGet",
+			args: {},
+			ident: "inventoryGet"
 		}]
 	}
 
@@ -3858,6 +3902,7 @@ function executeDungeon(resolve, reject) {
 		teamGetFavor = res[2].result.response;
 		dungeonActivity = res[3].result.response.stat.todayDungeonActivity;
 		titanGetAll = Object.values(res[4].result.response);
+		countCard = res[5].result.response.consumable[81];
 
 		teams.hero = {
 			favor: teamGetFavor.dungeon_hero,
@@ -3917,7 +3962,7 @@ function executeDungeon(resolve, reject) {
 	 *
 	 * Проверяем этаж
 	 */
-	function checkFloor(dungeonInfo) {
+	async function checkFloor(dungeonInfo) {
 		if (!('floor' in dungeonInfo) || dungeonInfo.floor?.state == 2) {
 			saveProgress();
 			return;
@@ -3925,34 +3970,42 @@ function executeDungeon(resolve, reject) {
 		// console.log(dungeonInfo, dungeonActivity);
 		setProgress(`${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
 		if (dungeonActivity >= maxDungeonActivity) {
-			endDungeon('endDungeon');
+			endDungeon('endDungeon', 'maxActive ' + dungeonActivity + '/' + maxDungeonActivity);
 			return;
 		}
 		titansStates = dungeonInfo.states.titans;
 		titanStats = titanObjToArray(titansStates);
-		floorChoices = dungeonInfo.floor.userData;
-		floorType = dungeonInfo.floorType;
-		primeElement = dungeonInfo.elements.prime;
+		const floorChoices = dungeonInfo.floor.userData;
+		const floorType = dungeonInfo.floorType;
+		//const primeElement = dungeonInfo.elements.prime;
 		if (floorType == "battle") {
-			promises = [];
+			const calls = [];
 			for (let teamNum in floorChoices) {
 				attackerType = floorChoices[teamNum].attackerType;
-				if (attackerType == 'neutral') {
-					const titans = titanGetAll.filter(e => !titansStates[e.id]?.isDead)
-					teams[attackerType].heroes = titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
-				}
-				const titans = fixTitanTeam(teams[attackerType]);
-				if (!titans.heroes.length) {
+				const args = fixTitanTeam(teams[attackerType]);
+				if (!args.heroes.length) {
 					continue;
 				}
-				promises.push(startBattle(teamNum, attackerType));
+				args.teamNum = teamNum;
+				calls.push({
+					name: "dungeonStartBattle",
+					args,
+					ident: "body_" + teamNum
+				})
 			}
-			if (!promises.length) {
-				endDungeon('endDungeon', 'All Dead');
-				return;
+			const battleDatas = await Send(JSON.stringify({ calls }))
+				.then(e => e.results.map(n => n.result.response))
+			const battleResults = [];
+			for (n in battleDatas) {
+				battleData = battleDatas[n]
+				battleData.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
+				battleResults.push(await Calc(battleData).then(result => {
+					result.teamNum = n;
+					result.attackerType = floorChoices[n].attackerType;
+					return result;
+				}));
 			}
-			Promise.all(promises)
-				.then(processingPromises);
+			processingPromises(battleResults)
 		}
 	}
 
@@ -4039,18 +4092,24 @@ function executeDungeon(resolve, reject) {
 	 */
 	async function endBattle(battleInfo) {
 		if (battleInfo.result.win) {
-			await countdownTimer(timerMS / 1e3, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
-			endBattleCall = {
-				calls: [{
-					name: "dungeonEndBattle",
-					args: {
+			const args = {
 						result: battleInfo.result,
 						progress: battleInfo.progress,
-					},
-					ident: "body"
-				}]
 			}
-			send(JSON.stringify(endBattleCall), resultEndBattle);
+			if (countCard && !isChecked('endlessCards')) {
+				args.isRaid = true;
+				countCard--;
+		} else {
+				const timer = battleInfo.battleTime / timerDiv;
+				console.log(timer);
+				await countdownTimer(timer, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
+			}
+			const calls = [{
+				name: "dungeonEndBattle",
+				args,
+				ident: "body"
+			}];
+			send(JSON.stringify({ calls }), resultEndBattle);
 		} else {
 			endDungeon('dungeonEndBattle win: false\n', battleInfo);
 		}
@@ -4062,6 +4121,14 @@ function executeDungeon(resolve, reject) {
 	 * Получаем и обрабатываем результаты боя
 	 */
 	function resultEndBattle(e) {
+		if ('error' in e) {
+			popup.confirm(I18N('ERROR_MSG', {
+				name: e.error.name,
+				description: e.error.description,
+			}));
+			endDungeon('errorRequest', e);
+			return;
+		}
 		battleResult = e.results[0].result.response;
 		if ('error' in battleResult) {
 			endDungeon('errorBattleResult', battleResult);
@@ -5098,6 +5165,8 @@ function hackGame() {
 		{name:"SpecialShopModel", prop:"game.model.user.shop.SpecialShopModel"},
 		{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
 		{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
+		{ name: "BattleLogEncoder", prop: "battle.log.BattleLogEncoder" },
+		{ name: "BattleLogReader", prop: "battle.log.BattleLogReader" },
 	];
 
 	/**
@@ -5182,9 +5251,13 @@ function hackGame() {
 		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 		battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
 		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
-			battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
-			battleData = battleInstant[getF(Game.BattleInstantPlay, 'get_rawBattleInfo')]();
+			const battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
+			const battleData = battleInstant[getF(Game.BattleInstantPlay, 'get_rawBattleInfo')]();
+			const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult[getProtoFn(Game.MultiBattleResult, 2)][0]));
+			const timeLimit = battlePresets[getF(Game.BattlePresets, 'get_timeLimit')]();
+			const battleTime = Math.max(...battleLog.map(e => e.time < timeLimit ? e.time : 0));
 			callback({
+				battleTime,
 				battleData,
 				progress: battleResult[getF(Game.MultiBattleResult, 'get_progress')](),
 				result: battleResult[getF(Game.MultiBattleResult, 'get_result')]()
@@ -8434,11 +8507,6 @@ class doYourBest {
 			checked: false
 		},
 		{
-			name: 'testDungeon',
-			label: I18N('COMPLETE_DUNGEON'),
-			checked: false
-		},
-		{
 			name: 'mailGetAll',
 			label: I18N('COLLECT_MAIL'),
 			checked: false
@@ -8465,6 +8533,11 @@ class doYourBest {
 			checked: false
 		},
 		{
+			name: 'testDungeon',
+			label: I18N('COMPLETE_DUNGEON'),
+			checked: false
+		},
+		{
 			name: 'synchronization',
 			label: I18N('MAKE_A_SYNC'),
 			checked: false
@@ -8481,7 +8554,6 @@ class doYourBest {
 		testTower,
 		checkExpedition,
 		testTitanArena,
-		testDungeon,
 		mailGetAll,
 		collectAllStuff: async () => {
 			await offerFarmAllReward();
@@ -8494,6 +8566,7 @@ class doYourBest {
 		},
 		getDailyBonus,
 		questAllFarm,
+		testDungeon,
 		synchronization: async () => {
 			cheats.refreshGame();
 		},
