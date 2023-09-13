@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.130
+// @version			2.132
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -3997,6 +3997,10 @@ function executeDungeon(resolve, reject) {
 					ident: "body_" + teamNum
 				})
 			}
+			if (!calls.length) {
+				endDungeon('endDungeon', 'All Dead');
+				return;
+			}			
 			const battleDatas = await Send(JSON.stringify({ calls }))
 				.then(e => e.results.map(n => n.result.response))
 			const battleResults = [];
@@ -5375,14 +5379,14 @@ function hackGame() {
 			}
 
 			Game.PlayerTowerData.prototype.P$h = function (a) {
-				let GM_2 = getFn(Game.GameModel, 2);
-				let GM_P2 = getProtoFn(Game.GameModel, 2);
-				let CM_29 = getProtoFn(Game.CommandManager, 29);
-				let TCL_5 = getProtoFn(Game.TowerCommandList, 5);
-				let MBR_15 = getProtoFn(Game.MultiBattleResult, 15);
-				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 15);
-				let PTD_78 = getProtoFn(Game.PlayerTowerData, 78);
-				Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]))
+				const GM_2 = getFnP(Game.GameModel, "get_instance");
+				const GM_P2 = getProtoFn(Game.GameModel, 2);
+				const CM_29 = getProtoFn(Game.CommandManager, 29);
+				const TCL_5 = getProtoFn(Game.TowerCommandList, 5);
+				const MBR_15 = getF(Game.MultiBattleResult, "get_result");
+				const RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
+				const PTD_78 = getProtoFn(Game.PlayerTowerData, 78);
+				Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]));
 			}
 		},
 		// skipSelectHero: function() {
