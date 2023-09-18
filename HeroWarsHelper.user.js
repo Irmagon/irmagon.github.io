@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.132
+// @version			2.135
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1271,6 +1271,12 @@ let artifactChestOpenCallName = '';
  * (Исправление бесконечных карт)
  */
 let lastDungeonBattleData = null;
+/**
+ * Start time of the last battle in the dungeon
+ *
+ * Время начала последнего боя в подземелье
+ */
+let lastDungeonBattleStart = 0;
 
 /**
  * Brawl pack
@@ -1539,7 +1545,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 			if (isChecked('secretWealth')) {
 				buyWithPetExperienceAuto();
 			}
- 
+
 			if (isChecked('buyForGold')) {
 				buyInStoreForGold();
 			}
@@ -1769,9 +1775,10 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Disable spending divination cards
 			 * Отключить трату карт предсказаний
 			 */
-			if (isChecked('endlessCards') && call.name == 'dungeonEndBattle') {
-				if (call.args.isRaid) {
+			if (call.name == 'dungeonEndBattle') {
+				if (call.args.isRaid && isChecked('endlessCards')) {
 					delete call.args.isRaid;
+                    changeRequest = true;
 				}
 				/**
 				 * Fix endless cards
@@ -1780,19 +1787,21 @@ async function checkChangeSend(sourceData, tempData) {
 				const lastBattle = lastDungeonBattleData;
 				const attackers = call.args.progress[0].attackers;
 				if (attackers.input.length === 0 && !call.args.isRaid) {
-					//if (lastBattle.type == 'dungeon_titan') {
 					lastBattle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
 					const result = await Calc(lastBattle);
+					if (isChecked('endlessCards')) {
 					call.args.progress = result.progress;
 					call.args.result = result.result;
-					const timer = Math.max(result.battleTime / timerDiv + 1.5, 3);
+						changeRequest = true;
+					}
+					let timer = Math.max(result.battleTime / timerDiv + 1.5, 3);
+					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
+					if (period < timer) {
+						timer = timer - period;
+					}
 					console.log(timer);
 					await countdownTimer(timer);
-					// } else {
-					// 	attackers.input = ["auto", 0, 0, "auto", 0, 0];
-					// }
 				}
-				changeRequest = true;
 			}
 			/**
 			 * Quiz Answer
@@ -2246,9 +2255,9 @@ async function checkChangeResponse(response) {
 			 * Dungeon recalculation (fix endless cards)
 			 * Прерасчет подземки (исправление бесконечных карт)
 			 */
-			if (isChecked('endlessCards') &&
-				call.ident == callsIdent['dungeonStartBattle']) {
-				lastDungeonBattleData = call.result.response;
+			if (call.ident == callsIdent['dungeonStartBattle']) {
+ 				lastDungeonBattleData = call.result.response;
+				lastDungeonBattleStart = Date.now();
 			}
 			/**
 			 * Adding 26 store to other stores
@@ -2267,8 +2276,12 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['subscriptionGetInfo']) {
 				if (call.result.response.subscription) {
-					timerDiv = 5;
-				}
+					const now = Math.round(Date.now() / 1000);
+					const endTime = call.result.response.subscription.endTime;
+					if (endTime > now) {
+ 					timerDiv = 5;
+                  }
+			}
 		}
 		}
 
@@ -3454,7 +3467,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1041/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1043/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -4000,7 +4013,7 @@ function executeDungeon(resolve, reject) {
 			if (!calls.length) {
 				endDungeon('endDungeon', 'All Dead');
 				return;
-			}			
+			}
 			const battleDatas = await Send(JSON.stringify({ calls }))
 				.then(e => e.results.map(n => n.result.response))
 			const battleResults = [];
