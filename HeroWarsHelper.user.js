@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.135
+// @version			2.138
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -373,6 +373,7 @@ const i18nLangData = {
 		FIGHTS: 'Fights',
 		STAGE: 'Stage',
 		DONT_HAVE_LIVES: 'You don\'t have lives',
+		LIVES: 'Lives',
 		SECRET_WEALTH_ALREADY: 'Secret Wealth: Item for Pet Potions already purchased',
 		SECRET_WEALTH_NOT_ENOUGH: 'Secret Wealth: Not Enough Pet Potion, You Have {available}, Need {need}',
 		SECRET_WEALTH_UPGRADE_NEW_PET: 'Secret Wealth: After purchasing the Pet Potion, it will not be enough to upgrade a new pet',
@@ -653,6 +654,7 @@ const i18nLangData = {
 		FIGHTS: 'Боев',
 		STAGE: 'Стадия',
 		DONT_HAVE_LIVES: 'У Вас нет жизней',
+		LIVES: 'Жизни',
 		SECRET_WEALTH_ALREADY: 'Тайное богатство: товар за Зелья питомцев уже куплен',
 		SECRET_WEALTH_NOT_ENOUGH: 'Тайное богатство: Не достаточно Зелье Питомца, у Вас {available}, нужно {need}',
 		SECRET_WEALTH_UPGRADE_NEW_PET: 'Тайное богатство: После покупки Зелье Питомца будет не достаточно для прокачки нового питомца',
@@ -844,7 +846,6 @@ const checkboxes = {
 		title: I18N('SECRET_WEALTH_CHECKBOX'),
 		default: false
 	},
-
 	autoBrawls: {
 		label: I18N('BRAWLS'),
 		cbox: null,
@@ -905,7 +906,7 @@ const inputs = {
 	speedBattle: {
 		input: null,
 		title: I18N('COMBAT_SPEED'),
-		default: 10,
+		default: 5,
 	},
 	countTestBattle: {
 		input: null,
@@ -1123,6 +1124,16 @@ const buttons = {
 					msg: I18N('SECRET_WEALTH'),
 					result: buyWithPetExperience,
 					title: I18N('SECRET_WEALTH_TITLE'),
+				},
+				{
+					msg: I18N('EPIC_BRAWL'),
+					result: async function () {
+						confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
+							const brawl = new epicBrawl;
+							brawl.start();
+						});
+					},
+					title: I18N('EPIC_BRAWL_TITLE'),
 				},
 			];
 			popupButtons.push({ result: false, isClose: true })
@@ -1710,7 +1721,6 @@ async function checkChangeSend(sourceData, tempData) {
 						changeRequest = true;
 					}
 				}
-
                 if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
 					if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
 						{ msg: I18N('BTN_NO'), result: false },
@@ -1720,7 +1730,6 @@ async function checkChangeSend(sourceData, tempData) {
 						isBrawlsAutoStart = true;
 					}
 				}
-
 			}
 			/**
 			 * Save pack for Brawls
@@ -2022,6 +2031,7 @@ async function checkChangeResponse(response) {
 			 * Endless lives in brawls
 			 * Бесконечные жизни в потасовках
 			 */
+			/*
 			if (getSaveVal('autoBrawls') && call.ident == callsIdent['brawl_getInfo']) {
 				brawl = call.result.response;
 				if (brawl) {
@@ -2029,6 +2039,7 @@ async function checkChangeResponse(response) {
 					isChange = true;
 				}
 			}
+			*/
 			/**
 			 * Hiding donation offers 1
 			 * Скрываем предложения доната 1
@@ -2126,11 +2137,15 @@ async function checkChangeResponse(response) {
 			if ((call.ident == callsIdent['clanWarAttack'] ||
 				call.ident == callsIdent['crossClanWar_startBattle'] ||
 				call.ident == callsIdent['battleGetReplay'] ||
+				call.ident == callsIdent['brawl_startBattle'] ||
 				call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
 				call.ident == callsIdent['adventure_turnStartBattle']) &&
 				isChecked('preCalcBattle')) {
 				setProgress('Идет прерасчет боя');
 				let battle = call.result.response.battle || call.result.response.replay;
+				if (call.ident == callsIdent['brawl_startBattle']) {
+					battle = call.result.response;
+				}
 				lastBattleInfo = battle;
 				console.log(battle.type);
 				function getBattleInfo(battle, isRandSeed) {
@@ -2138,7 +2153,7 @@ async function checkChangeResponse(response) {
 						if (isRandSeed) {
 							battle.seed = Math.floor(Date.now() / 1000) + random(0, 1e3);
 						}
-						BattleCalc(battle, getBattleType(battle.type), e => resolve(e.result.win));
+						BattleCalc(battle, getBattleType(battle.type), e => resolve(e));
 					});
 				}
 				let actions = [getBattleInfo(battle, false)]
@@ -2151,9 +2166,13 @@ async function checkChangeResponse(response) {
 				}
 				Promise.all(actions)
 					.then(e => {
+						e = e.map(n => ({win: n.result.win, time: n.battleTime}));
 						let firstBattle = e.shift();
-						let countWin = e.reduce((w, s) => w + s);
-						setProgress(`${I18N('THIS_TIME')} ${(firstBattle ? I18N('VICTORY') : I18N('DEFEAT'))} ${I18N('CHANCE_TO_WIN')}: ${Math.floor(countWin / e.length * 100)}% (${e.length})`, false, hideProgress)
+						const timer = Math.floor(120 - firstBattle.time);
+						const min = ('00' + Math.floor(timer / 60)).slice(-2);
+						const sec = ('00' + Math.floor(timer - min * 60)).slice(-2);
+						const countWin = e.reduce((w, s) => w + s.win, 0);
+						setProgress(`${I18N('THIS_TIME')} ${(firstBattle.win ? I18N('VICTORY') : I18N('DEFEAT'))} ${I18N('CHANCE_TO_WIN')}: ${Math.floor(countWin / e.length * 100)}% (${e.length}), ${min}:${sec}`, false, hideProgress)
 					});
 			}
 			/**
@@ -3689,6 +3708,7 @@ async function openOrMigrateDatabase(userId) {
 	}
 	await db.set(userId, storage.values);
 }
+
 /**
  * Sending expeditions
  *
@@ -9121,6 +9141,8 @@ class executeBrawls {
 		'12': 3,
 	}
 
+	attempts = 0;
+
 	constructor(resolve, reject) {
 		this.resolve = resolve;
 		this.reject = reject;
@@ -9130,8 +9152,9 @@ class executeBrawls {
 		this.heroes = heroes;
 		isCancalBattle = false;
 		this.brawlInfo = await this.getBrawlInfo();
+		this.attempts = this.brawlInfo.attempts;
 
-		if (!this.brawlInfo.attempts) {
+		if (!this.attempts) {
 			this.end(I18N('DONT_HAVE_LIVES'))
 			return;
 		}
@@ -9146,7 +9169,7 @@ class executeBrawls {
 			const stage = this.stage[maxStage];
 			const progress = this.brawlInfo.questInfo.progress;
 
-			setProgress(`${I18N('STAGE')} ${stage}: ${progress}/${maxStage}<br>${I18N('FIGHTS')}: ${this.stats.count}<br>${I18N('WINS')}: ${this.stats.win}<br>${I18N('LOSSES')}: ${this.stats.loss}<br>${I18N('STOP')}`, false, function () {
+			setProgress(`${I18N('STAGE')} ${stage}: ${progress}/${maxStage}<br>${I18N('FIGHTS')}: ${this.stats.count}<br>${I18N('WINS')}: ${this.stats.win}<br>${I18N('LOSSES')}: ${this.stats.loss}<br>${I18N('LIVES')}: ${this.attempts}<br>${I18N('STOP')}`, false, function () {
 				isBrawlsAutoStart = false;
 			});
 
@@ -9157,6 +9180,11 @@ class executeBrawls {
 
 			if (this.brawlInfo.questInfo.stage == 12 && this.brawlInfo.questInfo.progress == 12) {
 				this.end(I18N('SUCCESS'))
+				return;
+			}
+
+			if (!this.attempts) {
+				this.end(I18N('DONT_HAVE_LIVES'))
 				return;
 			}
 
@@ -9205,10 +9233,12 @@ class executeBrawls {
 		console.log(result.result);
 		if (result.result.win) {
 			this.stats.win++;
-			return await this.endBattle(result);
-		}
+		} else {
 		this.stats.loss++;
-		return await this.cancelBattle(result);
+			this.attempts--;
+		}
+		return await this.endBattle(result);
+		// return await this.cancelBattle(result);
 	}
 
 	/**
@@ -9275,6 +9305,7 @@ class executeBrawls {
 		this.resolve();
 	}
 }
+
 })();
 
 /**
@@ -9283,5 +9314,6 @@ class executeBrawls {
  * Добавить проверку правильности пути для приключения
  * Добивание на арене титанов
  * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
- * Удалить progress боя при прерасчете реплеев
+ * Закрытие окошек по Esc
+ * Починить работу скрипта на уровне команды ниже 10
  */
