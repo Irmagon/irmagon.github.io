@@ -844,7 +844,7 @@ const checkboxes = {
 		title: I18N('SECRET_WEALTH_CHECKBOX'),
 		default: false
 	},
-	/*
+
 	autoBrawls: {
 		label: I18N('BRAWLS'),
 		cbox: null,
@@ -858,9 +858,8 @@ const checkboxes = {
 			}
 			return $result || false;
 		})(),
-	}
-	*/
-	/*
+	},
+
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
 		cbox: null,
