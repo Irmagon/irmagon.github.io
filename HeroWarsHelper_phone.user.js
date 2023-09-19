@@ -1706,7 +1706,7 @@ async function checkChangeSend(sourceData, tempData) {
 						changeRequest = true;
 					}
 				}
-				/*
+
 				if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
 					if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
 						{ msg: I18N('BTN_NO'), result: false },
@@ -1716,7 +1716,7 @@ async function checkChangeSend(sourceData, tempData) {
 						isBrawlsAutoStart = true;
 					}
 				}
-				*/
+
 			}
 			/**
 			 * Save pack for Brawls
