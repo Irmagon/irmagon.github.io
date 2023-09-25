@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.138
+// @version			2.139
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1574,7 +1574,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		const oldReady = this.onreadystatechange;
 		this.onreadystatechange = function (e) {
 			if(this.readyState == 4 && this.status == 200) {
-				isTextResponse = this.responseType != "json";
+				isTextResponse = this.responseType === "text" || this.responseType === "";
 				let response = isTextResponse ? this.responseText : this.response;
 				requestHistory[this.uniqid].response = response;
 				/**
@@ -3485,7 +3485,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1043/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1050/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
