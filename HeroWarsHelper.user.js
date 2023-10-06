@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.140
+// @version			2.142
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1287,6 +1287,18 @@ let lastDungeonBattleData = null;
  * Время начала последнего боя в подземелье
  */
 let lastDungeonBattleStart = 0;
+/**
+ * Subscription end time
+ * 
+ * Время окончания подписки
+ */
+let subEndTime = 0;
+/** 
+ * Number of prediction cards
+ * 
+ * Количество карт предсказаний
+ */
+let countPredictionCard = 0;
 
 /**
  * Brawl pack
@@ -1300,12 +1312,6 @@ let brawlsPack = null;
  * Автопотасовка запущена
  */
 let isBrawlsAutoStart = false;
-/**
- * Timer divider
- *
- * Делитель таймера
- */
-this.timerDiv = 1.5;
 /**
  * Copies the text to the clipboard
  *
@@ -1793,8 +1799,7 @@ async function checkChangeSend(sourceData, tempData) {
 				 * Исправление бесконечных карт
 				 */
 				const lastBattle = lastDungeonBattleData;
-				const attackers = call.args.progress[0].attackers;
-				if (attackers.input.length === 0 && !call.args.isRaid) {
+				if (lastBattle && !call.args.isRaid) {
 					lastBattle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
 					const result = await Calc(lastBattle);
 					if (isChecked('endlessCards')) {
@@ -1802,14 +1807,14 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.result = result.result;
 						changeRequest = true;
 					}
-					let timer = Math.max(result.battleTime / timerDiv + 1.5, 3);
+					let timer = getTimer(result.battleTime);
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
+					console.log(timer, period);
 					if (period < timer) {
 						timer = timer - period;
-					}
-					console.log(timer);
 					await countdownTimer(timer);
 				}
+			}
 			}
 			/**
 			 * Quiz Answer
@@ -2278,6 +2283,13 @@ async function checkChangeResponse(response) {
 				lastDungeonBattleStart = Date.now();
 			}
 			/**
+			 * Getting the number of prediction cards
+			 * Получение количества карт предсказаний
+			 */
+			if (call.ident == callsIdent['inventoryGet']) {
+				countPredictionCard = call.result.response.consumable[81] || 0;
+			}
+			/**
 			 * Adding 26 store to other stores
 			 * Добавление 26 магазина к остальным магазинам
 			 */
@@ -2293,12 +2305,9 @@ async function checkChangeResponse(response) {
 			 * Получение состояния подписки
 			 */
 			if (call.ident == callsIdent['subscriptionGetInfo']) {
-				if (call.result.response.subscription) {
-					const now = Math.round(Date.now() / 1000);
-					const endTime = call.result.response.subscription.endTime;
-					if (endTime > now) {
- 					timerDiv = 5;
-                  }
+				const subscription = call.result.response.subscription;
+				if (subscription) {
+					subEndTime = subscription.endTime * 1000;
 			}
 		}
 		}
@@ -2639,6 +2648,20 @@ function setProgress(text, hide, onclick) {
 	}
 }
 
+/**
+ * Returns the timer value depending on the subscription
+ * 
+ * Возвращает значение таймера в зависимости от подписки
+ */
+function getTimer(time) {
+	let speedDiv = 5;
+	if (subEndTime < Date.now()) {
+		speedDiv = 1.5;
+	}
+	return Math.max(time / speedDiv + 1.5, 3);
+}
+ 
+ 
 /**
  * Calculates HASH MD5 from string
  *
@@ -3485,7 +3508,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1059/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1063/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -3873,7 +3896,6 @@ function testDungeon() {
 function executeDungeon(resolve, reject) {
 	dungeonActivity = 0;
 	maxDungeonActivity = 150;
-	countCard = 0;
 
 	titanGetAll = [];
 
@@ -3938,7 +3960,7 @@ function executeDungeon(resolve, reject) {
 		teamGetFavor = res[2].result.response;
 		dungeonActivity = res[3].result.response.stat.todayDungeonActivity;
 		titanGetAll = Object.values(res[4].result.response);
-		countCard = res[5].result.response.consumable[81];
+		countPredictionCard = res[5].result.response.consumable[81];
 
 		teams.hero = {
 			favor: teamGetFavor.dungeon_hero,
@@ -4136,11 +4158,11 @@ function executeDungeon(resolve, reject) {
 						result: battleInfo.result,
 						progress: battleInfo.progress,
 			}
-			if (countCard && !isChecked('endlessCards')) {
+			if (countPredictionCard) {
 				args.isRaid = true;
-				countCard--;
+				countPredictionCard--;
 		} else {
-				const timer = Math.max(battleInfo.battleTime / timerDiv + 1.5, 3);
+				const timer = getTimer(battleInfo.battleTime);
 				console.log(timer);
 				await countdownTimer(timer, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
 			}
@@ -5288,7 +5310,7 @@ function hackGame() {
 	this.BattleCalc = function (battleData, battleConfig, callback) {
 		// battleConfig = battleConfig || getBattleType(battleData.type)
 		if (!Game.BattlePresets) throw Error('Use connectGame');
-		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 		battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
 		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
 			const battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
@@ -5376,7 +5398,7 @@ function hackGame() {
 				if (isChecked('passBattle')) {
 					this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
-					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
+					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
 					a = new Game.BattleInstantPlay(c, a);
 					a[getProtoFn(Game.BattleInstantPlay, 8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
@@ -5401,7 +5423,7 @@ function hackGame() {
 			let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
 			Game.PlayerTowerData.prototype[PTD_67] = function (a) {
 				if (isChecked('passBattle')) {
-					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 22)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
+					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 					a = new Game.BattleInstantPlay(a, p);
 					a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
@@ -5510,10 +5532,10 @@ function hackGame() {
 					}
 					const BSM_22 = getProtoFn(Game.BattleSettingsModel, 22);
 					a > this[BC_11][BSM_22][BP_get_value]() && (a = this[BC_11][BSM_22][BP_get_value]());
-					const DS_21 = getFn(Game.DataStorage, 21);
+					const DS_22 = getFn(Game.DataStorage, 22);
 					const get_battleSpeedMultiplier = getF(Game.RuleStorage, "get_battleSpeedMultiplier", true);
 					// const RS_167 = getProtoFn(Game.RuleStorage, 167); // get_battleSpeedMultiplier
-					var b = Game.DataStorage[DS_21][get_battleSpeedMultiplier]();
+					var b = Game.DataStorage[DS_22][get_battleSpeedMultiplier]();
 					const R_1 = getFn(selfGame.Reflect, 1);
 					const BC_1 = getFn(Game.BattleController, 1);
 					const get_config = getF(Game.BattlePresets, "get_config");
@@ -5614,7 +5636,7 @@ function hackGame() {
 		let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
 		let Game = selfGame['Game'];
 		let navigator = getF(Game, "get_navigator")
-		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 17)
+		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 18)
 		let instance = getFnP(Game, 'get_instance');
 		Game[instance]()[navigator]()[navigate](window, event);
 	}
