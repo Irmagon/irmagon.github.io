@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.142
+// @version		2.146
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1785,10 +1785,13 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Отключить трату карт предсказаний
 			 */
 			if (call.name == 'dungeonEndBattle') {
-				if (call.args.isRaid && isChecked('endlessCards')) {
+				if (call.args.isRaid && countPredictionCard <= 0) {
 					delete call.args.isRaid;
                     changeRequest = true;
+				} else if (countPredictionCard > 0) {
+					countPredictionCard--;
 				}
+				console.log(`Cards: ${countPredictionCard}`);
 				/**
 				 * Fix endless cards
 				 * Исправление бесконечных карт
@@ -1797,11 +1800,11 @@ async function checkChangeSend(sourceData, tempData) {
 				if (lastBattle && !call.args.isRaid) {
 					lastBattle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
 					const result = await Calc(lastBattle);
-					if (isChecked('endlessCards')) {
+ 
 					call.args.progress = result.progress;
 					call.args.result = result.result;
 						changeRequest = true;
-					}
+						
 					let timer = getTimer(result.battleTime);
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
 					console.log(timer, period);
@@ -1809,6 +1812,7 @@ async function checkChangeSend(sourceData, tempData) {
 						timer = timer - period;
 					await countdownTimer(timer);
 				}
+					
 			}
 			}
 			/**
@@ -4006,6 +4010,11 @@ function executeDungeon(resolve, reject) {
 		}
 	}
 
+	function getNeutralTeam() {
+		const titans = titanGetAll.filter(e => !titansStates[e.id]?.isDead)
+		return titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
+	}
+ 
 	function fixTitanTeam(titans) {
 		titans.heroes = titans.heroes.filter(e => !titansStates[e]?.isDead);
 		return titans;
@@ -4037,6 +4046,9 @@ function executeDungeon(resolve, reject) {
 			for (let teamNum in floorChoices) {
 				attackerType = floorChoices[teamNum].attackerType;
 				const args = fixTitanTeam(teams[attackerType]);
+				if (attackerType == 'neutral') {
+					args.heroes = getNeutralTeam();
+				}
 				if (!args.heroes.length) {
 					continue;
 				}
@@ -4154,9 +4166,8 @@ function executeDungeon(resolve, reject) {
 						result: battleInfo.result,
 						progress: battleInfo.progress,
 			}
-			if (countPredictionCard) {
+			if (countPredictionCard > 0) {
 				args.isRaid = true;
-				countPredictionCard--;
 		} else {
 				const timer = getTimer(battleInfo.battleTime);
 				console.log(timer);
@@ -4167,6 +4178,7 @@ function executeDungeon(resolve, reject) {
 				args,
 				ident: "body"
 			}];
+			lastDungeonBattleData = null;
 			send(JSON.stringify({ calls }), resultEndBattle);
 		} else {
 			endDungeon('dungeonEndBattle win: false\n', battleInfo);
@@ -5495,7 +5507,7 @@ function hackGame() {
 			let PDD_15 = getProtoFn(Game.PlayerDungeonData, 15);
 			let oldEndlessCards = Game.PlayerDungeonData.prototype[PDD_15];
 			Game.PlayerDungeonData.prototype[PDD_15] = function () {
-				if (isChecked('endlessCards')) {
+				if (countPredictionCard <= 0) {
 					return true;
 				} else {
 					return oldEndlessCards.call(this);
