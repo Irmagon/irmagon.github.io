@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.146
+// @version		2.149
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -437,7 +437,7 @@ const i18nLangData = {
 		TIMER: 'Timer:',
 		SHOW_ERRORS: 'Show errors',
 		SHOW_ERRORS_TITLE: 'Show server request errors',
-		ERROR_MSG: 'Error: {name}<br>{desciption}',
+		ERROR_MSG: 'Error: {name}<br>{description}',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -779,12 +779,14 @@ const checkboxes = {
 		title: I18N('SKIP_FIGHTS_TITLE'),
 		default: false
 	},
+	/*
 	endlessCards: {
 		label: I18N('ENDLESS_CARDS'),
 		cbox: null,
 		title: I18N('ENDLESS_CARDS_TITLE'),
 		default: true
 	},
+	*/
 	sendExpedition: {
 		label: I18N('AUTO_EXPEDITION'),
 		cbox: null,
@@ -1573,7 +1575,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		 * Обработка данных входящего запроса
 		 */
 		const oldReady = this.onreadystatechange;
-		this.onreadystatechange = function (e) {
+		this.onreadystatechange = async function (e) {
 			if(this.readyState == 4 && this.status == 200) {
 				isTextResponse = this.responseType === "text" || this.responseType === "";
 				let response = isTextResponse ? this.responseText : this.response;
@@ -1584,7 +1586,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				 * Заменна данных входящего запроса
 				 */
 				if (isTextResponse) {
-					checkChangeResponse.call(this, response);
+					await checkChangeResponse.call(this, response);
 				}
 				/**
 				 * A function to run after the request is executed
@@ -1798,12 +1800,17 @@ async function checkChangeSend(sourceData, tempData) {
 				 */
 				const lastBattle = lastDungeonBattleData;
 				if (lastBattle && !call.args.isRaid) {
+					if (changeRequest) {
 					lastBattle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
+					} else {
+						lastBattle.progress = call.args.progress;
+					}
 					const result = await Calc(lastBattle);
  
+					if (changeRequest) {
 					call.args.progress = result.progress;
 					call.args.result = result.result;
-						changeRequest = true;
+					}
 						
 					let timer = getTimer(result.battleTime);
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
@@ -1946,6 +1953,7 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Добавление запроса на получение 26 магазина
 			 */
 			if (call.name == 'registration') {
+				/*
 				testData.calls.push({
 					name: "shopGet",
 					args: {
@@ -1954,6 +1962,7 @@ async function checkChangeSend(sourceData, tempData) {
 					ident: "shopGet"
 				});
 				changeRequest = true;
+				*/
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -2270,8 +2279,75 @@ async function checkChangeResponse(response) {
 						{ msg: I18N('BTN_OPEN'), result: true},
 						{ msg: I18N('BTN_NO'), result: false},
 					])) {
-					openRussianDoll(lastRussianDollId, newCount);
+					const recursionResult = await openRussianDolls(lastRussianDollId, newCount);
+					lootBox = [...lootBox, ...recursionResult];
 				}
+ 
+				/** Объединение результата лутбоксов */
+				const allLootBox = {};
+				lootBox.forEach(e => {
+					for (let f in e) {
+						if (!allLootBox[f]) {
+							if (typeof e[f] == 'object') {
+								allLootBox[f] = {};
+							} else {
+								allLootBox[f] = 0;
+							}
+						}
+						if (typeof e[f] == 'object') {
+							for (let o in e[f]) {
+								if (newCount && o == lastRussianDollId) {
+									continue;
+			}
+								if (!allLootBox[f][o]) {
+									allLootBox[f][o] = e[f][o];
+								} else {
+									allLootBox[f][o] += e[f][o];
+								}
+			}
+						} else {
+							allLootBox[f] += e[f];
+						}
+					}
+				});
+				/** Разбитие результата */
+				const output = [];
+				const maxCount = 5;
+				let currentObj = {};
+				let count = 0;
+				for (let f in allLootBox) {
+					if (!currentObj[f]) {
+						if (typeof allLootBox[f] == 'object') {
+							for (let o in allLootBox[f]) {
+								currentObj[f] ||= {}
+								if (!currentObj[f][o]) {
+									currentObj[f][o] = allLootBox[f][o];
+									count++;
+									if (count === maxCount) {
+										output.push(currentObj);
+										currentObj = {};
+										count = 0;
+									}
+								}
+							}
+						} else {
+							currentObj[f] = allLootBox[f];
+							count++;
+							if (count === maxCount) {
+								output.push(currentObj);
+								currentObj = {};
+								count = 0;
+							}
+						}
+					}
+				}
+				if (count > 0) {
+					output.push(currentObj);
+				}
+ 
+				console.log(output);
+				call.result.response = output;
+				isChange = true;
 			}
 			/**
 			 * Dungeon recalculation (fix endless cards)
@@ -2293,9 +2369,9 @@ async function checkChangeResponse(response) {
 			 * Добавление 26 магазина к остальным магазинам
 			 */
 			if (call.ident == callsIdent['shopGetAll']) {
-				const shop26 = respond.results.find(e => e.ident == callsIdent['shopGet']);
-				if (shop26) {
-					call.result.response[26] = shop26.result.response;
+				if (userInfo.level >= 10) {
+					call.result.response[26] = await Send({ calls: [{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet" }] }).then(e => e.results[0].result.response);
+					console.log(call.result.response);;
 					isChange = true;
 				}
 			}
@@ -2309,6 +2385,17 @@ async function checkChangeResponse(response) {
 					subEndTime = subscription.endTime * 1000;
 		}
 		}
+			/**
+			 * Getting prediction cards
+			 * Получение карт предсказаний
+			 */
+			if (call.ident == callsIdent['questFarm']) {
+				const consumable = call.result.response?.consumable;
+				if (consumable && consumable[81]) {
+					countPredictionCard += consumable[81];
+					console.log(`Cards: ${countPredictionCard}`);
+				}
+			}
 		}
 
 		if (mainReward && artifactChestOpen) {
@@ -3508,7 +3595,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1063/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1072/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -6186,7 +6273,7 @@ this.sendsMission = async function (param) {
 }
 
 /**
- * Recursive opening of matryoshka dolls
+ * Recursive opening of russian dolls
  *
  * Рекурсивное открытие матрешек
  */
@@ -6210,6 +6297,38 @@ function openRussianDoll(id, count, sum) {
 	})
 }
 
+/**
+ * Opening of russian dolls
+ *
+ * Открытие матрешек
+ */
+async function openRussianDolls(libId, amount) {
+	let sum = 0;
+	let sumResult = [];
+ 
+	while (amount) {
+		sum += amount;
+		setProgress(`${I18N('TOTAL_OPEN')} ${sum}`);
+		const calls = [{
+			name: "consumableUseLootBox",
+			args: { libId, amount },
+			ident: "body"
+		}];
+		const result = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
+		let newCount = 0;
+		for (let n of result) {
+			if (n?.consumable && n.consumable[libId]) {
+				newCount += n.consumable[libId]
+			}
+		}
+		sumResult = [...sumResult, ...result];
+		amount = newCount;
+	}
+ 
+	setProgress(`${I18N('TOTAL_OPEN')} ${sum}`, 5000);
+	return sumResult;
+}
+ 
 /**
  * Collect all mail, except letters with energy and charges of the portal
  *
@@ -9340,10 +9459,11 @@ class executeBrawls {
 
 /**
  * TODO:
- * Получение всех уровней при сборе всех наград (квест на титанит и на энку)
+ * Получение всех уровней при сборе всех наград (квест на титанит и на энку) +-
  * Добавить проверку правильности пути для приключения
  * Добивание на арене титанов
  * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
  * Закрытие окошек по Esc
- * Починить работу скрипта на уровне команды ниже 10
+ * Починить работу скрипта на уровне команды ниже 10 +-
+ * Автоматическое подключение библиотеки нужной версии
  */
