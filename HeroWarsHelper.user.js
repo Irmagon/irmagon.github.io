@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace			HWH
-// @version			2.149
+// @version			2.150
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -3599,7 +3599,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1072/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1074/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -5672,9 +5672,9 @@ function hackGame() {
 		 * Кнопка ускорения без Покровительства Валькирий
 		 */
 		battleFastKey: function () {
-			const BGM_39 = getProtoFn(Game.BattleGuiMediator, 39);
-			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_39];
-			Game.BattleGuiMediator.prototype[BGM_39] = function () {
+			const BGM_40 = getProtoFn(Game.BattleGuiMediator, 40);
+			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_40];
+			Game.BattleGuiMediator.prototype[BGM_40] = function () {
 				if (true) {
 					const BGM_8 = getProtoFn(Game.BattleGuiMediator, 8);
 					const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
