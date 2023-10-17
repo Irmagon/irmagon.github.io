@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.151
+// @version			2.153
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1792,11 +1792,13 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Отключить трату карт предсказаний
 			 */
 			if (call.name == 'dungeonEndBattle') {
-				if (call.args.isRaid && countPredictionCard <= 0) {
+				if (call.args.isRaid) {
+					if (countPredictionCard <= 0) {
 					delete call.args.isRaid;
                     changeRequest = true;
 				} else if (countPredictionCard > 0) {
 					countPredictionCard--;
+				}
 				}
 				console.log(`Cards: ${countPredictionCard}`);
 				/**
@@ -1824,7 +1826,6 @@ async function checkChangeSend(sourceData, tempData) {
 						timer = timer - period;
 					await countdownTimer(timer);
 				}
-					
 			}
 			}
 			/**
@@ -2749,7 +2750,7 @@ function getTimer(time) {
 	if (subEndTime < Date.now()) {
 		speedDiv = 1.5;
 	}
-	return Math.max(time / speedDiv + 1.5, 3);
+	return Math.max(time / speedDiv + 1.5, 4);
 }
  
  
