@@ -2,8 +2,8 @@
 // @name			HWH
 // @name:en			HWH
 // @name:ru			HWH
-// @namespace			HWH
-// @version			2.150
+// @namespace		HWH
+// @version			2.151
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1746,7 +1746,7 @@ async function checkChangeSend(sourceData, tempData) {
 			 */
 			if (call.name == 'brawl_startBattle') {
 				console.log(JSON.stringify(call.args));
-				brawlsPack = call.args.heroes;
+				brawlsPack = call.args;
 			}
 			/**
 			 * Canceled fight in Asgard
@@ -9301,8 +9301,8 @@ class executeBrawls {
 		this.reject = reject;
 	}
 
-	async start(heroes) {
-		this.heroes = heroes;
+	async start(args) {
+		this.args = args;
 		isCancalBattle = false;
 		this.brawlInfo = await this.getBrawlInfo();
 		this.attempts = this.brawlInfo.attempts;
@@ -9381,7 +9381,7 @@ class executeBrawls {
 	 */
 	async battle(userId) {
 		this.stats.count++;
-		const battle = await this.startBattle(userId, this.heroes);
+		const battle = await this.startBattle(userId, this.args);
 		const result = await Calc(battle);
 		console.log(result.result);
 		if (result.result.win) {
@@ -9399,16 +9399,14 @@ class executeBrawls {
 	 *
 	 * Начинает бой
 	 */
-	async startBattle(userId, heroes) {
-		const calls = [{
+	async startBattle(userId, args) {
+		const call = {
 			name: "brawl_startBattle",
-			args: {
-				userId,
-				heroes,
-				favor: {},
-			},
+			args,
 			ident: "brawl_startBattle"
-		}];
+		}
+		call.args.userId = userId;
+		const calls = [call];
 		const result = await Send(JSON.stringify({ calls }));
 		return result.results[0].result.response;
 	}
