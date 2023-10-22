@@ -945,46 +945,11 @@ const buttons = {
 		title: I18N('REWARDS_AND_MAIL_TITLE'),
 		func: rewardsAndMailFarm
 	},
-    sendExpedition: {
-        name: I18N('EXPEDITIONS'),
-        title: I18N('EXPEDITIONS_TITLE'),
-        func: checkExpedition
-    },
 	testTitanArena: {
 		name: I18N('TITAN_ARENA'),
 		title: I18N('TITAN_ARENA_TITLE'),
 		func: testTitanArena
 	},
-	testDungeon: {
-		name: I18N('DUNGEON'),
-		title: I18N('DUNGEON_TITLE'),
-		func: testDungeon
-	},
-	/*
-	bossRatingEvent: {
-		name: I18N('ARCHDEMON'),
-		title: I18N('ARCHDEMON_TITLE'),
-		func: function () {
-			confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
-		},
-	},
-	*/
-	testAdventure: {
-		name: I18N('ADVENTURE'),
-		title: I18N('ADVENTURE_TITLE'),
-		func: () => {
-			testAdventure();
-		},
-	},
-	/*
-	testSoloAdventure: {
-		name: I18N('STORM'),
-		title: I18N('STORM_TITLE'),
-		func: () => {
-			testAdventure('solo');
-		},
-	},
-	*/
 	goToSanctuary: {
 		name: I18N('SANCTUARY'),
 		title: I18N('SANCTUARY_TITLE'),
@@ -995,13 +960,6 @@ const buttons = {
 		title: I18N('GUILD_WAR_TITLE'),
 		func: cheats.goClanWar,
 	},
-	/*
-	secretWealth: {
-		name: I18N('SECRET_WEALTH'),
-		title: I18N('SECRET_WEALTH_TITLE'),
-		func: buyWithPetExperience,
-	},
-	*/
 	doActions: {
 		name: I18N('ACTIONS'),
 		title: I18N('ACTIONS_TITLE'),
@@ -1017,11 +975,21 @@ const buttons = {
 					result: testTower,
 					title: I18N('TOWER_TITLE'),
 				},
-				{
+                {
+                    msg: I18N('DUNGEON'),
+                    result: testDungeon,
+                    title: I18N('DUNGEON_TITLE'),
+                },
+                {
 					msg: I18N('EXPEDITIONS'),
 					result: checkExpedition,
 					title: I18N('EXPEDITIONS_TITLE'),
 				},
+                {
+                    msg: I18N('ADVENTURE'),
+                    result: () => {testAdventure();},
+                    title: I18N('ADVENTURE_TITLE'),
+                },
 				{
 					msg: I18N('MINIONS'),
 					result: testRaidNodes,
@@ -1049,6 +1017,13 @@ const buttons = {
 					},
 					title: I18N('STORM_TITLE'),
 				},
+                {
+                    msg: I18N('ARCHDEMON'),
+                    result: function () {
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
+                    },
+                    title: I18N('ARCHDEMON_TITLE'),
+                },
 				{
 					msg: I18N('REWARDS'),
 					result: questAllFarm,
@@ -1066,15 +1041,6 @@ const buttons = {
 				answer();
 			}
 		}
-	},
-	dailyQuests: {
-		name: I18N('DAILY_QUESTS'),
-		title: I18N('DAILY_QUESTS_TITLE'),
-		func: async function () {
-			const quests = new dailyQuests(() => { }, () => { });
-			await quests.autoInit();
-			quests.start();
-		},
 	},
 	doOthers: {
 		name: I18N('OTHERS'),
@@ -1144,6 +1110,15 @@ const buttons = {
 				answer();
 			}
 		}
+	},
+	dailyQuests: {
+		name: I18N('DAILY_QUESTS'),
+		title: I18N('DAILY_QUESTS_TITLE'),
+		func: async function () {
+			const quests = new dailyQuests(() => { }, () => { });
+			await quests.autoInit();
+			quests.start();
+		},
 	},
     getOutland: {
 		name: I18N('TO_DO_EVERYTHING'),
