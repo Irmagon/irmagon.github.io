@@ -1020,7 +1020,7 @@ const buttons = {
                 {
                     msg: I18N('ARCHDEMON'),
                     result: function () {
-                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEventSouls);
                     },
                     title: I18N('ARCHDEMON_TITLE'),
                 },
@@ -7210,6 +7210,140 @@ function countdownTimer(seconds, message) {
 	});
 }
 
+/** Набить килов в горниле душк */
+async function bossRatingEventSouls() {
+	const data = await Send({
+		calls: [
+			{ name: "heroGetAll", args: {}, ident: "teamGetAll" },
+			{ name: "offerGetAll", args: {}, ident: "offerGetAll" },
+			{ name: "pet_getAll", args: {}, ident: "pet_getAll" },
+		]
+	});
+	const bossEventInfo = data.results[1].result.response.find(e => e.offerType == "bossEvent");
+	if (!bossEventInfo) {
+		setProgress('Эвент завершен', true);
+		return;
+	}
+
+	if (bossEventInfo.progress.score > 250) {
+		setProgress('Уже убито больше 250 врагов');
+		rewardBossRatingEventSouls();
+		return;
+	}
+	const availablePets = Object.values(data.results[2].result.response).map(e => e.id);
+	const heroGetAllList = data.results[0].result.response;
+	const usedHeroes = bossEventInfo.progress.usedHeroes;
+	const heroList = [];
+
+	for (let heroId in heroGetAllList) {
+		let hero = heroGetAllList[heroId];
+		if (usedHeroes.includes(hero.id)) {
+			continue;
+		}
+		heroList.push(hero.id);
+	}
+
+	if (!heroList.length) {
+		setProgress('Нет героев', true);
+		return;
+	}
+
+	const pet = availablePets.includes(6005) ? 6005 : availablePets[Math.floor(Math.random() * availablePets.length)];
+	const petLib = lib.getData('pet');
+	let count = 1;
+
+	for (const heroId of heroList) {
+		const args = {
+			heroes: [heroId],
+			pet
+		}
+		/** Поиск питомца для героя */
+		for (const petId of availablePets) {
+			if (petLib[petId].favorHeroes.includes(heroId)) {
+				args.favor = {
+					[heroId]: petId
+				}
+				break;
+			}
+		}
+
+		const calls = [{
+			name: "bossRatingEvent_startBattle",
+			args,
+			ident: "body"
+		}, {
+			name: "offerGetAll",
+			args: {},
+			ident: "offerGetAll"
+		}];
+
+		const res = await Send({ calls });
+		count++;
+
+		if ('error' in res) {
+			console.error(res.error);
+			setProgress('Перезагрузите игру и попробуйте позже', true);
+			return;
+		}
+
+		const eventInfo = res.results[1].result.response.find(e => e.offerType == "bossEvent");
+		if (eventInfo.progress.score > 250) {
+			break;
+		}
+		setProgress('Количество убитых врагов: ' + eventInfo.progress.score + '<br>Использовано ' + count + ' героев');
+	}
+
+	rewardBossRatingEventSouls();
+}
+/** Сбор награды из Горнила Душ */
+async function rewardBossRatingEventSouls() {
+	const data = await Send({
+		calls: [
+			{ name: "offerGetAll", args: {}, ident: "offerGetAll" }
+		]
+	});
+
+	const bossEventInfo = data.results[0].result.response.find(e => e.offerType == "bossEvent");
+	if (!bossEventInfo) {
+		setProgress('Эвент завершен', true);
+		return;
+	}
+
+	const farmedChests = bossEventInfo.progress.farmedChests;
+	const score = bossEventInfo.progress.score;
+	// setProgress('Количество убитых врагов: ' + score);
+	const revard = bossEventInfo.reward;
+	const calls = [];
+
+	let count = 0;
+	for (let i = 1; i < 10; i++) {
+		if (farmedChests.includes(i)) {
+			continue;
+		}
+		if (score < revard[i].score) {
+			break;
+		}
+		calls.push({
+			name: "bossRatingEvent_getReward",
+			args: {
+				rewardId: i
+			},
+			ident: "body_" + i
+		});
+		count++;
+	}
+	if (!count) {
+		setProgress('Нечего собирать', true);
+		return;
+	}
+
+	Send({ calls }).then(e => {
+		console.log(e);
+		setProgress('Собрано ' + e?.results?.length + ' наград', true);
+	})
+}
+
+	
 /**
  * Attack of the minions of Asgard
  *
