@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.154
+// @version		2.155
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -433,6 +433,8 @@ const i18nLangData = {
 		ATTEMPT_ENDED: '<br>Attempts ended, timer started',
 		EPIC_BRAWL: 'Cosmic Battle',
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
+		FURNACE: 'Furnace',
+		FURNACE_TITLE: 'Hitting kills and collecting rewards',
 		RELOAD_GAME: 'Reload game',
 		TIMER: 'Timer:',
 		SHOW_ERRORS: 'Show errors',
@@ -945,31 +947,6 @@ const buttons = {
 		title: I18N('REWARDS_AND_MAIL_TITLE'),
 		func: rewardsAndMailFarm
 	},
-	/*
-	bossRatingEvent: {
-		name: I18N('ARCHDEMON'),
-		title: I18N('ARCHDEMON_TITLE'),
-		func: function () {
-			confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEventSouls);
-		},
-	},
-	*/
-	testAdventure: {
-		name: I18N('ADVENTURE'),
-		title: I18N('ADVENTURE_TITLE'),
-		func: () => {
-			testAdventure();
-		},
-	},
-	/*
-	testSoloAdventure: {
-		name: I18N('STORM'),
-		title: I18N('STORM_TITLE'),
-		func: () => {
-			testAdventure('solo');
-		},
-	},
-	*/
 	goToSanctuary: {
 		name: I18N('SANCTUARY'),
 		title: I18N('SANCTUARY_TITLE'),
@@ -1003,6 +980,11 @@ const buttons = {
 					title: I18N('TOWER_TITLE'),
 				},
                 {
+                    msg: I18N('DUNGEON'),
+                    result: testDungeon,
+                    title: I18N('DUNGEON_TITLE'),
+                },
+                {
                     msg: I18N('EXPEDITIONS'),
 					result: checkExpedition,
                     title: I18N('EXPEDITIONS_TITLE'),
@@ -1013,9 +995,9 @@ const buttons = {
                     result: testTitanArena
                 },
                 {
-                    msg: I18N('DUNGEON'),
-                    title: I18N('DUNGEON_TITLE'),
-                    result: testDungeon
+                    msg: I18N('ADVENTURE'),
+                    result: () => {testAdventure();},
+                    title: I18N('ADVENTURE_TITLE'),
                 },
 				{
 					msg: I18N('MINIONS'),
@@ -1044,6 +1026,20 @@ const buttons = {
 					},
 					title: I18N('STORM_TITLE'),
 				},
+				{
+                    msg: I18N('ARCHDEMON'),
+                    result: function () {
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
+                    },
+                    title: I18N('ARCHDEMON_TITLE'),
+                },
+                {
+                    msg: I18N('FURNACE'),
+                    result: function () {
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE')}?`, bossRatingEventSouls);
+                    },
+                    title: I18N('FURNACE_TITLE'),
+                },
 				{
 					msg: I18N('REWARDS'),
 					result: questAllFarm,
