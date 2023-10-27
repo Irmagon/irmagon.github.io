@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.154
+// @version			2.155
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -433,6 +433,8 @@ const i18nLangData = {
 		ATTEMPT_ENDED: '<br>Attempts ended, timer started',
 		EPIC_BRAWL: 'Cosmic Battle',
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
+		FURNACE: 'Furnace',
+		FURNACE_TITLE: 'Hitting kills and collecting rewards',
 		RELOAD_GAME: 'Reload game',
 		TIMER: 'Timer:',
 		SHOW_ERRORS: 'Show errors',
@@ -718,6 +720,9 @@ const i18nLangData = {
 		TIMER: 'Таймер:',
 		SHOW_ERRORS: 'Отображать ошибки',
 		SHOW_ERRORS_TITLE: 'Отображать ошибки запросов к серверу',
+		FURNACE: 'Горнило',
+		FURNACE_TITLE: 'Набивает килы и собирает награду',
+
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
 	}
 }
@@ -981,9 +986,9 @@ const buttons = {
                     title: I18N('DUNGEON_TITLE'),
                 },
                 {
-					msg: I18N('EXPEDITIONS'),
-					result: checkExpedition,
-					title: I18N('EXPEDITIONS_TITLE'),
+			msg: I18N('EXPEDITIONS'),
+			result: checkExpedition,
+			title: I18N('EXPEDITIONS_TITLE'),
 				},
                 {
                     msg: I18N('ADVENTURE'),
@@ -1020,9 +1025,16 @@ const buttons = {
                 {
                     msg: I18N('ARCHDEMON'),
                     result: function () {
-                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEventSouls);
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
                     },
                     title: I18N('ARCHDEMON_TITLE'),
+                },
+                {
+                    msg: I18N('FURNACE'),
+                    result: function () {
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE')}?`, bossRatingEventSouls);
+                    },
+                    title: I18N('FURNACE_TITLE'),
                 },
 				{
 					msg: I18N('REWARDS'),
@@ -3575,7 +3587,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1074/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1084/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
