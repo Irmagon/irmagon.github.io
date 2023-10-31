@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.155
+// @version		2.156
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -6438,8 +6438,7 @@ async function buyWithPetExperience() {
 	const itemLib = lib.getData('inventoryItem');
 	const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
 	const inventory = result[0];
-	const shop = result[1];
-	const slot = shop.slots[2];
+	const slot = Object.values(result[1].slots).find(e => e.cost?.consumable?.[85]);
 
 	const currentCount = inventory.consumable[85];
 	const price = slot.cost.consumable[85];
@@ -6479,7 +6478,7 @@ async function buyWithPetExperience() {
 		name: "shopBuy",
 		args: {
 			shopId: 26,
-			slot: 2,
+			slot: slot.id,
 			cost: slot.cost,
 			reward: slot.reward
 		},
@@ -6502,8 +6501,7 @@ async function buyWithPetExperienceAuto() {
 	const minCount = 450551;
 	const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
 	const inventory = result[0];
-	const shop = result[1];
-	const slot = shop.slots[2];
+	const slot = Object.values(result[1].slots).find(e => e.cost?.consumable?.[85]);
 
 	const currentCount = inventory.consumable[85];
 	const price = slot.cost.consumable[85];
@@ -6531,7 +6529,7 @@ async function buyWithPetExperienceAuto() {
 		name: "shopBuy",
 		args: {
 			shopId: 26,
-			slot: 2,
+			slot: slot.id,
 			cost: slot.cost,
 			reward: slot.reward
 		},
@@ -7360,7 +7358,6 @@ async function rewardBossRatingEventSouls() {
 	})
 }
 
-	
 /**
  * Attack of the minions of Asgard
  *
