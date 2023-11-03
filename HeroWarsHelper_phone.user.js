@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.156
+// @version		2.160
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -197,6 +197,8 @@ const i18nLangData = {
 		TITAN_ARENA_TITLE: 'Complete the titan arena',
 		DUNGEON: 'Dungeon',
 		DUNGEON_TITLE: 'Go through the dungeon',
+		SEER: 'Seer',
+		SEER_TITLE: 'Roll the Seer',
 		TOWER: 'Tower',
 		TOWER_TITLE: 'Pass the tower',
 		EXPEDITIONS: 'Expeditions',
@@ -344,6 +346,7 @@ const i18nLangData = {
 		UNKNOWN: 'unknown',
 		ENTER_THE_PATH: 'Enter the path of adventure using commas or dashes',
 		START_ADVENTURE: 'Start your adventure along this path!',
+		INCORRECT_WAY: 'Incorrect path in adventure',
 		BTN_CANCELED: 'Canceled',
 		MUST_TWO_POINTS: 'The path must contain at least 2 points.',
 		MUST_ONLY_NUMBERS: 'The path must contain only numbers and commas',
@@ -481,6 +484,8 @@ const i18nLangData = {
 		TITAN_ARENA_TITLE: 'Автопрохождение Турнира Стихий',
 		DUNGEON: 'Подземелье',
 		DUNGEON_TITLE: 'Автопрохождение подземелья',
+		SEER: 'Провидец',
+		SEER_TITLE: 'Покрутить Провидца',
 		TOWER: 'Башня',
 		TOWER_TITLE: 'Автопрохождение башни',
 		EXPEDITIONS: 'Экспедиции',
@@ -627,6 +632,7 @@ const i18nLangData = {
 		UNKNOWN: 'Неизвестно',
 		ENTER_THE_PATH: 'Введите путь приключения через запятые или дефисы',
 		START_ADVENTURE: 'Начать приключение по этому пути!',
+		INCORRECT_WAY: 'Неверный путь в приключении',
 		BTN_CANCELED: 'Отменено',
 		MUST_TWO_POINTS: 'Путь должен состоять минимум из 2х точек',
 		MUST_ONLY_NUMBERS: 'Путь должен содержать только цифры и запятые',
@@ -720,6 +726,9 @@ const i18nLangData = {
 		TIMER: 'Таймер:',
 		SHOW_ERRORS: 'Отображать ошибки',
 		SHOW_ERRORS_TITLE: 'Отображать ошибки запросов к серверу',
+		FURNACE: 'Горнило',
+		FURNACE_TITLE: 'Набивает килы и собирает награду',
+
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
 	}
 }
@@ -1059,6 +1068,13 @@ const buttons = {
                        quests.start();
                    },
                },
+				{
+					msg: I18N('SEER'),
+					result: function () {
+						confShow(`${I18N('RUN_SCRIPT')} ${I18N('SEER')}?`, rollAscension);
+					},
+					title: I18N('SEER_TITLE'),
+				},                
 			];
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -2151,7 +2167,7 @@ async function checkChangeResponse(response) {
 				call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
 				call.ident == callsIdent['adventure_turnStartBattle']) &&
 				isChecked('preCalcBattle')) {
-				setProgress('Идет прерасчет боя');
+				setProgress(I18N('BEING_RECALC'));
 				let battle = call.result.response.battle || call.result.response.replay;
 				if (call.ident == callsIdent['brawl_startBattle']) {
 					battle = call.result.response;
@@ -7358,6 +7374,23 @@ async function rewardBossRatingEventSouls() {
 	})
 }
 
+async function rollAscension() {
+	const refillable = await Send({calls:[
+		{
+			name:"userGetInfo",
+			args:{},
+			ident:"userGetInfo"
+		}
+	]}).then(e => e.results[0].result.response.refillable);
+	const i47 = refillable.find(i => i.id == 47);
+	if (i47?.amount) {
+		await Send({ calls: [{ name: "ascensionChest_open", args: { paid: false, amount: 1 }, ident: "body" }] });
+		setProgress(I18N('DONE'), true);
+	} else {
+		setProgress(I18N('NOT_ENOUGH_AP'), true);
+	}
+}
+ 
 /**
  * Attack of the minions of Asgard
  *
@@ -8845,6 +8878,11 @@ class doYourBest {
 			checked: false
 		},
 		{
+			name: 'rollAscension',
+			label: I18N('SEER_TITLE'),
+			checked: false
+		},
+		{
 			name: 'questAllFarm',
 			label: I18N('COLLECT_QUEST_REWARDS'),
 			checked: false
@@ -8881,6 +8919,7 @@ class doYourBest {
 			await quests.autoInit(true);
 			await quests.start();
 		},
+		rollAscension,
 		getDailyBonus,
 		questAllFarm,
 		testDungeon,
@@ -9099,6 +9138,24 @@ class executeAdventure {
 		return path;
 	}
 
+	checkPath() {
+		for (let i = 0; i < this.path.length - 1; i++) {
+			const currentPoint = this.path[i];
+			const nextPoint = this.path[i + 1];
+ 
+			const isValidPath = this.paths.some(p =>
+				(p.from_id === currentPoint && p.to_id === nextPoint) ||
+				(p.from_id === nextPoint && p.to_id === currentPoint)
+			);
+ 
+			if (!isValidPath) {
+				return false;
+			}
+		}
+ 
+		return true;
+	}
+ 
 	checkAdventureInfo(data) {
 		this.advInfo = data[0].result.response;
 		if (!this.advInfo) {
@@ -9120,6 +9177,7 @@ class executeAdventure {
 		this.turnsLeft = advUserInfo.turnsLeft;
 		this.currentNode = advUserInfo.currentNode;
 		this.nodes = this.advInfo.nodes;
+		this.paths = this.advInfo.paths;
 
 		if (this.currentNode == 1 && this.path[0] != 1) {
 			this.path.unshift(1);
@@ -9129,6 +9187,11 @@ class executeAdventure {
 	}
 
 	async loop() {
+		if (!this.checkPath()) {
+			this.terminatеReason = I18N('INCORRECT_WAY');
+			return this.end();
+		}
+ 
 		const position = this.path.indexOf(+this.currentNode);
 		if (!(~position)) {
 			this.terminatеReason = I18N('YOU_IN_NOT_ON_THE_WAY');
