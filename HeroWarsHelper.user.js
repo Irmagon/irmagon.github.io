@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.160
+// @version			2.163
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -346,7 +346,7 @@ const i18nLangData = {
 		UNKNOWN: 'unknown',
 		ENTER_THE_PATH: 'Enter the path of adventure using commas or dashes',
 		START_ADVENTURE: 'Start your adventure along this path!',
-		INCORRECT_WAY: 'Incorrect path in adventure',
+		INCORRECT_WAY: 'Incorrect path in adventure: {from} -> {to}',
 		BTN_CANCELED: 'Canceled',
 		MUST_TWO_POINTS: 'The path must contain at least 2 points.',
 		MUST_ONLY_NUMBERS: 'The path must contain only numbers and commas',
@@ -632,7 +632,7 @@ const i18nLangData = {
 		UNKNOWN: 'Неизвестно',
 		ENTER_THE_PATH: 'Введите путь приключения через запятые или дефисы',
 		START_ADVENTURE: 'Начать приключение по этому пути!',
-		INCORRECT_WAY: 'Неверный путь в приключении',
+		INCORRECT_WAY: 'Неверный путь в приключении: {from} -> {to}',
 		BTN_CANCELED: 'Отменено',
 		MUST_TWO_POINTS: 'Путь должен состоять минимум из 2х точек',
 		MUST_ONLY_NUMBERS: 'Путь должен содержать только цифры и запятые',
@@ -3600,7 +3600,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1092/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1097/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -5410,7 +5410,7 @@ function hackGame() {
 	this.BattleCalc = function (battleData, battleConfig, callback) {
 		// battleConfig = battleConfig || getBattleType(battleData.type)
 		if (!Game.BattlePresets) throw Error('Use connectGame');
-		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 		battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
 		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
 			const battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
@@ -5498,7 +5498,7 @@ function hackGame() {
 				if (isChecked('passBattle')) {
 					this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
-					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
+					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
 					a = new Game.BattleInstantPlay(c, a);
 					a[getProtoFn(Game.BattleInstantPlay, 8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
@@ -5523,7 +5523,7 @@ function hackGame() {
 			let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
 			Game.PlayerTowerData.prototype[PTD_67] = function (a) {
 				if (isChecked('passBattle')) {
-					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 23)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
+					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 					a = new Game.BattleInstantPlay(a, p);
 					a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
@@ -5632,10 +5632,10 @@ function hackGame() {
 					}
 					const BSM_22 = getProtoFn(Game.BattleSettingsModel, 22);
 					a > this[BC_11][BSM_22][BP_get_value]() && (a = this[BC_11][BSM_22][BP_get_value]());
-					const DS_22 = getFn(Game.DataStorage, 22);
+					const DS_23 = getFn(Game.DataStorage, 23);
 					const get_battleSpeedMultiplier = getF(Game.RuleStorage, "get_battleSpeedMultiplier", true);
 					// const RS_167 = getProtoFn(Game.RuleStorage, 167); // get_battleSpeedMultiplier
-					var b = Game.DataStorage[DS_22][get_battleSpeedMultiplier]();
+					var b = Game.DataStorage[DS_23][get_battleSpeedMultiplier]();
 					const R_1 = getFn(selfGame.Reflect, 1);
 					const BC_1 = getFn(Game.BattleController, 1);
 					const get_config = getF(Game.BattlePresets, "get_config");
@@ -9076,11 +9076,6 @@ class executeAdventure {
 
 	async start(type) {
 		this.type = type || this.type;
-		this.path = await this.getPath();
-		if (!this.path) {
-			this.end();
-			return;
-		}
 		this.callAdventureInfo.name = this.actions[this.type].getInfo;
 		const data = await Send(JSON.stringify({
 			calls: [
@@ -9093,12 +9088,14 @@ class executeAdventure {
 	}
 
 	async getPath() {
+		const oldVal = getSaveVal('adventurePath', '');
+		const keyPath = `adventurePath:${this.mapIdent}`;
 		const answer = await popup.confirm(I18N('ENTER_THE_PATH'), [
 			{
 				msg: I18N('START_ADVENTURE'),
 				placeholder: '1,2,3,4,5,6',
 				isInput: true,
-				default: getSaveVal('adventurePath', '')
+				default: getSaveVal(keyPath, oldVal)
 			},
 			{
 				msg: I18N('BTN_CANCEL'),
@@ -9126,14 +9123,18 @@ class executeAdventure {
 				return false;
 			}
 		}
-		setSaveVal('adventurePath', answer);
+ 
+		if (!this.checkPath(path)) {
+			return false;
+		}
+		setSaveVal(keyPath, answer);
 		return path;
 	}
 
-	checkPath() {
-		for (let i = 0; i < this.path.length - 1; i++) {
-			const currentPoint = this.path[i];
-			const nextPoint = this.path[i + 1];
+	checkPath(path) {
+		for (let i = 0; i < path.length - 1; i++) {
+			const currentPoint = path[i];
+			const nextPoint = path[i + 1];
  
 			const isValidPath = this.paths.some(p =>
 				(p.from_id === currentPoint && p.to_id === nextPoint) ||
@@ -9141,6 +9142,10 @@ class executeAdventure {
 			);
  
 			if (!isValidPath) {
+				this.terminatеReason = I18N('INCORRECT_WAY', {
+					from: currentPoint,
+					to: nextPoint,
+				});
 				return false;
 			}
 		}
@@ -9148,7 +9153,7 @@ class executeAdventure {
 		return true;
 	}
  
-	checkAdventureInfo(data) {
+	async checkAdventureInfo(data) {
 		this.advInfo = data[0].result.response;
 		if (!this.advInfo) {
 			this.terminatеReason = I18N('NOT_ON_AN_ADVENTURE') ;
@@ -9170,7 +9175,13 @@ class executeAdventure {
 		this.currentNode = advUserInfo.currentNode;
 		this.nodes = this.advInfo.nodes;
 		this.paths = this.advInfo.paths;
+		this.mapIdent = this.advInfo.mapIdent;
 
+		this.path = await this.getPath();
+		if (!this.path) {
+			return this.end();
+		}
+ 
 		if (this.currentNode == 1 && this.path[0] != 1) {
 			this.path.unshift(1);
 		}
@@ -9179,11 +9190,6 @@ class executeAdventure {
 	}
 
 	async loop() {
-		if (!this.checkPath()) {
-			this.terminatеReason = I18N('INCORRECT_WAY');
-			return this.end();
-		}
- 
 		const position = this.path.indexOf(+this.currentNode);
 		if (!(~position)) {
 			this.terminatеReason = I18N('YOU_IN_NOT_ON_THE_WAY');
