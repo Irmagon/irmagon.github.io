@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.163
+// @version			2.165
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -443,6 +443,15 @@ const i18nLangData = {
 		SHOW_ERRORS: 'Show errors',
 		SHOW_ERRORS_TITLE: 'Show server request errors',
 		ERROR_MSG: 'Error: {name}<br>{description}',
+		EVENT_AUTO_BOSS: 'Maximum number of battles for calculation: {length} ∗ {countTestBattle} = ${maxCalcBattle}.</br>If you have a weak computer, it may take a long time for this, click on the cross to cancel.</br>Should I search for the best pack from all or the first suitable one?',
+		BEST_SLOW: 'Best (slower)',
+		FIRST_FAST: 'First (faster)',
+		FREEZE_INTERFACE: 'Calculating... <br>The interface may freeze.',
+		ERROR_F12: 'Error, details in the console (F12)',
+		FAILED_FIND_WIN_PACK: 'Failed to find a winning pack',
+		BEST_PACK: 'Best pack:',
+		BOSS_HAS_BEEN_DEF: 'Boss ${boosLvl} has been defeated.',
+		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {boosLvl}, retry?',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -730,6 +739,15 @@ const i18nLangData = {
 		FURNACE_TITLE: 'Набивает килы и собирает награду',
 
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
+		EVENT_AUTO_BOSS: 'Максимальное количество боев для расчета: {length} * ${countTestBattle} = ${maxCalcBattle}.</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
+		BEST_SLOW: 'Лучший (медленее)',
+		FIRST_FAST: 'Первый (быстрее)',
+		FREEZE_INTERFACE: 'Идет расчет... <br> Интерфейс может зависнуть.',
+		ERROR_F12: 'Ошибка, подробности в консоли (F12)',
+		FAILED_FIND_WIN_PACK: 'Победный пак найти не удалось',
+		BEST_PACK: 'Наилучший пак: ',
+		BOSS_HAS_BEEN_DEF: 'Босс {boosLvl} побежден',
+		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${boosLvl} не хватило попыток, повторить?',
 	}
 }
 
@@ -1058,7 +1076,7 @@ const buttons = {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('SEER')}?`, rollAscension);
 					},
 					title: I18N('SEER_TITLE'),
-				},                
+				},
 			];
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1143,6 +1161,13 @@ const buttons = {
 			const quests = new dailyQuests(() => { }, () => { });
 			await quests.autoInit();
 			quests.start();
+		},
+	},
+	autoBoss: {
+		name: 'autoBoss',
+		title: 'autoBoss',
+		func: function () {
+			(new executeEventAutoBoss()).start()
 		},
 	},
     getOutland: {
@@ -1291,13 +1316,13 @@ let lastDungeonBattleData = null;
 let lastDungeonBattleStart = 0;
 /**
  * Subscription end time
- * 
+ *
  * Время окончания подписки
  */
 let subEndTime = 0;
-/** 
+/**
  * Number of prediction cards
- * 
+ *
  * Количество карт предсказаний
  */
 let countPredictionCard = 0;
@@ -1478,8 +1503,8 @@ XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
 	if (method == 'POST' && url.includes('.nextersglobal.com/api/') && /api\/$/.test(url)) {
 		if (!apiUrl) {
 			apiUrl = url;
-			socialInfo = /heroes-(.+?)\./.exec(apiUrl);
-			sNetwork = socialInfo ? socialInfo[1] : 'vk';
+			const socialInfo = /heroes-(.+?)\./.exec(apiUrl);
+			console.log(socialInfo);
 		}
 		requestHistory[this.uniqid] = {
 			method,
@@ -1540,8 +1565,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		 */
 		if (headers["X-Request-Id"] > 2 && !isLoadGame) {
 			isLoadGame = true;
-			await openOrMigrateDatabase(userInfo.id);
-			await lib.load(cheats.libGame);
+			await lib.load();
 			addControls();
 			addControlButtons();
 			addBottomUrls();
@@ -1698,12 +1722,14 @@ async function checkChangeSend(sourceData, tempData) {
 				isChecked('cancelBattle') ||
 				call.name == 'brawl_endBattle' ||
 				call.name == 'towerEndBattle' ||
+				call.name == 'invasion_bossEnd' ||
 				call.name == 'clanRaid_endNodeBattle') &&
 				isCancalBattle) {
 				nameFuncEndBattle = call.name;
 				if (!call.args.result.win) {
 					let resultPopup = false;
 					if (call.name == 'adventure_endBattle' ||
+						call.name == 'invasion_bossEnd' ||
 						call.name == 'adventureSolo_endBattle') {
 						resultPopup = await showMsgs(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_CANCEL'), I18N('BTN_AUTO'));
 					} else if (call.name == 'clanWarEndBattle' ||
@@ -1722,12 +1748,15 @@ async function checkChangeSend(sourceData, tempData) {
 						}
 					}
 				} else if (call.args.result.stars < 3 && call.name == 'towerEndBattle') {
-					resultPopup = await showMsg(I18N('LOST_HEROES'), I18N('BTN_OK'), I18N('BTN_CANCEL'));
+					resultPopup = await showMsg(I18N('LOST_HEROES'), I18N('BTN_OK'), I18N('BTN_CANCEL'), I18N('BTN_AUTO'));
 					if (resultPopup) {
 						fixBattle(call.args.progress[0].attackers.heroes);
 						fixBattle(call.args.progress[0].defenders.heroes);
 						changeRequest = true;
+						if (resultPopup > 1) {
+							this.onReadySuccess = testAutoBattle;
 					}
+				}
 				}
                 if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
 					if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
@@ -1783,7 +1812,9 @@ async function checkChangeSend(sourceData, tempData) {
 			 */
 			if (call.name == 'clanWarAttack' ||
 				call.name == 'crossClanWar_startBattle' ||
-				call.name == 'adventure_turnStartBattle') {
+				call.name == 'invasion_bossStart' ||
+				call.name == 'adventure_turnStartBattle' ||
+				call.name == 'towerStartBattle') {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
 			}
@@ -1813,12 +1844,12 @@ async function checkChangeSend(sourceData, tempData) {
 						lastBattle.progress = call.args.progress;
 					}
 					const result = await Calc(lastBattle);
- 
+
 					if (changeRequest) {
 					call.args.progress = result.progress;
 					call.args.result = result.result;
 					}
-						
+
 					let timer = getTimer(result.battleTime);
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
 					console.log(timer, period);
@@ -2044,6 +2075,7 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['registration']) {
 				userId = call.result.response.userId;
+				await openOrMigrateDatabase(userId);
 				readQuestInfo = true;
 			}
 			/**
@@ -2155,17 +2187,28 @@ async function checkChangeResponse(response) {
 			 */
 			if ((call.ident == callsIdent['clanWarAttack'] ||
 				call.ident == callsIdent['crossClanWar_startBattle'] ||
+				call.ident == callsIdent['bossAttack'] ||
 				call.ident == callsIdent['battleGetReplay'] ||
 				call.ident == callsIdent['brawl_startBattle'] ||
 				call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
+				call.ident == callsIdent['invasion_bossStart'] ||
+				call.ident == callsIdent['towerStartBattle'] ||
 				call.ident == callsIdent['adventure_turnStartBattle']) &&
 				isChecked('preCalcBattle')) {
 				setProgress(I18N('BEING_RECALC'));
 				let battle = call.result.response.battle || call.result.response.replay;
-				if (call.ident == callsIdent['brawl_startBattle']) {
+				if (call.ident == callsIdent['brawl_startBattle'] ||
+					call.ident == callsIdent['bossAttack'] ||
+					call.ident == callsIdent['towerStartBattle'] ||
+					call.ident == callsIdent['invasion_bossStart']) {
 					battle = call.result.response;
 				}
 				lastBattleInfo = battle;
+				let battleDuration = 120;
+				try {
+					const typeBattle = getBattleType(battle.type);
+					battleDuration = +lib.data.battleConfig[typeBattle.split('_')[1]].config.battleDuration;
+				} catch (e) { }
 				console.log(battle.type);
 				function getBattleInfo(battle, isRandSeed) {
 					return new Promise(function (resolve) {
@@ -2187,7 +2230,7 @@ async function checkChangeResponse(response) {
 					.then(e => {
 						e = e.map(n => ({win: n.result.win, time: n.battleTime}));
 						let firstBattle = e.shift();
-						const timer = Math.floor(120 - firstBattle.time);
+						const timer = Math.floor(battleDuration - firstBattle.time);
 						const min = ('00' + Math.floor(timer / 60)).slice(-2);
 						const sec = ('00' + Math.floor(timer - min * 60)).slice(-2);
 						const countWin = e.reduce((w, s) => w + s.win, 0);
@@ -2288,7 +2331,7 @@ async function checkChangeResponse(response) {
 					const recursionResult = await openRussianDolls(lastRussianDollId, newCount);
 					lootBox = [...lootBox, ...recursionResult];
 				}
- 
+
 				/** Объединение результата лутбоксов */
 				const allLootBox = {};
 				lootBox.forEach(e => {
@@ -2350,7 +2393,7 @@ async function checkChangeResponse(response) {
 				if (count > 0) {
 					output.push(currentObj);
 				}
- 
+
 				console.log(output);
 				call.result.response = output;
 				isChange = true;
@@ -2476,6 +2519,12 @@ function sendAnswerInfo(answerInfo) {
  * Возвращает тип боя по типу пресета
  */
 function getBattleType(strBattleType) {
+	if (strBattleType.includes("invasion")) {
+		return "get_invasion";
+	}
+	if (strBattleType.includes("boss")) {
+		return "get_boss";
+	}
 	switch (strBattleType) {
 		case "invasion":
 			return "get_invasion";
@@ -2742,7 +2791,7 @@ function setProgress(text, hide, onclick) {
 
 /**
  * Returns the timer value depending on the subscription
- * 
+ *
  * Возвращает значение таймера в зависимости от подписки
  */
 function getTimer(time) {
@@ -2752,8 +2801,8 @@ function getTimer(time) {
 	}
 	return Math.max(time / speedDiv + 1.5, 4);
 }
- 
- 
+
+
 /**
  * Calculates HASH MD5 from string
  *
@@ -3600,7 +3649,7 @@ const scriptMenu = new (function () {
  * Игровая библиотека
  */
 class Library {
-	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1097/lib/lib.json';
+	defaultLibUrl = 'https://heroesru-a.akamaihd.net/vk/v1101/lib/lib.json';
 
 	constructor() {
 		if (!Library.instance) {
@@ -3610,16 +3659,23 @@ class Library {
 		return Library.instance;
 	}
 
-	async load(data) {
-		if (data) {
-			this.data = data;
-			return;
-		}
+	async load() {
 		try {
+			await this.getUrlLib();
+			console.log(this.defaultLibUrl);
 			this.data = await fetch(this.defaultLibUrl).then(e => e.json())
 		} catch (error) {
-			console.error('Не удалось загрузить библиотеку')
+			console.error('Не удалось загрузить библиотеку', error)
 		}
+	}
+
+	async getUrlLib() {
+		try {
+			const db = new Database('hw_cache', 'cache');
+			await db.open();
+			const cacheLibFullUrl = await db.get('lib/lib.json.gz', false);
+			this.defaultLibUrl = cacheLibFullUrl.fullUrl.split('.gz').shift();
+		} catch(e) {}
 	}
 
 	getData(id) {
@@ -4106,7 +4162,7 @@ function executeDungeon(resolve, reject) {
 		const titans = titanGetAll.filter(e => !titansStates[e.id]?.isDead)
 		return titans.sort((a, b) => b.power - a.power).slice(0, 5).map(e => e.id);
 	}
- 
+
 	function fixTitanTeam(titans) {
 		titans.heroes = titans.heroes.filter(e => !titansStates[e]?.isDead);
 		return titans;
@@ -5329,6 +5385,7 @@ function hackGame() {
 		{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
 		{ name: "BattleLogEncoder", prop: "battle.log.BattleLogEncoder" },
 		{ name: "BattleLogReader", prop: "battle.log.BattleLogReader" },
+		{ name: "PlayerSubscriptionInfoValueObject", prop: "game.model.user.subscription.PlayerSubscriptionInfoValueObject" },
 	];
 
 	/**
@@ -5495,14 +5552,19 @@ function hackGame() {
 			let PMD_12 = getProtoFn(Game.PlayerMissionData, 12);
 			let oldSkipMisson = Game.PlayerMissionData.prototype[PMD_12];
 			Game.PlayerMissionData.prototype[PMD_12] = function (a, b, c) {
-				if (isChecked('passBattle')) {
+				if (!isChecked('passBattle')) {
+					oldSkipMisson.call(this, a, b, c);
+				}
+
+				try {
 					this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
 					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
 					a = new Game.BattleInstantPlay(c, a);
 					a[getProtoFn(Game.BattleInstantPlay, 8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
-				} else {
+				} catch (error) {
+					console.error('company', error)
 					oldSkipMisson.call(this, a, b, c);
 				}
 			}
@@ -5522,13 +5584,18 @@ function hackGame() {
 			let PTD_67 = getProtoFn(Game.PlayerTowerData, 67);
 			let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
 			Game.PlayerTowerData.prototype[PTD_67] = function (a) {
-				if (isChecked('passBattle')) {
+				if (!isChecked('passBattle')) {
+					oldSkipTower.call(this, a);
+				}
+
+				try {
 					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 					a = new Game.BattleInstantPlay(a, p);
 					a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
 					a.start()
-				} else {
-					oldSkipTower.call(this, a);;
+				} catch (error) {
+					console.error('tower', error)
+					oldSkipMisson.call(this, a, b, c);
 				}
 			}
 
@@ -5551,7 +5618,10 @@ function hackGame() {
 			let BPP_4 = getProtoFn(Game.BattlePausePopup, 4);
 			let oldPassBattle = Game.BattlePausePopup.prototype[BPP_4];
 			Game.BattlePausePopup.prototype[BPP_4] = function (a) {
-				if (isChecked('passBattle')) {
+				if (!isChecked('passBattle')) {
+					oldPassBattle.call(this, a);
+				}
+				try {
 					Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
 					this[getProtoFn(Game.BattlePausePopup, 3)]();
 					this[getProtoFn(Game.DisplayObjectContainer, 3)](this.clip[getProtoFn(Game.GuiClipContainer, 2)]());
@@ -5580,7 +5650,8 @@ function hackGame() {
 						b.sa(b.Fa() - a)
 					}
 					*/
-				} else {
+				} catch(error) {
+					console.error('passBattle', error)
 					oldPassBattle.call(this, a);
 				}
 			}
@@ -5611,27 +5682,30 @@ function hackGame() {
 			const oldSpeedBattle = Game.BattleController.prototype[get_timeScale];
 			Game.BattleController.prototype[get_timeScale] = function () {
 				const speedBattle = Number.parseFloat(getInput('speedBattle'));
-				if (speedBattle) {
-					const BC_11 = getProtoFn(Game.BattleController, 11);
+				if (!speedBattle) {
+					return oldSpeedBattle.call(this);
+				}
+				try {
+					const BC_12 = getProtoFn(Game.BattleController, 12);
 					const BSM_11 = getProtoFn(Game.BattleSettingsModel, 11);
 					const BP_get_value = getF(Game.BooleanProperty, "get_value");
-					if (this[BC_11][BSM_11][BP_get_value]()) {
+					if (this[BC_12][BSM_11][BP_get_value]()) {
 						return 0;
 					}
 					const BSM_2 = getProtoFn(Game.BattleSettingsModel, 2);
-					const BC_44 = getProtoFn(Game.BattleController, 44);
+					const BC_48 = getProtoFn(Game.BattleController, 48);
 					const BSM_1 = getProtoFn(Game.BattleSettingsModel, 1);
-					const BC_13 = getProtoFn(Game.BattleController, 13);
+					const BC_14 = getProtoFn(Game.BattleController, 14);
 					const BC_3 = getFn(Game.BattleController, 3);
-					if (this[BC_11][BSM_2][BP_get_value]()) {
-						var a = speedBattle * this[BC_44]();
+					if (this[BC_12][BSM_2][BP_get_value]()) {
+						var a = speedBattle * this[BC_48]();
 					} else {
-						a = this[BC_11][BSM_1][BP_get_value]();
-						//const multiple = a == 1 ? speedBattle : this[BC_13][a];
-						a = this[BC_13][a] * Game.BattleController[BC_3][BP_get_value]() * this[BC_44]();
+						a = this[BC_12][BSM_1][BP_get_value]();
+						const multiple = a == 2 ? speedBattle : this[BC_14][a];
+						a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_48]();
 					}
-					const BSM_22 = getProtoFn(Game.BattleSettingsModel, 22);
-					a > this[BC_11][BSM_22][BP_get_value]() && (a = this[BC_11][BSM_22][BP_get_value]());
+					const BSM_24 = getProtoFn(Game.BattleSettingsModel, 24);
+					a > this[BC_12][BSM_24][BP_get_value]() && (a = this[BC_12][BSM_24][BP_get_value]());
 					const DS_23 = getFn(Game.DataStorage, 23);
 					const get_battleSpeedMultiplier = getF(Game.RuleStorage, "get_battleSpeedMultiplier", true);
 					// const RS_167 = getProtoFn(Game.RuleStorage, 167); // get_battleSpeedMultiplier
@@ -5642,7 +5716,8 @@ function hackGame() {
 					// const BC_0 = getProtoFn(Game.BattleConfig, 0); // .ident
 					null != b && (a = selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) ? a * selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) : a * selfGame.Reflect[R_1](b, "default"));
 					return a
-				} else {
+				} catch(error) {
+					console.error('passBatspeedBattletle', error)
 					return oldSpeedBattle.call(this);
 				}
 			}
@@ -5672,21 +5747,19 @@ function hackGame() {
 		 *
 		 * Кнопка ускорения без Покровительства Валькирий
 		 */
-		battleFastKey: function () {
-			const BGM_40 = getProtoFn(Game.BattleGuiMediator, 40);
-			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_40];
-			Game.BattleGuiMediator.prototype[BGM_40] = function () {
-				if (true) {
-					const BGM_8 = getProtoFn(Game.BattleGuiMediator, 8);
-					const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
-					const BPW_0 = getProtoFn(Game.BooleanPropertyWriteable, 0);
-					this[BGM_8][BPW_0](true);
-					this[BGM_9][BPW_0](true);
+		subscribe: function () {
+			const PSIVO_9 = getProtoFn(Game.PlayerSubscriptionInfoValueObject, 9);
+			const oldCheckSub = Game.PlayerSubscriptionInfoValueObject.prototype[PSIVO_9];
+			Game.PlayerSubscriptionInfoValueObject.prototype[PSIVO_9] = function () {
+				let flag = true;
+				console.log(flag)
+				if (flag) {
+					return true;
 				} else {
-					return oldBattleFastKey.call(this);
-				}
+					return oldCheckSub.call(this);
 			}
 		}
+		},
 	}
 
 	/**
@@ -6310,7 +6383,7 @@ function openRussianDoll(id, count, sum) {
 async function openRussianDolls(libId, amount) {
 	let sum = 0;
 	let sumResult = [];
- 
+
 	while (amount) {
 		sum += amount;
 		setProgress(`${I18N('TOTAL_OPEN')} ${sum}`);
@@ -6329,11 +6402,11 @@ async function openRussianDolls(libId, amount) {
 		sumResult = [...sumResult, ...result];
 		amount = newCount;
 	}
- 
+
 	setProgress(`${I18N('TOTAL_OPEN')} ${sum}`, 5000);
 	return sumResult;
 }
- 
+
 /**
  * Collect all mail, except letters with energy and charges of the portal
  *
@@ -6416,13 +6489,23 @@ async function justInfo() {
 			name: "clanWarGetInfo",
 			args: {},
 			ident: "clanWarGetInfo"
+		},
+		{
+			name: "titanArenaGetStatus",
+			args: {},
+			ident: "titanArenaGetStatus"
 		}];
 		const result = await Send(JSON.stringify({ calls }));
 		const infos = result.results;
 		const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
 		const clanWarMyTries = infos[1].result.response?.myTries ?? 0;
+		const titansLevel = +(infos[2].result.response?.tier ?? 0);
+		const titansStatus = infos[2].result.response?.status; //peace_time || battle
+
 		const sanctuaryButton = buttons['goToSanctuary'].button;
 		const clanWarButton = buttons['goToClanWar'].button;
+		const titansArenaButton = buttons['testTitanArena'].button;
+
 		if (portalSphere.amount) {
 			sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
 			sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
@@ -6437,6 +6520,16 @@ async function justInfo() {
 			clanWarButton.style.color = '';
 			clanWarButton.title = I18N('GUILD_WAR_TITLE');
 		}
+
+		if (titansLevel < 7 && titansStatus == 'battle') {
+			const partColor = Math.floor(125 * titansLevel / 7);
+			titansArenaButton.style.color = `rgb(255,${partColor},${partColor})`;
+			titansArenaButton.title = `${I18N('TITAN_ARENA_TITLE')}\n${titansLevel} ${I18N('LEVEL')}`;
+		} else {
+			titansArenaButton.style.color = '';
+			titansArenaButton.title = I18N('TITAN_ARENA_TITLE');
+		}
+
 		setProgress('<img src="https://zingery.ru/heroes/portal.png" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
 		resolve();
 	});
@@ -7382,7 +7475,7 @@ async function rollAscension() {
 		setProgress(I18N('NOT_ENOUGH_AP'), true);
 	}
 }
- 
+
 /**
  * Attack of the minions of Asgard
  *
@@ -7894,6 +7987,12 @@ function executeAutoBattle(resolve, reject) {
 		});
 		avgCoeff /= results.length;
 
+		if (nameFuncStartBattle == 'invasion_bossStart') {
+			setProgress(I18N('NOT_THIS_TIME'), true);
+			endAutoBattle('invasion_bossStart');
+			return;
+		}
+
 		const result = await popup.confirm(
 			I18N('VICTORY_IMPOSSIBLE') +
 			`<br>${I18N('ROUND_STAT')} ${results.length} ${I18N('BATTLE')}:` +
@@ -7938,7 +8037,8 @@ function executeAutoBattle(resolve, reject) {
 		const afterPack = result.progress[0][packType].heroes;
 		for (let heroId in afterPack) {
 			const hero = afterPack[heroId];
-			const hp = hero.hp / beforePack[heroId].state.hp;
+			const stateHp = beforePack[heroId]?.state?.hp || beforePack[heroId]?.stats?.hp;
+			const hp = hero.hp / stateHp;
 			const energy = hero.energy / 1e3;
 			const factor = hp + energy / 20;
 			afterSumFactor += factor;
@@ -7976,6 +8076,10 @@ function executeAutoBattle(resolve, reject) {
 	 */
 	function calcResultBattle(e) {
 		let battle = e.results[0].result.response.battle
+		if (nameFuncStartBattle == 'towerStartBattle' ||
+			nameFuncStartBattle == 'invasion_bossStart') {
+			battle = e.results[0].result.response;
+		}
 		BattleCalc(battle, getBattleType(battle.type), resultBattle);
 	}
 	/**
@@ -7998,6 +8102,11 @@ function executeAutoBattle(resolve, reject) {
 				endBattle(e, false);
 				return;
 			}
+		}
+		if (nameFuncStartBattle == 'towerStartBattle' ||
+			nameFuncStartBattle == 'invasion_bossStart') {
+			startBattle();
+			return;
 		}
 		cancelEndBattle(e);
 	}
@@ -8033,6 +8142,10 @@ function executeAutoBattle(resolve, reject) {
 			},
 			ident: "body"
 		}];
+
+		if (nameFuncStartBattle == 'invasion_bossStart') {
+			calls[0].args.id = lastBattleArg.id;
+		}
 
 		send(JSON.stringify({
 			calls
@@ -9123,7 +9236,7 @@ class executeAdventure {
 				return false;
 			}
 		}
- 
+
 		if (!this.checkPath(path)) {
 			return false;
 		}
@@ -9135,12 +9248,12 @@ class executeAdventure {
 		for (let i = 0; i < path.length - 1; i++) {
 			const currentPoint = path[i];
 			const nextPoint = path[i + 1];
- 
+
 			const isValidPath = this.paths.some(p =>
 				(p.from_id === currentPoint && p.to_id === nextPoint) ||
 				(p.from_id === nextPoint && p.to_id === currentPoint)
 			);
- 
+
 			if (!isValidPath) {
 				this.terminatеReason = I18N('INCORRECT_WAY', {
 					from: currentPoint,
@@ -9149,10 +9262,10 @@ class executeAdventure {
 				return false;
 			}
 		}
- 
+
 		return true;
 	}
- 
+
 	async checkAdventureInfo(data) {
 		this.advInfo = data[0].result.response;
 		if (!this.advInfo) {
@@ -9181,7 +9294,7 @@ class executeAdventure {
 		if (!this.path) {
 			return this.end();
 		}
- 
+
 		if (this.currentNode == 1 && this.path[0] != 1) {
 			this.path.unshift(1);
 		}
@@ -9639,6 +9752,257 @@ class executeBrawls {
 		setProgress(endReason, true);
 		console.log(endReason);
 		this.resolve();
+	}
+}
+
+class executeEventAutoBoss {
+
+	async start() {
+		await this.loadInfo();
+		this.generateCombo();
+
+		const countTestBattle = +getInput('countTestBattle');
+		const maxCalcBattle = this.combo.length * countTestBattle;
+
+		const resultDialog = await popup.confirm(I18N('EVENT_AUTO_BOSS', {
+			length: this.combo.length,
+			countTestBattle,
+			maxCalcBattle
+		}), [
+			{ msg: I18N('BEST_SLOW'), result: true },
+			{ msg: I18N('FIRST_FAST'), result: false },
+			{ isClose: true, result: 'exit' },
+		]);
+
+		if (resultDialog == 'exit') {
+			this.end('Отменено');
+			return;
+		}
+
+		popup.confirm(I18N('FREEZE_INTERFACE'));
+
+		setTimeout(() => {
+			this.startFindPack(resultDialog)
+		}, 1000)
+	}
+
+	async loadInfo() {
+		const resultReq = await Send({ calls: [{ name: "teamGetMaxUpgrade", args: {}, ident: "group_1_body" }, { name: "invasion_bossStart", args: { id: 119, heroes: [3, 61], favor: { "61": 6001 } }, ident: "body" }] }).then(e => e.results);
+		this.heroes = resultReq[0].result.response;
+		this.battle = resultReq[1].result.response;
+
+		this.heroes.hero[61] = this.battle.attackers[1];
+		this.battle.attackers = [];
+	}
+
+	combinations(arr, n) {
+		if (n == 1) {
+			return arr.map(function (x) { return [x]; });
+		}
+		else if (n <= 0) {
+			return [];
+		}
+		var result = [];
+		for (var i = 0; i < arr.length; i++) {
+			var rest = arr.slice(i + 1);
+			var c = this.combinations(rest, n - 1);
+			for (var j = 0; j < c.length; j++) {
+				c[j].unshift(arr[i]);
+				result.push(c[j]);
+			}
+		}
+		return result;
+	}
+
+	generateCombo() {
+		// const heroesIds = [3, 7, 8, 9, 12, 16, 18, 22, 35, 40, 48, 57, 58, 59];
+		const heroesIds = [3, 7, 9, 12, 18, 22, 35, 40, 48, 57, 58, 59];
+		this.combo = this.combinations(heroesIds, 4);
+	}
+
+	async startFindPack(findBestOfAll) {
+		const promises = [];
+		let bestBattle = null;
+		for (const comb of this.combo) {
+			const copyBattle = structuredClone(this.battle);
+			const attackers = [];
+			for (const id of comb) {
+				if (this.heroes.hero[id]) {
+					attackers.push(this.heroes.hero[id]);
+				}
+			}
+			attackers.push(this.heroes.hero[61]);
+			attackers.push(this.heroes.pet[6001]);
+			copyBattle.attackers = attackers;
+			const countTestBattle = +getInput('countTestBattle');
+			if (findBestOfAll) {
+				promises.push(this.CalcBattle(copyBattle, countTestBattle));
+			} else {
+				try {
+					const checkBattle = await this.CalcBattle(copyBattle, countTestBattle);
+					if (checkBattle.result.win) {
+						bestBattle = checkBattle;
+						break;
+					}
+				} catch(e) {
+					console.log(e, copyBattle)
+					popup.confirm(I18N('ERROR_F12'));
+					this.end(I18N('ERROR_F12'), e, copyBattle)
+					return;
+				}
+			}
+		}
+
+		if (findBestOfAll) {
+			bestBattle = await Promise.all(promises)
+				.then(results => {
+					results = results.sort((a, b) => b.coeff - a.coeff).slice(0, 10);
+					let maxStars = 0;
+					let maxCoeff = -100;
+					let maxBattle = null;
+					results.forEach(e => {
+						if (e.stars > maxStars || e.coeff > maxCoeff) {
+							maxCoeff = e.coeff;
+							maxStars = e.stars;
+							maxBattle = e;
+						}
+					});
+					console.log(results);
+					console.log('better', maxCoeff, maxStars, maxBattle, maxBattle.battleData.attackers.map(e => e.id));
+					return maxBattle;
+				});
+		}
+
+		if (!bestBattle || !bestBattle.result.win) {
+			let msg = I18N('FAILED_FIND_WIN_PACK');
+			let msgc = msg;
+			if (bestBattle?.battleData) {
+				const heroes = bestBattle.battleData.attackers.map(e => e.id).filter(e => e < 61);
+				msg += `</br>${I18N('BEST_PACK')}</br>` + heroes.map(
+					id => `<img src="https://heroesweb-a.akamaihd.net/vk/v0952/assets/hero_icons/${('000' + id).slice(-4)}.png"/>`
+				).join('');
+				msgc += I18N('BEST_PACK') + heroes.join(',')
+			}
+
+			await popup.confirm(msg);
+			this.end(msgc);
+			return;
+		}
+
+		this.heroesPack = bestBattle.battleData.attackers.map(e => e.id).filter(e => e < 6000);
+		this.battleLoop();
+	}
+
+	async battleLoop() {
+		let repeat = false;
+		do {
+			repeat = false;
+			const countAutoBattle = +getInput('countAutoBattle');
+			for (let i = 1; i <= countAutoBattle; i++) {
+				const startBattle = await Send({
+					calls: [{
+						name: "invasion_bossStart",
+						args: {
+							id: 119,
+							heroes: this.heroesPack,
+							favor: { "61": 6001 },
+							pet: 6001
+						}, ident: "body"
+					}]
+				}).then(e => e.results[0].result.response);
+				const calcBattle = await Calc(startBattle);
+
+				setProgress(`${i}) ${calcBattle.result.win ? I18N('VICTORY') : I18N('DEFEAT') } `)
+				console.log(i, calcBattle.result.win)
+				if (!calcBattle.result.win) {
+					continue;
+				}
+
+				const endBattle = await Send({
+					calls: [{
+						name: "invasion_bossEnd",
+						args: {
+							id: 119,
+							result: calcBattle.result,
+							progress: calcBattle.progress
+						}, ident: "body"
+					}]
+				}).then(e => e.results[0].result.response);
+				console.log(endBattle);
+				const msg = I18N('BOSS_HAS_BEEN_DEF', { boosLvl: battle.typeId });
+				await popup.confirm(msg);
+				this.end(msg);
+				return;
+			}
+
+			const msg = I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: battle.typeId });
+			repeat = await popup.confirm(msg, [
+				{ msg: 'Да', result: true },
+				{ msg: 'Нет', result: false },
+			]);
+			this.end(I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: battle.typeId }));
+
+		} while (repeat)
+	}
+
+	calcCoeff(result, packType) {
+		let beforeSumFactor = 0;
+		const beforePack = result.battleData[packType][0];
+		for (let heroId in beforePack) {
+			const hero = beforePack[heroId];
+			const state = hero.state;
+			let factor = 1;
+			if (state) {
+				const hp = state.hp / state.maxHp;
+				factor = hp;
+			}
+			beforeSumFactor += factor;
+		}
+
+		let afterSumFactor = 0;
+		const afterPack = result.progress[0][packType].heroes;
+		for (let heroId in afterPack) {
+			const hero = afterPack[heroId];
+			const stateHp = beforePack[heroId]?.state?.hp || beforePack[heroId]?.stats?.hp;
+			const hp = hero.hp / stateHp;
+			afterSumFactor += hp;
+		}
+		const resultCoeff = beforeSumFactor / afterSumFactor;
+		return resultCoeff;
+	}
+
+	async CalcBattle(battle, count) {
+		const actions = [];
+		for (let i = 0; i < count; i++) {
+			battle.seed = Math.floor(Date.now() / 1000) + this.random(0, 1e3);
+			actions.push(Calc(battle).then(e => {
+				e.coeff = this.calcCoeff(e, 'defenders');
+				return e;
+			}));
+		}
+
+		return Promise.all(actions).then(results => {
+			let maxCoeff = -100;
+			let maxBattle = null;
+			results.forEach(e => {
+				if (e.coeff > maxCoeff) {
+					maxCoeff = e.coeff;
+					maxBattle = e;
+				}
+			});
+			maxBattle.stars = results.reduce((w, s) => w + s.result.stars, 0);
+			maxBattle.attempts = results;
+			return maxBattle;
+		});
+	}
+
+	random(min, max) {
+		return Math.floor(Math.random() * (max - min + 1) + min);
+	}
+
+	end(reason) {
+		setProgress('');
+		console.log('endEventAutoBoss', reason)
 	}
 }
 
