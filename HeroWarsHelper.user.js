@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.165
+// @version			2.166
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -443,14 +443,14 @@ const i18nLangData = {
 		SHOW_ERRORS: 'Show errors',
 		SHOW_ERRORS_TITLE: 'Show server request errors',
 		ERROR_MSG: 'Error: {name}<br>{description}',
-		EVENT_AUTO_BOSS: 'Maximum number of battles for calculation: {length} ∗ {countTestBattle} = ${maxCalcBattle}.</br>If you have a weak computer, it may take a long time for this, click on the cross to cancel.</br>Should I search for the best pack from all or the first suitable one?',
+		EVENT_AUTO_BOSS: 'Maximum number of battles for calculation:</br>{length} ∗ {countTestBattle} = {maxCalcBattle}</br>If you have a weak computer, it may take a long time for this, click on the cross to cancel.</br>Should I search for the best pack from all or the first suitable one?',
 		BEST_SLOW: 'Best (slower)',
 		FIRST_FAST: 'First (faster)',
 		FREEZE_INTERFACE: 'Calculating... <br>The interface may freeze.',
 		ERROR_F12: 'Error, details in the console (F12)',
 		FAILED_FIND_WIN_PACK: 'Failed to find a winning pack',
 		BEST_PACK: 'Best pack:',
-		BOSS_HAS_BEEN_DEF: 'Boss ${boosLvl} has been defeated.',
+		BOSS_HAS_BEEN_DEF: 'Boss {boosLvl} has been defeated.',
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {boosLvl}, retry?',
 	},
 	ru: {
@@ -739,7 +739,7 @@ const i18nLangData = {
 		FURNACE_TITLE: 'Набивает килы и собирает награду',
 
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
-		EVENT_AUTO_BOSS: 'Максимальное количество боев для расчета: {length} * ${countTestBattle} = ${maxCalcBattle}.</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
+		EVENT_AUTO_BOSS: 'Максимальное количество боев для расчета:</br>{length} * {countTestBattle} = {maxCalcBattle}</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
 		BEST_SLOW: 'Лучший (медленее)',
 		FIRST_FAST: 'Первый (быстрее)',
 		FREEZE_INTERFACE: 'Идет расчет... <br> Интерфейс может зависнуть.',
@@ -747,7 +747,7 @@ const i18nLangData = {
 		FAILED_FIND_WIN_PACK: 'Победный пак найти не удалось',
 		BEST_PACK: 'Наилучший пак: ',
 		BOSS_HAS_BEEN_DEF: 'Босс {boosLvl} побежден',
-		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${boosLvl} не хватило попыток, повторить?',
+		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса {boosLvl} не хватило попыток, повторить?',
 	}
 }
 
@@ -1652,7 +1652,12 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		}
 		this.onreadystatechange();
 	} else {
+		try {
 		return original.send.call(this, sourceData);
+		} catch(e) {
+			debugger;
+		}
+		
 	}
 };
 /**
@@ -9929,18 +9934,18 @@ class executeEventAutoBoss {
 					}]
 				}).then(e => e.results[0].result.response);
 				console.log(endBattle);
-				const msg = I18N('BOSS_HAS_BEEN_DEF', { boosLvl: battle.typeId });
+				const msg = I18N('BOSS_HAS_BEEN_DEF', { boosLvl: this.battle.typeId });
 				await popup.confirm(msg);
 				this.end(msg);
 				return;
 			}
 
-			const msg = I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: battle.typeId });
+			const msg = I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: this.battle.typeId });
 			repeat = await popup.confirm(msg, [
 				{ msg: 'Да', result: true },
 				{ msg: 'Нет', result: false },
 			]);
-			this.end(I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: battle.typeId }));
+			this.end(I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: this.battle.typeId }));
 
 		} while (repeat)
 	}
