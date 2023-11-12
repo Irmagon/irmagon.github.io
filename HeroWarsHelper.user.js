@@ -1136,7 +1136,14 @@ const buttons = {
 					result: buyWithPetExperience,
 					title: I18N('SECRET_WEALTH_TITLE'),
 				},
-				{
+                {
+                    msg: 'autoBoss',
+                    title: 'autoBoss',
+                    result: function () {
+                        (new executeEventAutoBoss()).start()
+                    },
+                },
+                {
 					msg: I18N('EPIC_BRAWL'),
 					result: async function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
@@ -1161,13 +1168,6 @@ const buttons = {
 			const quests = new dailyQuests(() => { }, () => { });
 			await quests.autoInit();
 			quests.start();
-		},
-	},
-	autoBoss: {
-		name: 'autoBoss',
-		title: 'autoBoss',
-		func: function () {
-			(new executeEventAutoBoss()).start()
 		},
 	},
     getOutland: {
