@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.166
+// @version		2.167
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -5700,9 +5700,9 @@ function hackGame() {
 				}
 				try {
 					const BC_12 = getProtoFn(Game.BattleController, 12);
-					const BSM_11 = getProtoFn(Game.BattleSettingsModel, 11);
+					const BSM_12 = getProtoFn(Game.BattleSettingsModel, 12);
 					const BP_get_value = getF(Game.BooleanProperty, "get_value");
-					if (this[BC_12][BSM_11][BP_get_value]()) {
+					if (this[BC_12][BSM_12][BP_get_value]()) {
 						return 0;
 					}
 					const BSM_2 = getProtoFn(Game.BattleSettingsModel, 2);
