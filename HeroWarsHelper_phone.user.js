@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.167
+// @version		2.170
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -5567,6 +5567,7 @@ function hackGame() {
 			Game.PlayerMissionData.prototype[PMD_12] = function (a, b, c) {
 				if (!isChecked('passBattle')) {
 					oldSkipMisson.call(this, a, b, c);
+					return;
 				}
 
 				try {
@@ -5599,8 +5600,8 @@ function hackGame() {
 			Game.PlayerTowerData.prototype[PTD_67] = function (a) {
 				if (!isChecked('passBattle')) {
 					oldSkipTower.call(this, a);
+					return;
 				}
-
 				try {
 					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
 					a = new Game.BattleInstantPlay(a, p);
@@ -5633,6 +5634,7 @@ function hackGame() {
 			Game.BattlePausePopup.prototype[BPP_4] = function (a) {
 				if (!isChecked('passBattle')) {
 					oldPassBattle.call(this, a);
+					return;
 				}
 				try {
 					Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
@@ -5760,16 +5762,20 @@ function hackGame() {
 		 *
 		 * Кнопка ускорения без Покровительства Валькирий
 		 */
-		subscribe: function () {
-			const PSIVO_9 = getProtoFn(Game.PlayerSubscriptionInfoValueObject, 9);
-			const oldCheckSub = Game.PlayerSubscriptionInfoValueObject.prototype[PSIVO_9];
-			Game.PlayerSubscriptionInfoValueObject.prototype[PSIVO_9] = function () {
+		battleFastKey: function () {
+			const BGM_42 = getProtoFn(Game.BattleGuiMediator, 42);
+			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_42];
+			Game.BattleGuiMediator.prototype[BGM_42] = function () {
 				let flag = true;
 				console.log(flag)
 				if (flag) {
-					return true;
+					const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
+					const BGM_10 = getProtoFn(Game.BattleGuiMediator, 10);
+					const BPW_0 = getProtoFn(Game.BooleanPropertyWriteable, 0);
+					this[BGM_9][BPW_0](true);
+					this[BGM_10][BPW_0](true);
 				} else {
-					return oldCheckSub.call(this);
+					return oldBattleFastKey.call(this);
 			}
 		}
 		},
