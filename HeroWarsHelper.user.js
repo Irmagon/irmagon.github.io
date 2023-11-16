@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.170
+// @version			2.172
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -13,6 +13,7 @@
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
 // @encoding		utf-8
+// @include			https://apps-1701433570146040.apps.fbsbx.com/*
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
 // @match			https://www.solfors.com/
@@ -5760,13 +5761,17 @@ function hackGame() {
 			Game.BattleGuiMediator.prototype[BGM_42] = function () {
 				let flag = true;
 				console.log(flag)
-				if (flag) {
+				if (!flag) {
+					return oldBattleFastKey.call(this);
+				}
+				try {
 					const BGM_9 = getProtoFn(Game.BattleGuiMediator, 9);
 					const BGM_10 = getProtoFn(Game.BattleGuiMediator, 10);
 					const BPW_0 = getProtoFn(Game.BooleanPropertyWriteable, 0);
 					this[BGM_9][BPW_0](true);
 					this[BGM_10][BPW_0](true);
-				} else {
+				} catch (error) {
+					console.error(error);
 					return oldBattleFastKey.call(this);
 			}
 		}
