@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.172
+// @version			2.176
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -183,6 +183,8 @@ const i18nLangData = {
 		AUTO_QUIZ: 'AutoQuiz',
 		AUTO_QUIZ_TITLE: 'Automatically receive correct answers to quiz questions',
 		SECRET_WEALTH_CHECKBOX: 'Automatic purchase in the store "Secret Wealth" when entering the game',
+		HIDE_SERVERS: 'Collapse servers',
+		HIDE_SERVERS_TITLE: 'Hide unused servers',
 		/* Input fields */
 		HOW_MUCH_TITANITE: 'How much titanite to farm',
 		COMBAT_SPEED: 'Combat Speed Multiplier',
@@ -479,6 +481,8 @@ const i18nLangData = {
 		AUTO_QUIZ: 'АвтоВикторина',
 		AUTO_QUIZ_TITLE: 'Автоматическое получение правильных ответов на вопросы викторины',
 		SECRET_WEALTH_CHECKBOX: 'Автоматическая покупка в магазине "Тайное Богатство" при заходе в игру',
+		HIDE_SERVERS: 'Свернуть сервера',
+		HIDE_SERVERS_TITLE: 'Скрывать неиспользуемые сервера',
 		/* Поля ввода */
 		HOW_MUCH_TITANITE: 'Сколько фармим титанита',
 		COMBAT_SPEED: 'Множитель ускорения боя',
@@ -910,6 +914,12 @@ const checkboxes = {
 		label: I18N('BUY_FOR_GOLD'),
 		cbox: null,
 		title: I18N('BUY_FOR_GOLD_TITLE'),
+		default: false
+	},
+	hideServers: {
+		label: I18N('HIDE_SERVERS'),
+		cbox: null,
+		title: I18N('HIDE_SERVERS_TITLE'),
 		default: false
 	},
 };
@@ -2087,6 +2097,7 @@ async function checkChangeResponse(response) {
 			/**
 			 * Endless lives in brawls
 			 * Бесконечные жизни в потасовках
+			 * (Больше не работает)
 			 */
 			/*
 			if (getSaveVal('autoBrawls') && call.ident == callsIdent['brawl_getInfo']) {
@@ -2450,6 +2461,11 @@ async function checkChangeResponse(response) {
 					countPredictionCard += consumable[81];
 					console.log(`Cards: ${countPredictionCard}`);
 				}
+			}
+			if (call.ident == callsIdent['serverGetAll'] && isChecked('hideServers')) {
+				let servers = call.result.response.users.map(s => s.serverId)
+				call.result.response.servers = call.result.response.servers.filter(s => servers.includes(s.id));
+				isChange = true;
 			}
 		}
 
@@ -5582,7 +5598,7 @@ function hackGame() {
 				let CM_20 = getProtoFn(Game.CommandManager, 20);
 				let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
 				let MBR_15 = getProtoFn(Game.MultiBattleResult, 15);
-				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 15);
+				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
 				let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
 				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]))
 			}
@@ -5612,7 +5628,7 @@ function hackGame() {
 				const CM_29 = getProtoFn(Game.CommandManager, 29);
 				const TCL_5 = getProtoFn(Game.TowerCommandList, 5);
 				const MBR_15 = getF(Game.MultiBattleResult, "get_result");
-				const RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
+				const RPCCB_15 = getProtoFn(Game.RPCCommandBase, 17);
 				const PTD_78 = getProtoFn(Game.PlayerTowerData, 78);
 				Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]));
 			}
@@ -5709,7 +5725,8 @@ function hackGame() {
 						var a = speedBattle * this[BC_48]();
 					} else {
 						a = this[BC_12][BSM_1][BP_get_value]();
-						const multiple = a == 2 ? speedBattle : this[BC_14][a];
+						const maxSpeed = Math.max(...this[BC_14]);
+						const multiple = a == this[BC_14].indexOf(maxSpeed) ? (maxSpeed >= 4 ? speedBattle : this[BC_14][a]) : this[BC_14][a];
 						a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_48]();
 					}
 					const BSM_24 = getProtoFn(Game.BattleSettingsModel, 24);
@@ -10028,8 +10045,6 @@ class executeEventAutoBoss {
  * TODO:
  * Получение всех уровней при сборе всех наград (квест на титанит и на энку) +-
  * Добивание на арене титанов
- * Кнопку Турнир стихий красить в красный цвет если не дошел до 7 этапа
  * Закрытие окошек по Esc
  * Починить работу скрипта на уровне команды ниже 10 +-
- * Автоматическое подключение библиотеки нужной версии
  */
