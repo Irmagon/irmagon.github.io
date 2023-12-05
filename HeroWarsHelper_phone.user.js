@@ -1181,13 +1181,14 @@ const buttons = {
 			}
 		}
 	},
-	autoBoss: {
+/**	autoBoss: {
 		name: 'autoBoss',
 		title: 'autoBoss',
 		func: function () {
 			(new executeEventAutoBoss()).start()
 		},
 	},
+ */
     getOutland: {
 		name: I18N('TO_DO_EVERYTHING'),
 		title: I18N('TO_DO_EVERYTHING_TITLE'),
