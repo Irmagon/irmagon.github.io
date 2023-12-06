@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.176
+// @version		2.177
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -5606,7 +5606,7 @@ function hackGame() {
 				let GM_P2 = getProtoFn(Game.GameModel, 2);
 				let CM_20 = getProtoFn(Game.CommandManager, 20);
 				let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
-				let MBR_15 = getProtoFn(Game.MultiBattleResult, 15);
+				let MBR_15 = getF(Game.MultiBattleResult, "get_result");
 				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
 				let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
 				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]))
