@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.177
+// @version		2.180
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -250,9 +250,9 @@ const i18nLangData = {
 		ANSWER_NOT_KNOWN: 'ATTENTION THE ANSWER IS NOT KNOWN',
 		BEING_RECALC: 'The battle is being recalculated',
 		THIS_TIME: 'This time',
-		VICTORY: 'VICTORY',
-		DEFEAT: 'DEFEAT',
-		CHANCE_TO_WIN: "Chance to win",
+		VICTORY: '<span style="color:green;">VICTORY</span>',
+		DEFEAT: '<span style="color:red;">DEFEAT</span>',
+		CHANCE_TO_WIN: 'Chance to win <span style="color: red;">based on pre-calculation</span>',
 		OPEN_DOLLS: 'nesting dolls recursively',
 		SENT_QUESTION: 'Question sent',
 		SETTINGS: 'Settings',
@@ -453,8 +453,10 @@ const i18nLangData = {
 		ERROR_F12: 'Error, details in the console (F12)',
 		FAILED_FIND_WIN_PACK: 'Failed to find a winning pack',
 		BEST_PACK: 'Best pack:',
-		BOSS_HAS_BEEN_DEF: 'Boss {boosLvl} has been defeated.',
-		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {boosLvl}, retry?',
+		BOSS_HAS_BEEN_DEF: 'Boss {bossLvl} has been defeated.',
+		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {bossLvl}, retry?',
+		BOSS_VICTORY_IMPOSSIBLE: 'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
+		BOSS_HAS_BEEN_DEF_TEXT: 'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -548,9 +550,9 @@ const i18nLangData = {
 		ANSWER_NOT_KNOWN: 'ВНИМАНИЕ ОТВЕТ НЕ ИЗВЕСТЕН',
 		BEING_RECALC: 'Идет прерасчет боя',
 		THIS_TIME: 'На этот раз',
-		VICTORY: 'ПОБЕДА',
-		DEFEAT: 'ПОРАЖЕНИЕ',
-		CHANCE_TO_WIN: 'Шансы на победу',
+		VICTORY: '<span style="color:green;">ПОБЕДА</span>',
+		DEFEAT: '<span style="color:red;">ПОРАЖЕНИЕ</span>',
+		CHANCE_TO_WIN: 'Шансы на победу <span style="color:red;">на основе прерасчета</span>',
 		OPEN_DOLLS: 'матрешек рекурсивно',
 		SENT_QUESTION: 'Вопрос отправлен',
 		SETTINGS: 'Настройки',
@@ -621,7 +623,7 @@ const i18nLangData = {
 		YOU_CAN_COMPLETE: 'Можно выполнить квесты',
 		BTN_DO_IT: 'Выполняй',
 		NOT_QUEST_COMPLETED: 'Ни одного квеста не выполенно',
-		COMPLETED_QUESTS: 'Выполенно квестов',
+		COMPLETED_QUESTS: 'Выполнено квестов',
 		/* everything button */
 		ASSEMBLE_OUTLAND: 'Собрать Запределье',
 		PASS_THE_TOWER: 'Пройти башню',
@@ -751,8 +753,10 @@ const i18nLangData = {
 		ERROR_F12: 'Ошибка, подробности в консоли (F12)',
 		FAILED_FIND_WIN_PACK: 'Победный пак найти не удалось',
 		BEST_PACK: 'Наилучший пак: ',
-		BOSS_HAS_BEEN_DEF: 'Босс {boosLvl} побежден',
-		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса {boosLvl} не хватило попыток, повторить?',
+		BOSS_HAS_BEEN_DEF: 'Босс {bossLvl} побежден',
+		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${bossLvl} не хватило попыток, повторить?',
+		BOSS_VICTORY_IMPOSSIBLE: 'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
+		BOSS_HAS_BEEN_DEF_TEXT: 'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
 	}
 }
 
@@ -1164,6 +1168,13 @@ const buttons = {
 					title: I18N('SECRET_WEALTH_TITLE'),
 				},
 				{
+                    msg: 'autoBoss',
+                    title: 'autoBoss',
+                    result: function () {
+                        (new executeEventAutoBoss()).start()
+                    },
+                },
+                {
 					msg: I18N('EPIC_BRAWL'),
 					result: async function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
@@ -1747,6 +1758,7 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'brawl_endBattle' ||
 				call.name == 'towerEndBattle' ||
 				call.name == 'invasion_bossEnd' ||
+				call.name == 'bossEndBattle' ||
 				call.name == 'clanRaid_endNodeBattle') &&
 				isCancalBattle) {
 				nameFuncEndBattle = call.name;
@@ -1754,6 +1766,7 @@ async function checkChangeSend(sourceData, tempData) {
 					let resultPopup = false;
 					if (call.name == 'adventure_endBattle' ||
 						call.name == 'invasion_bossEnd' ||
+						call.name == 'bossEndBattle' ||
 						call.name == 'adventureSolo_endBattle') {
 						resultPopup = await showMsgs(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_CANCEL'), I18N('BTN_AUTO'));
 					} else if (call.name == 'clanWarEndBattle' ||
@@ -1836,8 +1849,9 @@ async function checkChangeSend(sourceData, tempData) {
 			 */
 			if (call.name == 'clanWarAttack' ||
 				call.name == 'crossClanWar_startBattle' ||
-				call.name == 'invasion_bossStart' ||
 				call.name == 'adventure_turnStartBattle' ||
+				call.name == 'bossAttack' ||
+				call.name == 'invasion_bossStart' ||
 				call.name == 'towerStartBattle') {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
@@ -2210,7 +2224,7 @@ async function checkChangeResponse(response) {
 			 * Start of the battle for recalculation
 			 * Начало боя для прерасчета
 			 */
-			if ((call.ident == callsIdent['clanWarAttack'] ||
+			if (call.ident == callsIdent['clanWarAttack'] ||
 				call.ident == callsIdent['crossClanWar_startBattle'] ||
 				call.ident == callsIdent['bossAttack'] ||
 				call.ident == callsIdent['battleGetReplay'] ||
@@ -2218,9 +2232,7 @@ async function checkChangeResponse(response) {
 				call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
 				call.ident == callsIdent['invasion_bossStart'] ||
 				call.ident == callsIdent['towerStartBattle'] ||
-				call.ident == callsIdent['adventure_turnStartBattle']) &&
-				isChecked('preCalcBattle')) {
-				setProgress(I18N('BEING_RECALC'));
+				call.ident == callsIdent['adventure_turnStartBattle']) {
 				let battle = call.result.response.battle || call.result.response.replay;
 				if (call.ident == callsIdent['brawl_startBattle'] ||
 					call.ident == callsIdent['bossAttack'] ||
@@ -2229,12 +2241,16 @@ async function checkChangeResponse(response) {
 					battle = call.result.response;
 				}
 				lastBattleInfo = battle;
+				if (!isChecked('preCalcBattle')) {
+					continue;
+				}
+				setProgress(I18N('BEING_RECALC'));
 				let battleDuration = 120;
 				try {
 					const typeBattle = getBattleType(battle.type);
 					battleDuration = +lib.data.battleConfig[typeBattle.split('_')[1]].config.battleDuration;
 				} catch (e) { }
-				console.log(battle.type);
+				//console.log(battle.type);
 				function getBattleInfo(battle, isRandSeed) {
 					return new Promise(function (resolve) {
 						if (isRandSeed) {
@@ -5786,7 +5802,7 @@ function hackGame() {
 			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_42];
 			Game.BattleGuiMediator.prototype[BGM_42] = function () {
 				let flag = true;
-				console.log(flag)
+				//console.log(flag)
 				if (!flag) {
 					return oldBattleFastKey.call(this);
 				}
@@ -7972,6 +7988,7 @@ function executeAutoBattle(resolve, reject) {
 	let battleArg = {};
 	let countBattle = 0;
 	let findCoeff = 0;
+	let lastCalcBattle = null;
 
 	this.start = function (battleArgs, battleInfo) {
 		battleArg = battleArgs;
@@ -8012,7 +8029,7 @@ function executeAutoBattle(resolve, reject) {
 	 */
 	async function resultPreCalcBattle(results) {
 		let countWin = results.reduce((s, w) => w.result.win + s, 0);
-		setProgress(`${I18N('CHANCE_TO_WIN')} ${Math.floor(countWin / results.length * 100)}% (${results.length})`, true);
+		setProgress(`${I18N('CHANCE_TO_WIN')} ${Math.floor(countWin / results.length * 100)}% (${results.length})`, false, hideProgress);
 		if (countWin > 0) {
 			isCancalBattle = false;
 			startBattle();
@@ -8029,7 +8046,18 @@ function executeAutoBattle(resolve, reject) {
 		});
 		avgCoeff /= results.length;
 
-		if (nameFuncStartBattle == 'invasion_bossStart') {
+		if (nameFuncStartBattle == 'invasion_bossStart' ||
+			nameFuncStartBattle == 'bossAttack') {
+			const result = await popup.confirm(
+				I18N('BOSS_VICTORY_IMPOSSIBLE', { battles: results.length }), [
+				{ msg: I18N('BTN_CANCEL'), result: false },
+				{ msg: I18N('BTN_DO_IT'), result: true },
+			])
+			if (result) {
+				isCancalBattle = false;
+				startBattle();
+				return;
+			}
 			setProgress(I18N('NOT_THIS_TIME'), true);
 			endAutoBattle('invasion_bossStart');
 			return;
@@ -8096,7 +8124,7 @@ function executeAutoBattle(resolve, reject) {
 	function startBattle() {
 		countBattle++;
 		const countMaxBattle = getInput('countAutoBattle');
-		setProgress(countBattle + '/' + countMaxBattle);
+		// setProgress(countBattle + '/' + countMaxBattle);
 		if (countBattle > countMaxBattle) {
 			setProgress(`${I18N('RETRY_LIMIT_EXCEEDED')}: ${countMaxBattle}`, true);
 			endAutoBattle(`${I18N('RETRY_LIMIT_EXCEEDED')}: ${countMaxBattle}`)
@@ -8116,12 +8144,26 @@ function executeAutoBattle(resolve, reject) {
 	 *
 	 * Расчет боя
 	 */
-	function calcResultBattle(e) {
+	async function calcResultBattle(e) {
+		if ('error' in e) {
+			const result = await popup.confirm(
+				I18N('ERROR_DURING_THE_BATTLE'), [
+				{ msg: I18N('BTN_OK'), result: false },
+				{ msg: I18N('RELOAD_GAME'), result: true },
+			]);
+			endAutoBattle('Error', e.error);
+			if (result) {
+				location.reload();
+			}
+			return;
+		}
 		let battle = e.results[0].result.response.battle
 		if (nameFuncStartBattle == 'towerStartBattle' ||
+			nameFuncStartBattle == 'bossAttack' ||
 			nameFuncStartBattle == 'invasion_bossStart') {
 			battle = e.results[0].result.response;
 		}
+		lastCalcBattle = battle;
 		BattleCalc(battle, getBattleType(battle.type), resultBattle);
 	}
 	/**
@@ -8131,21 +8173,23 @@ function executeAutoBattle(resolve, reject) {
 	 */
 	function resultBattle(e) {
 		const isWin = e.result.win;
-		console.log(isWin);
 		if (isWin) {
 			endBattle(e, false);
 			return;
 		}
+		const countMaxBattle = getInput('countAutoBattle');
 		if (findCoeff) {
 			const coeff = calcCoeff(e, 'defenders');
-			console.log(coeff);
-			setProgress(coeff, true);
+			setProgress(`${countBattle}/${countMaxBattle}, ${coeff}`);
 			if (coeff > findCoeff) {
 				endBattle(e, false);
 				return;
 			}
+		} else {
+			setProgress(`${countBattle}/${countMaxBattle}`);
 		}
 		if (nameFuncStartBattle == 'towerStartBattle' ||
+			nameFuncStartBattle == 'bossAttack' ||
 			nameFuncStartBattle == 'invasion_bossStart') {
 			startBattle();
 			return;
@@ -8191,16 +8235,34 @@ function executeAutoBattle(resolve, reject) {
 
 		send(JSON.stringify({
 			calls
-		}), e => {
+		}), async e => {
 			console.log(e);
 			if (isCancal) {
 				startBattle();
 				return;
 			}
-			scriptMenu.setStatus(`${I18N('SUCCESS')}!`);
-			setTimeout(() => {
-				scriptMenu.setStatus('');
-			}, 5000)
+ 
+			setProgress(`${I18N('SUCCESS')}!`, 5000)
+			if (nameFuncStartBattle == 'invasion_bossStart' ||
+				nameFuncStartBattle == 'bossAttack') {
+				const countMaxBattle = getInput('countAutoBattle');
+				const bossLvl = lastCalcBattle.typeId >= 130 ? lastCalcBattle.typeId : '';
+				const result = await popup.confirm(
+					I18N('BOSS_HAS_BEEN_DEF_TEXT', { bossLvl, countBattle, countMaxBattle }), [
+					{ msg: I18N('BTN_OK'), result: 0 },
+					{ msg: I18N('MAKE_A_SYNC'), result: 1 },
+					{ msg: I18N('RELOAD_GAME'), result: 2 },
+				]);
+				if (result) {
+					if (result == 1) {
+						cheats.refreshGame();
+					}
+					if (result == 2) {
+						location.reload();
+					}
+				}
+ 
+			}
 			endAutoBattle(`${I18N('SUCCESS')}!`)
 		});
 	}
@@ -9971,18 +10033,18 @@ class executeEventAutoBoss {
 					}]
 				}).then(e => e.results[0].result.response);
 				console.log(endBattle);
-				const msg = I18N('BOSS_HAS_BEEN_DEF', { boosLvl: this.battle.typeId });
+				const msg = I18N('BOSS_HAS_BEEN_DEF', { bossLvl: this.battle.typeId });
 				await popup.confirm(msg);
 				this.end(msg);
 				return;
 			}
 
-			const msg = I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: this.battle.typeId });
+			const msg = I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { bossLvl: this.battle.typeId });
 			repeat = await popup.confirm(msg, [
 				{ msg: 'Да', result: true },
 				{ msg: 'Нет', result: false },
 			]);
-			this.end(I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { boosLvl: this.battle.typeId }));
+			this.end(I18N('NOT_ENOUGH_ATTEMPTS_BOSS', { bossLvl: this.battle.typeId }));
 
 		} while (repeat)
 	}
