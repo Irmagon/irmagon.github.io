@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.180
+// @version			2.182
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -457,6 +457,7 @@ const i18nLangData = {
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {bossLvl}, retry?',
 		BOSS_VICTORY_IMPOSSIBLE: 'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
+		PLAYER_POS: 'Player positions:',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -757,6 +758,7 @@ const i18nLangData = {
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${bossLvl} не хватило попыток, повторить?',
 		BOSS_VICTORY_IMPOSSIBLE: 'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
+		PLAYER_POS: 'Позиции игроков:',
 	}
 }
 
@@ -2137,7 +2139,7 @@ async function checkChangeResponse(response) {
 					call.ident == callsIdent['specialOffer_getAll'])) {
 				let offers = call.result.response;
 				if (offers) {
-					call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type));
+					call.result.response = offers.filter(e => !['addBilling', 'bundleCarousel'].includes(e.type) || ['idleResource'].includes(e.offerType));
 					isChange = true;
 				}
 			}
@@ -2440,13 +2442,14 @@ async function checkChangeResponse(response) {
 				countPredictionCard = call.result.response.consumable[81] || 0;
 			}
 			/**
-			 * Adding 26 store to other stores
-			 * Добавление 26 магазина к остальным магазинам
+			 * Adding 26 and 28 store to other stores
+			 * Добавление 26 и 28 магазина к остальным магазинам
 			 */
 			if (call.ident == callsIdent['shopGetAll']) {
 				if (userInfo.level >= 10) {
-					call.result.response[26] = await Send({ calls: [{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet" }] }).then(e => e.results[0].result.response);
-					console.log(call.result.response);;
+					const result = await Send({ calls: [{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet_26" }, { name: "shopGet", args: { shopId: "28" }, ident: "shopGet_28" }] }).then(e => e.results);
+					call.result.response[26] = result[0].result.response;
+					call.result.response[28] = result[1].result.response;
 					isChange = true;
 				}
 			}
@@ -2471,10 +2474,33 @@ async function checkChangeResponse(response) {
 					console.log(`Cards: ${countPredictionCard}`);
 				}
 			}
+			/**
+			 * Hiding extra servers
+			 * Скрытие лишних серверов
+			 */
 			if (call.ident == callsIdent['serverGetAll'] && isChecked('hideServers')) {
 				let servers = call.result.response.users.map(s => s.serverId)
 				call.result.response.servers = call.result.response.servers.filter(s => servers.includes(s.id));
 				isChange = true;
+			}
+			/**
+			 * Displays player positions in the adventure
+			 * Отображает позиции игроков в приключении
+			 */
+			if (call.ident == callsIdent['adventure_getLobbyInfo']) {
+				const users = Object.values(call.result.response.users);
+				let msg = I18N('PLAYER_POS');
+				for (const user of users) {
+					msg += `<br>${user.user.name} - ${user.currentNode}`;
+				}
+				setProgress(msg, false, hideProgress);
+		}
+			/**
+			 * Automatic launch of a raid at the end of the adventure
+			 * Автоматический запуск рейда при окончании приключения
+			 */
+			if (call.ident == callsIdent['adventure_end']) {
+				autoRaidAdventure()
 			}
 		}
 
@@ -5832,8 +5858,25 @@ function hackGame() {
 	 */
 	this.refreshGame = function () {
 		(new Game.NextDayUpdatedManager)[getProtoFn(Game.NextDayUpdatedManager, 5)]();
+		try {
+			cheats.refreshInventory();
+		} catch (e) { }
 	}
 
+	/**
+	 * Update inventory
+	 *
+	 * Обновляет инвентарь
+	 */
+	this.refreshInventory = async function () {
+		const GM_INST = getFnP(Game.GameModel, "get_instance");
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_24 = getProtoFn(selfGame["game.model.user.Player"], 24);
+		const Player = Game.GameModel[GM_INST]()[GM_0];
+		Player[P_24] = new selfGame["game.model.user.inventory.PlayerInventory"]
+		Player[P_24].init(await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"}]}').then(e => e.results[0].result.response))
+	}
+ 
 	/**
 	 * Change the play screen on windowName
 	 *
@@ -5922,6 +5965,7 @@ function hackGame() {
 			self.libGame = b.raw;
 			try {
 				b.raw.shop[26].requirements = null;
+				b.raw.shop[28].requirements = null;
 			} catch (e) {
 				console.warn(e);
 			}
@@ -10102,4 +10146,5 @@ class executeEventAutoBoss {
  * Добивание на арене титанов
  * Закрытие окошек по Esc
  * Починить работу скрипта на уровне команды ниже 10 +-
+ * Написать номальную синхронизацию
  */
