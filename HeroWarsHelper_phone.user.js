@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.182
+// @version		2.185
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -380,10 +380,10 @@ const i18nLangData = {
 		STAGE: 'Stage',
 		DONT_HAVE_LIVES: 'You don\'t have lives',
 		LIVES: 'Lives',
-		SECRET_WEALTH_ALREADY: 'Secret Wealth: Item for Pet Potions already purchased',
-		SECRET_WEALTH_NOT_ENOUGH: 'Secret Wealth: Not Enough Pet Potion, You Have {available}, Need {need}',
-		SECRET_WEALTH_UPGRADE_NEW_PET: 'Secret Wealth: After purchasing the Pet Potion, it will not be enough to upgrade a new pet',
-		SECRET_WEALTH_PURCHASED: 'Secret wealth: Purchased {count} {name}',
+		SECRET_WEALTH_ALREADY: 'Item for Pet Potions already purchased',
+		SECRET_WEALTH_NOT_ENOUGH: 'Not Enough Pet Potion, You Have {available}, Need {need}',
+		SECRET_WEALTH_UPGRADE_NEW_PET: 'After purchasing the Pet Potion, it will not be enough to upgrade a new pet',
+		SECRET_WEALTH_PURCHASED: 'Purchased {count} {name}',
 		SECRET_WEALTH_CANCELED: 'Secret Wealth: Purchase Canceled',
 		SECRET_WEALTH_BUY: 'You have {available} Pet Potion.<br>Do you want to buy {countBuy} {name} for {price} Pet Potion?',
 		DAILY_BONUS: 'Daily bonus',
@@ -458,6 +458,16 @@ const i18nLangData = {
 		BOSS_VICTORY_IMPOSSIBLE: 'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
 		PLAYER_POS: 'Player positions:',
+		NY_GIFTS: 'Gifts',
+		NY_GIFTS_TITLE: 'Open all New Year\'s gifts',
+		NY_NO_GIFTS: 'No gifts not received',
+		NY_GIFTS_COLLECTED: '{count} gifts collected',
+		CHANGE_MAP: 'Island map',
+		CHANGE_MAP_TITLE: 'Change island map',
+		SELECT_ISLAND_MAP: 'Select an island map:',
+		FIRST_MAP: 'First map',
+		SECOND_MAP: 'Second map',
+		SECRET_WEALTH_SHOP: 'Secret Wealth {name}: ',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -497,7 +507,7 @@ const i18nLangData = {
 		TO_DO_EVERYTHING_TITLE: 'Выполнить несколько действий',
 		OUTLAND: 'Запределье',
 		OUTLAND_TITLE: 'Собрать Запределье',
-		TITAN_ARENA: 'Турнир',
+		TITAN_ARENA: 'Титаны',
 		TITAN_ARENA_TITLE: 'Автопрохождение Турнира Стихий',
 		DUNGEON: 'Подземелье',
 		DUNGEON_TITLE: 'Автопрохождение подземелья',
@@ -680,10 +690,10 @@ const i18nLangData = {
 		STAGE: 'Стадия',
 		DONT_HAVE_LIVES: 'У Вас нет жизней',
 		LIVES: 'Жизни',
-		SECRET_WEALTH_ALREADY: 'Тайное богатство: товар за Зелья питомцев уже куплен',
-		SECRET_WEALTH_NOT_ENOUGH: 'Тайное богатство: Не достаточно Зелье Питомца, у Вас {available}, нужно {need}',
-		SECRET_WEALTH_UPGRADE_NEW_PET: 'Тайное богатство: После покупки Зелье Питомца будет не достаточно для прокачки нового питомца',
-		SECRET_WEALTH_PURCHASED: 'Тайное богатство: Куплено {count} {name}',
+		SECRET_WEALTH_ALREADY: 'товар за Зелья питомцев уже куплен',
+		SECRET_WEALTH_NOT_ENOUGH: 'Не достаточно Зелье Питомца, у Вас {available}, нужно {need}',
+		SECRET_WEALTH_UPGRADE_NEW_PET: 'После покупки Зелье Питомца будет не достаточно для прокачки нового питомца',
+		SECRET_WEALTH_PURCHASED: 'Куплено {count} {name}',
 		SECRET_WEALTH_CANCELED: 'Тайное богатство: покупка отменена',
 		SECRET_WEALTH_BUY: 'У вас {available} Зелье Питомца.<br>Вы хотите купить {countBuy} {name} за {price} Зелье Питомца?',
 		DAILY_BONUS: 'Ежедневка',
@@ -759,6 +769,16 @@ const i18nLangData = {
 		BOSS_VICTORY_IMPOSSIBLE: 'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
 		PLAYER_POS: 'Позиции игроков:',
+		NY_GIFTS: 'Подарки',
+		NY_GIFTS_TITLE: 'Открыть все новогодние подарки',
+		NY_NO_GIFTS: 'Нет не полученных подарков',
+		NY_GIFTS_COLLECTED: 'Собрано {count} подарков',
+		CHANGE_MAP: 'Карта острова',
+		CHANGE_MAP_TITLE: 'Сменить карту острова',
+		SELECT_ISLAND_MAP: 'Выберите карту острова:',
+		FIRST_MAP: 'Первая карта',
+		SECOND_MAP: 'Вторая карта',
+		SECRET_WEALTH_SHOP: 'Тайное богатство {name}: ',
 	}
 }
 
@@ -1110,6 +1130,11 @@ const buttons = {
 					},
 					title: I18N('SEER_TITLE'),
 				},                
+                				{
+					msg: I18N('NY_GIFTS'),
+					result: getGiftNewYear,
+					title: I18N('NY_GIFTS_TITLE'),
+				},
 			];
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1185,6 +1210,21 @@ const buttons = {
 						});
 					},
 					title: I18N('EPIC_BRAWL_TITLE'),
+				},
+                {
+					msg: I18N('CHANGE_MAP'),
+					result: async function () {
+						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [
+							{ msg: I18N('FIRST_MAP'), result: 1 },
+							{ msg: I18N('SECOND_MAP'), result: 2 },
+							{ result: false, isClose: true },
+						]
+						);
+						if (result) {
+							cheats.changeIslandMap(result);
+						}
+					},
+					title: I18N('CHANGE_MAP_TITLE'),
 				},
 			];
 			popupButtons.push({ result: false, isClose: true })
@@ -1508,7 +1548,7 @@ function confShow(message, yesCallback, noCallback) {
 	if (yesCallback) {
 		buts = [
 			{ msg: I18N('BTN_RUN'), result: true},
-			{ msg: I18N('BTN_CANCEL'), result: false},
+			{ msg: I18N('BTN_CANCEL'), result: false, isCancel: true},
 		]
 	} else {
 		yesCallback = () => {};
@@ -1517,6 +1557,7 @@ function confShow(message, yesCallback, noCallback) {
 		];
 	}
 	popup.confirm(message, buts).then((e) => {
+		// dialogPromice = null;
 		if (e) {
 			yesCallback();
 		} else {
@@ -2462,9 +2503,14 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['shopGetAll']) {
 				if (userInfo.level >= 10) {
-					const result = await Send({ calls: [{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet_26" }, { name: "shopGet", args: { shopId: "28" }, ident: "shopGet_28" }] }).then(e => e.results);
+					const result = await Send({ calls: [
+						{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet_26" }, 
+						{ name: "shopGet", args: { shopId: "28" }, ident: "shopGet_28" },
+						{ name: "shopGet", args: { shopId: "29" }, ident: "shopGet_29" },
+					] }).then(e => e.results);
 					call.result.response[26] = result[0].result.response;
 					call.result.response[28] = result[1].result.response;
+					call.result.response[29] = result[2].result.response;
 					isChange = true;
 				}
 			}
@@ -5955,6 +6001,23 @@ function hackGame() {
 	}
 
 	/**
+	 * Change island map
+	 * 
+	 * Сменить карту острова
+	 */
+	this.changeIslandMap = (mapId = 2) => {
+		const GameInst = getFnP(selfGame['Game'], 'get_instance');
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_59 = getProtoFn(selfGame["game.model.user.Player"], 59);
+		const Player = Game.GameModel[GameInst]()[GM_0];
+		Player[P_59].$({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
+ 
+		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
+		const navigator = getF(selfGame['Game'], "get_navigator");
+		selfGame['Game'][GameInst]()[navigator]()[GN_15](new selfGame["game.mediator.gui.popup.PopupStashEventParams"]);
+	}
+ 
+	/**
 	 * Game library availability tracker
 	 *
 	 * Отслеживание доступности игровой библиотеки
@@ -5982,6 +6045,7 @@ function hackGame() {
 			try {
 				b.raw.shop[26].requirements = null;
 				b.raw.shop[28].requirements = null;
+				b.raw.shop[29].requirements = null;
 			} catch (e) {
 				console.warn(e);
 			}
@@ -6549,6 +6613,9 @@ function lettersFilter(letters) {
 	for (let l in letters) {
 		letter = letters[l];
 		const reward = letter.reward;
+		if (!reward) {
+			continue;
+		}
 		/**
 		 * Mail Collection Exceptions
 		 *
@@ -6570,7 +6637,22 @@ function lettersFilter(letters) {
 		);
 		if (isFarmLetter) {
 			lettersIds.push(~~letter.id);
+			continue;
 		}
+		/** 
+		 * Если до окончания годности письма менее 24 часов,
+		 * то оно собирается не смотря на исключения
+		 */
+		const availableUntil = +letter?.availableUntil;
+		if (availableUntil) {
+			const maxTimeLeft = 24 * 60 * 60 * 1000;
+			const timeLeft = (new Date(availableUntil * 1000) - new Date())
+			console.log('Time left:', timeLeft)
+			if (timeLeft < maxTimeLeft) {
+				lettersIds.push(~~letter.id);
+				continue;
+		}
+	}
 	}
 	return lettersIds;
 }
@@ -6700,54 +6782,75 @@ async function buyWithPetExperience() {
 }
 
 async function buyWithPetExperienceAuto() {
-	const itemLib = lib.getData('inventoryItem');
 	const minCount = 450551;
-	const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
-	const inventory = result[0];
-	const slot = Object.values(result[1].slots).find(e => e.cost?.consumable?.[85]);
+	const result = await Send({calls:[
+		{name:"inventoryGet",args:{},ident:"inventoryGet"},
+		{name:"shopGet",args:{shopId:"26"},ident:"shopGet_26"},
+		{name:"shopGet",args:{shopId:"28"},ident:"shopGet_28"},
+		{name:"shopGet",args:{shopId:"29"},ident:"shopGet_29"}
+	]}).then(e => e.results.map(n => n.result.response));
+	const inventory = result.shift();
+	const shops = result;
+	const calls = [];
+
+	for (let shop of shops) {
+		const slot = Object.values(shop.slots).find(e => e.cost?.consumable?.[85]);
 
 	const currentCount = inventory.consumable[85];
 	const price = slot.cost.consumable[85];
+		const shopName = I18N('SECRET_WEALTH_SHOP', { name: shop.id });
 
 	if (slot.bought) {
-		console.log(I18N('SECRET_WEALTH_ALREADY'));
-		setProgress(I18N('SECRET_WEALTH_ALREADY'), true);
-		return;
+			console.log(shopName + I18N('SECRET_WEALTH_ALREADY'));
+			setProgress(shopName + I18N('SECRET_WEALTH_ALREADY'), true);
+			continue;
 	}
 
 	if (currentCount < price) {
-		const msg = I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
+			const msg = shopName + I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
 		console.log(msg);
 		setProgress(msg, true);
-		return;
+			continue;
 	}
 
 	if ((currentCount - price) < minCount) {
-		console.log(I18N('SECRET_WEALTH_UPGRADE_NEW_PET'));
-		setProgress(I18N('SECRET_WEALTH_UPGRADE_NEW_PET'), true);
-		return;
+			console.log(shopName + I18N('SECRET_WEALTH_UPGRADE_NEW_PET'));
+			setProgress(shopName + I18N('SECRET_WEALTH_UPGRADE_NEW_PET'), true);
+			continue;
 	}
 
-	const calls = [{
+		calls.push({
 		name: "shopBuy",
 		args: {
-			shopId: 26,
+				shopId: shop.id,
 			slot: slot.id,
 			cost: slot.cost,
 			reward: slot.reward
 		},
 		ident: "body"
-	}];
-	const bought = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
+		});
+	}
 
+	if (!calls.length) {
+		setProgress(I18N('SECRET_WEALTH') + '<br>' + I18N('NOTHING_BUY'), true);
+		return;
+	}
+
+	const boughts = await Send(JSON.stringify({ calls })).then(e => e.results);
+ 
+	let textResult = I18N('SECRET_WEALTH');
+	for (const result of boughts) {
+		const bought = result.result.response
 	const type = Object.keys(bought).pop();
 	const itemId = Object.keys(bought[type]).pop();
 	const count = bought[type][itemId];
+		const itemLib = lib.getData('inventoryItem');
 	const itemName = itemLib[type][itemId].label;
+		textResult += ' <br>\n' + I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
+	}
 
-	const resultMsg = I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
-	console.log(resultMsg, bought);
-	setProgress(resultMsg, true);
+	console.log(textResult, boughts);
+	setProgress(textResult, true);
 }
 
 async function getDailyBonus() {
@@ -7560,7 +7663,11 @@ async function rewardBossRatingEventSouls() {
 		setProgress('Собрано ' + e?.results?.length + ' наград', true);
 	})
 }
-
+/**
+ * Spin the Seer
+ * 
+ * Покрутить провидца
+ */
 async function rollAscension() {
 	const refillable = await Send({calls:[
 		{
@@ -7578,6 +7685,33 @@ async function rollAscension() {
 	}
 }
  
+/**
+ * Collect gifts for the New Year
+ * 
+ * Собрать подарки на новый год
+ */
+function getGiftNewYear() {
+	Send({ calls: [{ name: "newYearGiftGet", args: { type: 0 }, ident: "body" }] }).then(e => {
+		const gifts = e.results[0].result.response.gifts;
+		const calls = gifts.filter(e => e.opened == 0).map(e => ({
+			name: "newYearGiftOpen",
+			args: {
+				giftId: e.id
+			},
+			ident: `body_${e.id}`
+		}));
+		if (!calls.length) {
+			setProgress(I18N('NY_NO_GIFTS'), 5000);
+			return;
+		}
+		Send({ calls }).then(e => {
+			console.log(e.results)
+			const msg = I18N('NY_GIFTS_COLLECTED', { count: e.results.length });
+			console.log(msg);
+			setProgress(msg, 5000);
+		});
+	})
+}
 /**
  * Attack of the minions of Asgard
  *
@@ -8094,7 +8228,7 @@ function executeAutoBattle(resolve, reject) {
 			nameFuncStartBattle == 'bossAttack') {
 			const result = await popup.confirm(
 				I18N('BOSS_VICTORY_IMPOSSIBLE', { battles: results.length }), [
-				{ msg: I18N('BTN_CANCEL'), result: false },
+				{ msg: I18N('BTN_CANCEL'), result: false, isCancel: true },
 				{ msg: I18N('BTN_DO_IT'), result: true },
 			])
 			if (result) {
@@ -8114,7 +8248,7 @@ function executeAutoBattle(resolve, reject) {
 			`<br>${I18N('MAXIMUM')}: ` + maxCoeff.toLocaleString() +
 			`<br>${I18N('AVERAGE')}: ` + avgCoeff.toLocaleString() +
 			`<br>${I18N('FIND_COEFF')} ` + avgCoeff.toLocaleString(), [
-			{ msg: I18N('BTN_CANCEL'), result: 0 },
+			{ msg: I18N('BTN_CANCEL'), result: 0, isCancel: true },
 			{ msg: I18N('BTN_GO'), isInput: true, default: Math.round(avgCoeff * 1000) / 1000 },
 		])
 		if (result) {
@@ -8664,7 +8798,7 @@ class dailyQuests {
 		} else {
 			const answer = await popup.confirm(`${I18N('YOU_CAN_COMPLETE') }:`, [
 				{ msg: I18N('BTN_DO_IT'), result: true },
-				{ msg: I18N('BTN_CANCEL'), result: false },
+				{ msg: I18N('BTN_CANCEL'), result: false, isCancel: true },
 			], weCanDo);
 			if (!answer) {
 				this.end('');
@@ -9204,7 +9338,7 @@ class doYourBest {
 		});
 
 		const answer = await popup.confirm(I18N('RUN_FUNCTION'), [
-			{ msg: I18N('BTN_CANCEL'), result: false },
+			{ msg: I18N('BTN_CANCEL'), result: false, isCancel: true },
 			{ msg: I18N('BTN_GO'), result: true },
 		], this.funcList);
 
@@ -9360,7 +9494,8 @@ class executeAdventure {
 			},
 			{
 				msg: I18N('BTN_CANCEL'),
-				result: false
+				result: false,
+				isCancel: true
 			},
 		]);
 		if (!answer) {
