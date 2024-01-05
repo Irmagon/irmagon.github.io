@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.185
+// @version			2.188
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -468,6 +468,13 @@ const i18nLangData = {
 		FIRST_MAP: 'First map',
 		SECOND_MAP: 'Second map',
 		SECRET_WEALTH_SHOP: 'Secret Wealth {name}: ',
+		SHOPS: 'Shops',
+		SHOPS_DEFAULT: 'Default',
+		SHOPS_DEFAULT_TITLE: 'Default stores',
+		SHOPS_LIST: 'Shops {number}',
+		SHOPS_LIST_TITLE: 'List of shops {number}',
+		SHOPS_WARNING: 'Stores<br><span style="color:red">If you buy brawl store coins for emeralds, you must use them immediately, otherwise they will disappear after restarting the game!</span>',
+		MINIONS_WARNING: 'The hero packs for attacking minions are incomplete, should I continue?'
 	},
 	ru: {
 		/* Чекбоксы */
@@ -779,6 +786,13 @@ const i18nLangData = {
 		FIRST_MAP: 'Первая карта',
 		SECOND_MAP: 'Вторая карта',
 		SECRET_WEALTH_SHOP: 'Тайное богатство {name}: ',
+		SHOPS: 'Магазины',
+		SHOPS_DEFAULT: 'Стандартные',
+		SHOPS_DEFAULT_TITLE: 'Стандартные магазины',
+		SHOPS_LIST: 'Магазины {number}',
+		SHOPS_LIST_TITLE: 'Список магазинов {number}',
+		SHOPS_WARNING: 'Магазины<br><span style="color:red">Если Вы купите монеты магазинов потасовок за изумруды, то их надо использовать сразу, иначе после перезагрузки игры они пропадут!</span>',
+		MINIONS_WARNING: 'Пачки героев для атаки приспешников неполные, продолжить?',
 	}
 }
 
@@ -1173,11 +1187,6 @@ const buttons = {
 					result: clanStatistic,
 					title: I18N('CLAN_STAT_TITLE'),
 				},
-				{
-					msg: I18N('SECRET_WEALTH'),
-					result: buyWithPetExperience,
-					title: I18N('SECRET_WEALTH_TITLE'),
-				},
                 {
                     msg: 'autoBoss',
                     title: 'autoBoss',
@@ -1209,6 +1218,40 @@ const buttons = {
 						}
 					},
 					title: I18N('CHANGE_MAP_TITLE'),
+				},
+				{
+					msg: I18N('SHOPS'),
+					result: async function () {
+						const shopButtons = [{
+							msg: I18N('SHOPS_DEFAULT'),
+							result: function () {
+								cheats.goDefaultShops();
+							},
+							title: I18N('SHOPS_DEFAULT_TITLE'),
+						}, {
+							msg: I18N('SECRET_WEALTH'),
+							result: function () {
+								cheats.goSecretWealthShops();
+							},
+							title: I18N('SECRET_WEALTH'),
+						}];
+						for (let i = 0; i < 4; i++) {
+							const number = i + 1;
+							shopButtons.push({
+								msg: I18N('SHOPS_LIST', { number }),
+								result: function () {
+									cheats.goCustomShops(i);
+								},
+								title: I18N('SHOPS_LIST_TITLE', { number }),
+							})
+						}
+						shopButtons.push({ result: false, isClose: true })
+						const answer = await popup.confirm(I18N('SHOPS_WARNING'), shopButtons);
+						if (typeof answer === 'function') {
+							answer();
+						}
+					},
+					title: I18N('SHOPS'),
 				},
 			];
 			popupButtons.push({ result: false, isClose: true })
@@ -2645,7 +2688,6 @@ function getBattleType(strBattleType) {
 		case "adventure": // Adventures // Приключения
 		case "clan_global_pvp":
 		case "clan_pvp":
-		case "challenge":
 			return "get_clanPvp";
 		case "dungeon_titan":
 		case "titan_tower":
@@ -2660,6 +2702,7 @@ function getBattleType(strBattleType) {
 		case "grand":
 		case "arena":
 		case "pvp":
+		case "challenge":
 			return "get_pvp";
 		case "core":
 			return "get_core";
@@ -2933,12 +2976,27 @@ const popup = new (function () {
 	this.msgText,
 	this.buttons = [];
 	this.checkboxes = [];
+	this.dialogPromice = null;
 
 	function init() {
 		addStyle();
 		addBlocks();
+		addEventListeners();
 	}
 
+	const addEventListeners = () => {
+		document.addEventListener('keyup', (e) => {
+			if (e.key == 'Escape') {
+				if (this.dialogPromice) {
+					const { func, result } = this.dialogPromice;
+					this.dialogPromice = null;
+					popup.hide();
+					func(result);
+				}
+			}
+		});
+	}
+ 
 	const addStyle = () => {
 		let style = document.createElement('style');
 		style.innerText = `
@@ -5960,8 +6018,8 @@ function hackGame() {
 	 * Перейти к Войне Гильдий
 	 */
 	this.goClanWar = function() {
-		let instance = getFnP(selfGame["game.model.GameModel"], 'get_instance')
-		let player = selfGame["game.model.GameModel"][instance]().A;
+		let instance = getFnP(Game.GameModel, 'get_instance')
+		let player = Game.GameModel[instance]().A;
 		let clanWarSelect = selfGame["game.mechanics.cross_clan_war.popup.selectMode.CrossClanWarSelectModeMediator"];
 		new clanWarSelect(player).open();
 	}
@@ -5972,18 +6030,287 @@ function hackGame() {
 	 * Переместиться в BrawlShop
 	 */
 	this.goBrawlShop = () => {
-		const instance = getFnP(selfGame["game.model.GameModel"], 'get_instance')
+		const instance = getFnP(Game.GameModel, 'get_instance')
 		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
 		const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
 		const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
 		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
 
-		const player = selfGame["game.model.GameModel"][instance]().A;
+		const player = Game.GameModel[instance]().A;
 		const shop = player[P_36][PSD_0][IM_0][1038][PSDE_4];
 		const shopPopup = new selfGame["game.mechanics.brawl.mediator.BrawlShopPopupMediator"](player, shop)
 		shopPopup.open(new selfGame["game.mediator.gui.popup.PopupStashEventParams"])
 	}
 
+	/**
+	 * Returns all stores from game data
+	 * 
+	 * Возвращает все магазины из данных игры
+	 */
+	this.getShops = () => {
+		const instance = getFnP(Game.GameModel, 'get_instance')
+		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
+		const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
+		const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
+ 
+		const player = Game.GameModel[instance]().A;
+		return player[P_36][PSD_0][IM_0];
+	}
+ 
+	/**
+	 * Returns the store from the game data by ID
+	 * 
+	 * Возвращает магазин из данных игры по идетификатору
+	 */
+	this.getShop = (id) => {
+		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+		const shops = this.getShops();
+		const shop = shops[id]?.[PSDE_4];
+		return shop;
+	}
+ 
+	/**
+	 * Moves to the store with the specified ID
+	 * 
+	 * Перемещает к магазину с указанным идетификатором
+	 */
+	this.goShopId = function (id) {
+		const shop = this.getShop(id);
+		if (!shop) {
+			return;
+		}
+		let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
+		let Game = selfGame['Game'];
+		let navigator = getF(Game, "get_navigator");
+		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 21);
+		let instance = getFnP(Game, 'get_instance');
+		Game[instance]()[navigator]()[navigate](shop, event);
+	}
+ 
+	/**
+	 * Opens a list of non-standard stores
+	 * 
+	 * Открывает список не стандартных магазинов
+	 */
+	this.goCustomShops = async (p = 0) => {
+		/** Запрос данных нужных магазинов */
+		const calls = [{ name: "shopGetAll", args: {}, ident: "shopGetAll" }];
+		const shops = lib.getData('shop');
+		for (const id in shops) {
+			const check = !shops[id].ident.includes('merchantPromo') &&
+				![1, 4, 5, 6, 7, 8, 9, 10, 11, 1023, 1024].includes(+id);
+			if (check) {
+				calls.push({
+					name: "shopGet", args: { shopId: id }, ident: `shopGet_${id}`
+				})
+			}
+		}
+		const result = await Send({ calls }).then(e => e.results.map(n => n.result.response));
+		const shopAll = result.shift();
+		const DS_32 = getFn(Game.DataStorage, 32)
+ 
+		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
+ 
+		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		const SD_1 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 1);
+		const SD_9 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 9);
+		const ident = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 11);
+ 
+		for (let shop of result) {
+			shopAll[shop.id] = shop;
+			// Снимаем все ограничения с магазинов
+			const shopLibData = Game.DataStorage[DS_32][SDS_5](shop.id)
+			shopLibData[SD_19] = 1;
+			shopLibData[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
+			shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
+				teamLevel: 10
+			});
+		}
+		/** Скрываем все остальные магазины */
+		for (let id in shops) {
+			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
+			if (shopLibData[ident].includes('merchantPromo')) {
+				shopLibData[SD_19] = 0;
+				shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
+					teamLevel: 999
+				});
+			}
+		}
+ 
+		const instance = getFnP(Game.GameModel, 'get_instance')
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
+		const player = Game.GameModel[instance]()[GM_0];
+		/** Пересоздаем объект с магазинами */
+		player[P_36] = new selfGame["game.model.user.shop.PlayerShopData"](player);
+		player[P_36].init(shopAll);
+		/** Даем магазинам новые названия */
+		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+ 
+		const shopName = getFn(cheats.getShop(1), 14);
+		const currentShops = this.getShops();
+		let count = 0;
+		const start = 9 * p + 1;
+		const end = start + 8;
+		for (let id in currentShops) {
+			const shop = currentShops[id][PSDE_4];
+			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
+				/** Скрываем стандартные магазины */
+				shop[SD_19] = 0;
+			} else {
+				count++;
+				if (count < start || count > end) {
+					shop[SD_19] = 0;
+					continue;
+				}
+				shop[SD_19] = 1;
+				shop[shopName] = cheats.translate("LIB_SHOP_NAME_" + id) + ' ' + id;
+				shop[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
+				shop[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
+					teamLevel: 10
+				});
+			}
+		}
+		console.log(count, start, end)
+		/** Отправляемся в городскую лавку */
+		this.goShopId(1);
+	}
+ 
+	/**
+	 * Opens a list of standard stores
+	 * 
+	 * Открывает список стандартных магазинов
+	 */
+	this.goDefaultShops = async () => {
+		const result = await Send({ calls: [{ name: "shopGetAll", args: {}, ident: "shopGetAll" }] })
+			.then(e => e.results.map(n => n.result.response));
+		const shopAll = result.shift();
+		const shops = lib.getData('shop');
+ 
+		const DS_8 = getFn(Game.DataStorage, 8)
+		const DSB_4 = getProtoFn(selfGame["game.data.storage.DescriptionStorageBase"], 4)
+ 
+		/** Получаем объект валюты магазина для оторажения */
+		const coins = Game.DataStorage[DS_8][DSB_4](85);
+		coins.__proto__ = selfGame["game.data.storage.resource.ConsumableDescription"].prototype;
+ 
+		const DS_32 = getFn(Game.DataStorage, 32)
+		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
+ 
+		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		for (const id in shops) {
+			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
+			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
+				shopLibData[SD_19] = 1;
+			} else {
+				shopLibData[SD_19] = 0;
+			}
+		}
+ 
+		const instance = getFnP(Game.GameModel, 'get_instance')
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
+		const player = Game.GameModel[instance]()[GM_0];
+		/** Пересоздаем объект с магазинами */
+		player[P_36] = new selfGame["game.model.user.shop.PlayerShopData"](player);
+		player[P_36].init(shopAll);
+ 
+		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+		const currentShops = this.getShops();
+		for (let id in currentShops) {
+			const shop = currentShops[id][PSDE_4];
+			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
+				shop[SD_19] = 1;
+			} else {
+				shop[SD_19] = 0;
+			}
+		}
+		this.goShopId(1);
+	}
+ 
+	/**
+	 * Opens a list of Secret Wealth stores
+	 * 
+	 * Открывает список магазинов Тайное богатство
+	 */
+	this.goSecretWealthShops = async () => {
+		/** Запрос данных нужных магазинов */
+		const calls = [{ name: "shopGetAll", args: {}, ident: "shopGetAll" }];
+		const shops = lib.getData('shop');
+		for (const id in shops) {
+			if (shops[id].ident.includes('merchantPromo')) {
+				calls.push({
+					name: "shopGet", args: { shopId: id }, ident: `shopGet_${id}`
+				})
+			}
+		}
+		const result = await Send({ calls }).then(e => e.results.map(n => n.result.response));
+		const shopAll = result.shift();
+		const DS_32 = getFn(Game.DataStorage, 32)
+ 
+		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
+ 
+		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		const SD_1 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 1);
+		const SD_9 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 9);
+		const ident = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 11);
+		const specialCurrency = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 15);
+ 
+		const DS_8 = getFn(Game.DataStorage, 8)
+		const DSB_4 = getProtoFn(selfGame["game.data.storage.DescriptionStorageBase"], 4)
+ 
+		/** Получаем объект валюты магазина для оторажения */
+		const coins = Game.DataStorage[DS_8][DSB_4](85);
+		coins.__proto__ = selfGame["game.data.storage.resource.CoinDescription"].prototype;
+ 
+		for (let shop of result) {
+			shopAll[shop.id] = shop;
+			/** Снимаем все ограничения с магазинов */
+			const shopLibData = Game.DataStorage[DS_32][SDS_5](shop.id)
+			if (shopLibData[ident].includes('merchantPromo')) {
+				shopLibData[SD_19] = 1;
+				shopLibData[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
+				shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
+					teamLevel: 10
+				});
+			}
+		}
+ 
+		/** Скрываем все остальные магазины */
+		for (let id in shops) {
+			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
+			if (!shopLibData[ident].includes('merchantPromo')) {
+				shopLibData[SD_19] = 0;
+			}
+		}
+ 
+		const instance = getFnP(Game.GameModel, 'get_instance')
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
+		const player = Game.GameModel[instance]()[GM_0];
+		/** Пересоздаем объект с магазинами */
+		player[P_36] = new selfGame["game.model.user.shop.PlayerShopData"](player);
+		player[P_36].init(shopAll);
+		/** Даем магазинам новые названия */
+		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+ 
+		const shopName = getFn(cheats.getShop(1), 14);
+		const currentShops = this.getShops();
+		for (let id in currentShops) {
+			const shop = currentShops[id][PSDE_4];
+			if (shop[ident].includes('merchantPromo')) {
+				shop[SD_19] = 1;
+				shop[specialCurrency] = coins;
+				shop[shopName] = cheats.translate("LIB_SHOP_NAME_" + id) + ' ' + id;
+			} else if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
+				/** Скрываем стандартные магазины */
+				shop[SD_19] = 0;
+			}
+		}
+		/** Отправляемся в городскую лавку */
+		this.goShopId(1);
+	}
+ 
 	/**
 	 * Change island map
 	 * 
@@ -6767,12 +7094,18 @@ async function buyWithPetExperience() {
 
 async function buyWithPetExperienceAuto() {
 	const minCount = 450551;
-	const result = await Send({calls:[
-		{name:"inventoryGet",args:{},ident:"inventoryGet"},
-		{name:"shopGet",args:{shopId:"26"},ident:"shopGet_26"},
-		{name:"shopGet",args:{shopId:"28"},ident:"shopGet_28"},
-		{name:"shopGet",args:{shopId:"29"},ident:"shopGet_29"}
-	]}).then(e => e.results.map(n => n.result.response));
+ 
+	const startCalls = [{ "name": "inventoryGet", "args": {}, "ident": "inventoryGet" }];
+	const libShops = lib.getData('shop');
+	for (const id in libShops) {
+		if (libShops[id].ident.includes('merchantPromo')) {
+			startCalls.push({
+				name: "shopGet", args: { shopId: id }, ident: `shopGet_${id}`
+			})
+		}
+	}
+ 
+	const result = await Send({ calls: startCalls }).then(e => e.results.map(n => n.result.response));
 	const inventory = result.shift();
 	const shops = result;
 	const calls = [];
@@ -6780,6 +7113,10 @@ async function buyWithPetExperienceAuto() {
 	for (let shop of shops) {
 		const slot = Object.values(shop.slots).find(e => e.cost?.consumable?.[85]);
 
+		if (!slot) {
+			continue;
+		}
+ 
 	const currentCount = inventory.consumable[85];
 	const price = slot.cost.consumable[85];
 		const shopName = I18N('SECRET_WEALTH_SHOP', { name: shop.id });
@@ -6811,7 +7148,7 @@ async function buyWithPetExperienceAuto() {
 			cost: slot.cost,
 			reward: slot.reward
 		},
-		ident: "body"
+			ident: "body_" + shop.id
 		});
 	}
 
@@ -6887,34 +7224,57 @@ async function getDailyBonus() {
 	console.log(`Ежедневная награда: Получено ${count} ${itemName}`, reward);
 }
 
-async function farmStamina() {
+async function farmStamina(lootBoxId = 148) {
 	const lootBox = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"}]}')
 		.then(e => e.results[0].result.response.consumable[148]);
 
 	/** Добавить другие ящики */
+	/**
+	 * 144 - медная шкатулка
+	 * 145 - бронзовая шкатулка
+	 * 148 - платиновая шкатулка
+	 */
 	if (!lootBox) {
 		setProgress(I18N('NO_BOXES'), true);
 		return;
 	}
 
-	const isOpening = await popup.confirm(I18N('OPEN_LOOTBOX', { lootBox }), [
+	let maxFarmEnergy = getSaveVal('maxFarmEnergy', 100);
+	const result = await popup.confirm(I18N('OPEN_LOOTBOX', { lootBox }), [
 		{ result: false, isClose: true },
 		{ msg: I18N('BTN_YES'), result: true },
+		{ msg: I18N('STAMINA'), isInput: true, default: maxFarmEnergy },
 	]);
 
-	if (!isOpening) {
+	if (!+result) {
 		return;
 	}
 
+	if ((typeof result) !== 'boolean' && Number.parseInt(result)) {
+		maxFarmEnergy = +result;
+		setSaveVal('maxFarmEnergy', maxFarmEnergy);
+	} else {
+		maxFarmEnergy = 0;
+	}
+ 
+	let collectEnergy = 0;
 	for (let count = lootBox; count > 0; count--) {
 		const result = await Send('{"calls":[{"name":"consumableUseLootBox","args":{"libId":148,"amount":1},"ident":"body"}]}')
 			.then(e => e.results[0].result.response[0]);
 		if ('stamina' in result) {
-			setProgress(`${I18N('OPEN')}: ${lootBox - count}/${lootBox} ${I18N('STAMINA')} +${result.stamina}`, true);
-			console.log('stamina +' + result.stamina);
+			setProgress(`${I18N('OPEN')}: ${lootBox - count}/${lootBox} ${I18N('STAMINA')} +${result.stamina}<br>${I18N('STAMINA')}: ${collectEnergy}`, false);
+			console.log(`${ I18N('STAMINA') } + ${ result.stamina }`);
+			if (!maxFarmEnergy) {
 			return;
+			}
+			collectEnergy += +result.stamina;
+			if (collectEnergy >= maxFarmEnergy) {
+				console.log(`${I18N('STAMINA')} + ${ collectEnergy }`);
+				setProgress(`${I18N('STAMINA')} + ${ collectEnergy }`, false);
+				return;
+			}
 		} else {
-			setProgress(`${I18N('OPEN')}: ${lootBox - count}/${lootBox}`, false);
+			setProgress(`${I18N('OPEN')}: ${lootBox - count}/${lootBox}<br>${I18N('STAMINA')}: ${collectEnergy}`, false);
 			console.log(result);
 		}
 	}
@@ -7743,14 +8103,18 @@ function executeRaidNodes(resolve, reject) {
 		send(JSON.stringify(callsExecuteRaidNodes), startRaidNodes);
 	}
 
-	function startRaidNodes(data) {
+	async function startRaidNodes(data) {
 		res = data.results;
 		clanRaidInfo = res[0].result.response;
 		teamGetAll = res[1].result.response;
 		teamGetFavor = res[2].result.response;
 
 		let index = 0;
+		let isNotFullPack = false;
 		for (let team of teamGetAll.clanRaid_nodes) {
+			if (team.length < 6) {
+				isNotFullPack = true;
+			}
 			raidData.teams.push({
 				data: {},
 				heroes: team.filter(id => id < 6000),
@@ -7760,6 +8124,16 @@ function executeRaidNodes(resolve, reject) {
 		}
 		raidData.favor = teamGetFavor.clanRaid_nodes;
 
+		if (isNotFullPack) {
+			if (await popup.confirm(I18N('MINIONS_WARNING'), [
+				{ msg: I18N('BTN_NO'), result: true },
+				{ msg: I18N('BTN_YES'), result: false },
+			])) {
+				endRaidNodes('isNotFullPack');
+				return;
+			}
+		}
+ 
 		raidData.nodes = clanRaidInfo.nodes;
 		raidData.attempts = clanRaidInfo.attempts;
 		isCancalBattle = false;
@@ -10279,7 +10653,8 @@ class executeEventAutoBoss {
  * TODO:
  * Получение всех уровней при сборе всех наград (квест на титанит и на энку) +-
  * Добивание на арене титанов
- * Закрытие окошек по Esc
+ * Закрытие окошек по Esc +-
  * Починить работу скрипта на уровне команды ниже 10 +-
  * Написать номальную синхронизацию
+ * Добавить дополнительные настройки автопокупки в "Тайном богатстве"
  */
