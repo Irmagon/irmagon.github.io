@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.188
+// @version		2.189
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -6239,7 +6239,7 @@ function hackGame() {
 		const calls = [{ name: "shopGetAll", args: {}, ident: "shopGetAll" }];
 		const shops = lib.getData('shop');
 		for (const id in shops) {
-			if (shops[id].ident.includes('merchantPromo')) {
+			if (shops[id].ident.includes('merchantPromo') && shops[id].teamLevelToUnlock <= 130) {
 				calls.push({
 					name: "shopGet", args: { shopId: id }, ident: `shopGet_${id}`
 				})
