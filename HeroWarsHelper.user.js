@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.189
+// @version			2.190
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -6354,9 +6354,14 @@ function hackGame() {
 		Game.GameModel.prototype.start = function (a, b, c) {
 			self.libGame = b.raw;
 			try {
-				b.raw.shop[26].requirements = null;
-				b.raw.shop[28].requirements = null;
-				b.raw.shop[29].requirements = null;
+				const levels = b.raw.seasonAdventure.level;
+				for (const id in levels) {
+					const level = levels[id];
+					level.clientData.graphics.fogged[0] = level.clientData.graphics.visible[0]
+				}
+				// b.raw.shop[26].requirements = null;
+				// b.raw.shop[28].requirements = null;
+				// b.raw.shop[29].requirements = null;
 			} catch (e) {
 				console.warn(e);
 			}
