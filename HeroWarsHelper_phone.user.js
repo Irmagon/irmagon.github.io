@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.190
+// @version		2.193
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -474,7 +474,14 @@ const i18nLangData = {
 		SHOPS_LIST: 'Shops {number}',
 		SHOPS_LIST_TITLE: 'List of shops {number}',
 		SHOPS_WARNING: 'Stores<br><span style="color:red">If you buy brawl store coins for emeralds, you must use them immediately, otherwise they will disappear after restarting the game!</span>',
-		MINIONS_WARNING: 'The hero packs for attacking minions are incomplete, should I continue?'
+		MINIONS_WARNING: 'The hero packs for attacking minions are incomplete, should I continue?',
+		FAST_SEASON: 'Fast season',
+		FAST_SEASON_TITLE: 'Skip the map selection screen in a season',
+		GET_SOMETHING: 'Get something',
+		GET_SOMETHING_TITLE: 'Collects everything something',
+		GET_ALL_SOMETHING: 'Get all somethings?',
+		NO_SOMETHING_DATA: 'Some data is missing',
+		COLLECTED_SOMETHING: 'Collected: {count}',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -793,6 +800,13 @@ const i18nLangData = {
 		SHOPS_LIST_TITLE: 'Список магазинов {number}',
 		SHOPS_WARNING: 'Магазины<br><span style="color:red">Если Вы купите монеты магазинов потасовок за изумруды, то их надо использовать сразу, иначе после перезагрузки игры они пропадут!</span>',
 		MINIONS_WARNING: 'Пачки героев для атаки приспешников неполные, продолжить?',
+		FAST_SEASON: 'Быстрый сезон',
+		FAST_SEASON_TITLE: 'Пропуск экрана с выбором карты в сезоне',
+		GET_SOMETHING: 'Получить кое-что',
+		GET_SOMETHING_TITLE: 'Собирает все кое-что',
+		GET_ALL_SOMETHING: 'Собрать все кое-что?',
+		NO_SOMETHING_DATA: 'Нет кое-каких данных',
+		COLLECTED_SOMETHING: 'Собрано: {count}',
 	}
 }
 
@@ -960,6 +974,12 @@ const checkboxes = {
 		label: I18N('HIDE_SERVERS'),
 		cbox: null,
 		title: I18N('HIDE_SERVERS_TITLE'),
+		default: false
+	},
+	fastSeason: {
+		label: I18N('FAST_SEASON'),
+		cbox: null,
+		title: I18N('FAST_SEASON_TITLE'),
 		default: false
 	},
 };
@@ -1263,6 +1283,16 @@ const buttons = {
 					title: I18N('SHOPS'),
 				},
 			];
+			if (getSaveVal('argsDataForSomething', false)) {
+				popupButtons.push({
+					msg: I18N('GET_SOMETHING'),
+					result: function () {
+						getSomething();
+					},
+					title: I18N('GET_SOMETHING_TITLE'),
+				})
+			}
+ 
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
 			if (typeof answer === 'function') {
@@ -1400,6 +1430,7 @@ let artifactChestOpen = false;
  * Имя функции открытия ключей или сфер артефактов титанов
  */
 let artifactChestOpenCallName = '';
+let correctShowOpenArtifact = 0;
 /**
  * Data for the last battle in the dungeon
  * (Fix endless cards)
@@ -1866,6 +1897,7 @@ async function checkChangeSend(sourceData, tempData) {
 					}
 					}
 				}
+				// Потасовки
 				if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
 					if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
 						{ msg: I18N('BTN_NO'), result: false },
@@ -2094,21 +2126,19 @@ async function checkChangeSend(sourceData, tempData) {
 					changeRequest = true;
 				}
 			}
-			/**
-			 * Adding a request to receive 26 store
-			 * Добавление запроса на получение 26 магазина
-			 */
-			if (call.name == 'registration') {
-				/*
-				testData.calls.push({
-					name: "shopGet",
-					args: {
-						shopId: "26"
-					},
-					ident: "shopGet"
-				});
-				changeRequest = true;
-				*/
+			if (call.name == 'rewardedVideo_boxyFarmReward') {
+				if (!getSaveVal('argsDataForSomething', false)) {
+					this.onReadySuccess = async () => {
+						if (await popup.confirm(I18N('GET_ALL_SOMETHING'), [
+							{ msg: 'Да', result: true },
+							{ msg: 'Нет', result: false },
+							{ result: false, isClose: true }
+						])) {
+							getSomething()
+						}
+			}
+				}
+				setSaveVal('argsDataForSomething', call.args);
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -2169,6 +2199,7 @@ async function checkChangeResponse(response) {
 		}
 		let mainReward = null;
 		const allReward = {};
+		let countTypeReward = 0;
 		let readQuestInfo = false;
 		for (const call of respond.results) {
 			/**
@@ -2389,6 +2420,7 @@ async function checkChangeResponse(response) {
 						for (let o in e[f]) {
 							if (!allReward[f][o]) {
 								allReward[f][o] = e[f][o];
+								countTypeReward++;
 							} else {
 								allReward[f][o] += e[f][o];
 							}
@@ -2401,6 +2433,12 @@ async function checkChangeResponse(response) {
 				}
 			}
 
+			if (countTypeReward > 20) {
+				correctShowOpenArtifact = 3;
+			} else {
+				correctShowOpenArtifact = 0;
+			}
+			
 			/**
 			 * Sum the result of opening Pet Eggs
 			 * Суммирование результата открытия яиц питомцев
@@ -2526,23 +2564,6 @@ async function checkChangeResponse(response) {
 				countPredictionCard = call.result.response.consumable[81] || 0;
 			}
 			/**
-			 * Adding 26 and 28 store to other stores
-			 * Добавление 26 и 28 магазина к остальным магазинам
-			 */
-			if (call.ident == callsIdent['shopGetAll']) {
-				if (userInfo.level >= 10) {
-					const result = await Send({ calls: [
-						{ name: "shopGet", args: { shopId: "26" }, ident: "shopGet_26" }, 
-						{ name: "shopGet", args: { shopId: "28" }, ident: "shopGet_28" },
-						{ name: "shopGet", args: { shopId: "29" }, ident: "shopGet_29" },
-					] }).then(e => e.results);
-					call.result.response[26] = result[0].result.response;
-					call.result.response[28] = result[1].result.response;
-					call.result.response[29] = result[2].result.response;
-					isChange = true;
-				}
-			}
-			/**
 			 * Getting subscription status
 			 * Получение состояния подписки
 			 */
@@ -2590,6 +2611,29 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['adventure_end']) {
 				autoRaidAdventure()
+			}
+			/**
+			 * Do something
+			 * Сделать кое-что
+			 */
+			if (call.ident == callsIdent['splitGetAll']) {
+				if (!(NXFlashVars?.game_url || '').includes('facebook')) {
+					call.result.response.push({
+						"mechanic_level": {
+							"rewarded_video_boxy": {
+								"enabled": 1
+							}
+		}
+					});
+					isChange = true;
+		}
+			}
+			/** Удаление лавки редкостей */
+			if (call.ident == callsIdent['missionRaid']) {
+				if (call.result?.heroesMerchant) {
+					delete call.result.heroesMerchant;
+					isChange = true;
+				}
 			}
 		}
 
@@ -5933,8 +5977,46 @@ function hackGame() {
 			}
 		}
 		},
+		fastSeason: function () {
+			const GameNavigator = selfGame["game.screen.navigator.GameNavigator"];
+			const oldFuncName = getProtoFn(GameNavigator, 16);
+			const newFuncName = getProtoFn(GameNavigator, 14);
+			const oldFastSeason = GameNavigator.prototype[oldFuncName];
+			const newFastSeason = GameNavigator.prototype[newFuncName];
+			GameNavigator.prototype[oldFuncName] = function (a, b) {
+				if (isChecked('fastSeason')) {
+					return newFastSeason.apply(this, [a]);
+				} else {
+					return oldFastSeason.apply(this, [a, b]);
 	}
+	}
+		},
+		ShowChestReward: function () {
+			const TitanArtifactChest = selfGame["game.mechanics.titan_arena.mediator.chest.TitanArtifactChestRewardPopupMediator"];
+			const getOpenAmountTitan = getF(TitanArtifactChest, "get_openAmount");
+			const oldGetOpenAmountTitan = TitanArtifactChest.prototype[getOpenAmountTitan];
+			TitanArtifactChest.prototype[getOpenAmountTitan] = function () {
+				if (correctShowOpenArtifact) {
+					correctShowOpenArtifact--;
+					return 100;
+				}
+				return oldGetOpenAmountTitan.call(this);
+			}
 
+			const ArtifactChest = selfGame["game.view.popup.artifactchest.rewardpopup.ArtifactChestRewardPopupMediator"];
+			const getOpenAmount = getF(ArtifactChest, "get_openAmount");
+			const oldGetOpenAmount = ArtifactChest.prototype[getOpenAmount];
+			ArtifactChest.prototype[getOpenAmount] = function () {
+				if (correctShowOpenArtifact) {
+					correctShowOpenArtifact--;
+					return 100;
+				}
+				return oldGetOpenAmount.call(this);
+			}
+ 
+		}
+	}
+ 
 	/**
 	 * Starts replacing recorded functions
 	 *
@@ -8062,6 +8144,52 @@ function getGiftNewYear() {
 		});
 	})
 }
+ 
+async function getSomething(countSomething = 0) {
+	const argsForSomething = getSaveVal('argsDataForSomething', false);
+	if (!argsForSomething) {
+		console.log(I18N('NO_SOMETHING_DATA'));
+		setProgress(I18N('NO_SOMETHING_DATA'));
+		return;
+	}
+ 
+	const boxes = await Send({ calls: [{ name: "rewardedVideo_boxyGetInfo", args: {}, ident: "body" }] }).then(e => e.results[0].result.response.boxes);
+ 
+	const calls = [];
+	for (const boxId in boxes) {
+		if (!boxes[boxId].opened) {
+			const args = { ...argsForSomething };
+			args.boxId = boxId;
+			calls.push({
+				name: "rewardedVideo_boxyFarmReward",
+				args,
+				ident: `body_${boxId}`
+			})
+		}
+	}
+ 
+	if (!calls.length) {
+		console.log(I18N('COLLECTED_SOMETHING', { count: countSomething }))
+		setProgress(I18N('COLLECTED_SOMETHING', { count: countSomething }));
+		return;
+	}
+ 
+	const result = await Send({ calls }).then(e => e?.results || e);
+	if ('error' in result) {
+		await popup.confirm(I18N('ERROR_MSG', { 
+			name: result.error.name, 
+			description: result.error.description 
+		}), [
+			{ msg: 'Ok', result: false },
+			{ result: false, isClose: true }
+		])
+		return;
+	}
+ 
+	countSomething += result.length;
+	getSomething(countSomething);
+}
+ 
 /**
  * Attack of the minions of Asgard
  *
@@ -9679,8 +9807,9 @@ class doYourBest {
 		},
 		reloadGame: async () => {
 			location.reload();
+		},
+		getSomething,
 		}
-	}
 
 	constructor(resolve, reject, questInfo) {
 		this.resolve = resolve;
@@ -9691,6 +9820,15 @@ class doYourBest {
 	async start() {
 		const selectedDoIt = getSaveVal('selectedDoIt', {});
 
+		if (getSaveVal('argsDataForSomething', false)) {
+			this.funcList.push({
+				name: 'getSomething',
+				label: I18N('GET_SOMETHING'),
+				title: I18N('GET_SOMETHING_TITLE'),
+				checked: false
+			})
+		}
+ 
 		this.funcList.forEach(task => {
 			if (!selectedDoIt[task.name]) {
 				selectedDoIt[task.name] = {
