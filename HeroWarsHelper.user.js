@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.193
+// @version			2.196
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -936,6 +936,7 @@ const checkboxes = {
 		title: I18N('SECRET_WEALTH_CHECKBOX'),
 		default: false
 	},
+	// Потасовки
 	autoBrawls: {
 		label: I18N('BRAWLS'),
 		cbox: null,
@@ -10363,6 +10364,11 @@ class executeBrawls {
 		args: {},
 		ident: "userGetInfo"
 	}
+	callTeamGetMaxUpgrade = {
+		name: "teamGetMaxUpgrade",
+		args: {},
+		ident: "teamGetMaxUpgrade"
+	}
 
 	stats = {
 		win: 0,
@@ -10425,6 +10431,9 @@ class executeBrawls {
 
 			const enemie = Object.values(this.brawlInfo.findEnemies).shift();
 
+			// Для потасовок брустара
+			this.args.heroes = await this.updatePuck(enemie.heroes);
+ 
 			const result = await this.battle(enemie.userId);
 			this.brawlInfo = {
 				questInfo: result[1].result.response,
@@ -10433,6 +10442,45 @@ class executeBrawls {
 		}
 	}
 
+	async updatePuck(enemieHeroes) {
+		const pucks = [
+			[4030, 4032, 4031, 4043, 4033],
+			[4030, 4040, 4032, 4043, 4033],
+			[4030, 4032, 4043, 4042, 4033],
+			[4000, 4030, 4043, 4042, 4033],
+			[4030, 4040, 4043, 4042, 4033],
+			[4030, 4032, 4041, 4043, 4033],
+			[4030, 4040, 4031, 4043, 4033],
+		];
+ 
+		for (const puck of pucks) {
+			const attackers = this.maxUpgrade
+				.filter(e => puck.includes(e.id))
+				.reduce((obj, e) => ({ ...obj, [e.id]: e }), {});
+			const battle = {
+				attackers,
+				defenders: [enemieHeroes],
+				type: "brawl_titan",
+			}
+ 
+			let countWinBattles = 0;
+			let countTestBattle = 10;
+			for (let i = 0; i < countTestBattle; i++) {
+				battle.seed = Math.floor(Date.now() / 1000) + Math.random() * 1000;
+				const result = await Calc(battle);
+				if (result.result.win) {
+					countWinBattles++;
+				}
+				if (countWinBattles > 6) {
+					console.log(puck)
+					return puck;
+				}
+			}
+		}
+ 
+		return pucks[1];
+	}
+ 
 	async questFarm() {
 		const calls = [this.callBrawlQuestFarm];
 		const result = await Send(JSON.stringify({ calls }));
@@ -10445,10 +10493,12 @@ class executeBrawls {
 				this.callUserGetInfo,
 				this.callBrawlQuestGetInfo,
 				this.callBrawlFindEnemies,
+				this.callTeamGetMaxUpgrade,
 			]
 		}));
 
 		let attempts = data.results[0].result.response.refillable.find(n => n.id == 48);
+		this.maxUpgrade = Object.values(data.results[3].result.response.titan);
 		return {
 			attempts: attempts.amount,
 			questInfo: data.results[1].result.response,
