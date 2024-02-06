@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.196
+// @version		2.203
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -482,6 +482,13 @@ const i18nLangData = {
 		GET_ALL_SOMETHING: 'Get all somethings?',
 		NO_SOMETHING_DATA: 'Some data is missing',
 		COLLECTED_SOMETHING: 'Collected: {count}',
+		SET_NUMBER_LEVELS: 'Specify the number of levels:',
+		NOT_ENOUGH_RESOURECES: 'Not enough resources',
+		IMPROVED_LEVELS: 'Improved levels: {count}',
+		ARTIFACTS_UPGRADE: 'Artifacts Upgrade',
+		ARTIFACTS_UPGRADE_TITLE: 'Upgrades the specified amount of the cheapest hero artifacts',
+		SKINS_UPGRADE: 'Skins Upgrade',
+		SKINS_UPGRADE_TITLE: 'Upgrades the specified amount of the cheapest hero skins',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -807,6 +814,13 @@ const i18nLangData = {
 		GET_ALL_SOMETHING: 'Собрать все кое-что?',
 		NO_SOMETHING_DATA: 'Нет кое-каких данных',
 		COLLECTED_SOMETHING: 'Собрано: {count}',
+		SET_NUMBER_LEVELS: 'Указать колличество уровней:',
+		NOT_ENOUGH_RESOURECES: 'Не хватает ресурсов',
+		IMPROVED_LEVELS: 'Улучшено уровней: {count}',
+		ARTIFACTS_UPGRADE: 'Улучшение артефактов',
+		ARTIFACTS_UPGRADE_TITLE: 'Улучшает указанное количество самых дешевых артефактов героев',
+		SKINS_UPGRADE: 'Улучшение обликов',
+		SKINS_UPGRADE_TITLE: 'Улучшает указанное количество самых дешевых обликов героев',
 	}
 }
 
@@ -1235,6 +1249,16 @@ const buttons = {
 					title: I18N('EPIC_BRAWL_TITLE'),
 				},
                 {
+					msg: I18N('ARTIFACTS_UPGRADE'),
+					result: updateArtifacts,
+					title: I18N('ARTIFACTS_UPGRADE_TITLE'),
+				},
+				{
+					msg: I18N('SKINS_UPGRADE'),
+					result: updateSkins,
+					title: I18N('SKINS_UPGRADE_TITLE'),
+				},
+				{
 					msg: I18N('CHANGE_MAP'),
 					result: async function () {
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [
@@ -2219,20 +2243,6 @@ async function checkChangeResponse(response) {
 				await openOrMigrateDatabase(userId);
 				readQuestInfo = true;
 			}
-			/**
-			 * Endless lives in brawls
-			 * Бесконечные жизни в потасовках
-			 * (Больше не работает)
-			 */
-			/*
-			if (getSaveVal('autoBrawls') && call.ident == callsIdent['brawl_getInfo']) {
-				brawl = call.result.response;
-				if (brawl) {
-					brawl.boughtEndlessLivesToday = 1;
-					isChange = true;
-				}
-			}
-			*/
 			/**
 			 * Hiding donation offers 1
 			 * Скрываем предложения доната 1
@@ -3319,11 +3329,16 @@ const popup = new (function () {
 	this.addButton = (option, buttonClick) => {
 
 		const { button, contButton, inputField } = option.isClose ? this.addCloseButton() : this.addAnyButton(option);
-
+		if (option.isClose) {
+			this.dialogPromice = {func: buttonClick, result: option.result};
+		}
 		button.addEventListener('click', () => {
 			let result = '';
 			if (option.isInput) {
 				result = inputField.value;
+			}
+			if (option.isClose || option.isCancel) {
+				this.dialogPromice = null;
 			}
 			buttonClick(result);
 		});
@@ -3403,6 +3418,9 @@ const popup = new (function () {
 					complete(result);
 					popup.hide();
 				});
+				if (butt.isCancel) {
+					this.dialogPromice = {func: complete, result: butt.result};
+			}
 			}
 			this.show();
 		});
@@ -3410,6 +3428,7 @@ const popup = new (function () {
 
 	document.addEventListener('DOMContentLoaded', init);
 });
+ 
 /**
  * Script control panel
  *
@@ -3587,6 +3606,9 @@ const scriptMenu = new (function () {
 		.scriptMenu_button:hover {
 			filter: brightness(1.2);
 		}
+	.scriptMenu_button:active {
+		box-shadow: inset 0px 4px 6px #442901, inset 0px 4px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
+	}
 		.scriptMenu_buttonText {
 			color: #fce5b7;
 			text-shadow: 0px 1px 2px black;
@@ -3850,6 +3872,15 @@ const scriptMenu = new (function () {
 		return showDetails;
 	}
 });
+ 
+/**
+ * Пример использования
+scriptMenu.init();
+scriptMenu.addHeader('v1.508');
+scriptMenu.addCheckbox('testHack', 'Тестовый взлом игры!');
+scriptMenu.addButton('Запуск!', () => console.log('click'), 'подсказака');
+scriptMenu.addInputText('input подсказака');
+ */
 /**
  * Game Library
  *
@@ -5388,9 +5419,8 @@ function executeTitanArena(resolve, reject) {
 		let wins = e.map(n => n.result.win);
 		let firstBattle = e.shift();
 		let countWin = wins.reduce((w, s) => w + s);
-		let numReval = countRivalsTier - finishListBattle.length;
-		// setProgress('TitanArena: Уровень ' + currTier + ' Бои: ' + numReval + '/' + countRivalsTier + ' - ' + countWin + '/11');
-		console.log('resultPreCalcBattle', countWin + '/11' )
+		const countTestBattle = getInput('countTestBattle');
+		console.log('resultPreCalcBattle', `${countWin}/${countTestBattle}`)
 		if (countWin > 0) {
 			attempts = getInput('countAutoBattle');
 		} else {
@@ -6441,7 +6471,7 @@ function hackGame() {
 				const levels = b.raw.seasonAdventure.level;
 				for (const id in levels) {
 					const level = levels[id];
-					level.clientData.graphics.fogged[0] = level.clientData.graphics.visible[0]
+					level.clientData.graphics.fogged = level.clientData.graphics.visible
 				}
 				// b.raw.shop[26].requirements = null;
 				// b.raw.shop[28].requirements = null;
@@ -7083,6 +7113,7 @@ async function justInfo() {
 		const infos = result.results;
 		const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
 		const clanWarMyTries = infos[1].result.response?.myTries ?? 0;
+		const arePointsMax = infos[1].result.response?.arePointsMax;
 		const titansLevel = +(infos[2].result.response?.tier ?? 0);
 		const titansStatus = infos[2].result.response?.status; //peace_time || battle
 
@@ -7097,7 +7128,7 @@ async function justInfo() {
 			sanctuaryButton.style.color = '';
 			sanctuaryButton.title = I18N('SANCTUARY_TITLE');
 		}
-		if (clanWarMyTries) {
+		if (clanWarMyTries && !arePointsMax) {
 			clanWarButton.style.color = 'red';
 			clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
 		} else {
@@ -8189,6 +8220,97 @@ async function getSomething(countSomething = 0) {
  
 	countSomething += result.length;
 	getSomething(countSomething);
+}
+ 
+async function updateArtifacts() {
+	const count = +await popup.confirm(I18N('SET_NUMBER_LEVELS'), [
+		{ msg: I18N('BTN_GO'), isInput: true, default: 10 },
+		{ result: false, isClose: true }
+	]);
+	if (!count) {
+		return;
+	}
+	const quest = new questRun;
+	await quest.autoInit();
+	const heroes = Object.values(quest.questInfo['heroGetAll']);
+	const inventory = quest.questInfo['inventoryGet'];
+	const calls = [];
+	for (let i = count; i > 0; i--) {
+		const upArtifact = quest.getUpgradeArtifact();
+		const hero = heroes.find(e => e.id == upArtifact.heroId);
+		hero.artifacts[upArtifact.slotId].level++;
+		inventory[upArtifact.costСurrency][upArtifact.costId] -= upArtifact.costValue;
+		calls.push({
+			name: "heroArtifactLevelUp",
+			args: {
+				heroId: upArtifact.heroId,
+				slotId: upArtifact.slotId
+			},
+			ident: `heroArtifactLevelUp_${i}`
+		});
+	}
+ 
+	if (!calls.length) {
+		console.log(I18N('NOT_ENOUGH_RESOURECES'));
+		setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
+		return;
+	}
+ 
+	await Send(JSON.stringify({ calls })).then(e => {
+		if ('error' in e) {
+			console.log(I18N('NOT_ENOUGH_RESOURECES'));
+			setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
+		} else {
+			console.log(I18N('IMPROVED_LEVELS', { count: e.results.length }));
+			setProgress(I18N('IMPROVED_LEVELS', { count: e.results.length }), false);
+		}
+	});
+}
+ 
+async function updateSkins() {
+	const count = +await popup.confirm(I18N('SET_NUMBER_LEVELS'), [
+		{ msg: I18N('BTN_GO'), isInput: true, default: 10 },
+		{ result: false, isClose: true }
+	]);
+	if (!count) {
+		return;
+	}
+ 
+	const quest = new questRun;
+	await quest.autoInit();
+	const heroes = Object.values(quest.questInfo['heroGetAll']);
+	const inventory = quest.questInfo['inventoryGet'];
+	const calls = [];
+	for (let i = count; i > 0; i--) {
+		const upSkin = quest.getUpgradeSkin();
+		const hero = heroes.find(e => e.id == upSkin.heroId);
+		hero.skins[upSkin.skinId]++;
+		inventory[upSkin.costСurrency][upSkin.costСurrencyId] -= upSkin.cost;
+		calls.push({
+			name: "heroSkinUpgrade",
+			args: {
+				heroId: upSkin.heroId,
+				skinId: upSkin.skinId
+			},
+			ident: `heroSkinUpgrade_${i}`
+		})
+	}
+ 
+	if (!calls.length) {
+		console.log(I18N('NOT_ENOUGH_RESOURECES'));
+		setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
+		return;
+	}
+ 
+	await Send(JSON.stringify({ calls })).then(e => {
+		if ('error' in e) {
+			console.log(I18N('NOT_ENOUGH_RESOURECES'));
+			setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
+		} else {
+			console.log(I18N('IMPROVED_LEVELS', { count: e.results.length }));
+			setProgress(I18N('IMPROVED_LEVELS', { count: e.results.length }), false);
+		}
+	});
 }
  
 /**
@@ -9427,6 +9549,9 @@ class dailyQuests {
 					upArt.level = level;
 					upArt.heroId = hero.id;
 					upArt.slotId = slotId;
+					upArt.costСurrency = costСurrency;
+					upArt.costId = costId;
+					upArt.costValue = costValue;
 				}
 			}
 		}
@@ -9468,6 +9593,8 @@ class dailyQuests {
 					upSkin.level = level;
 					upSkin.heroId = hero.id;
 					upSkin.skinId = skinId;
+					upSkin.costСurrency = costСurrency;
+					upSkin.costСurrencyId = costСurrencyId;
 				}
 			}
 		}
@@ -9822,7 +9949,7 @@ class doYourBest {
 		const selectedDoIt = getSaveVal('selectedDoIt', {});
 
 		if (getSaveVal('argsDataForSomething', false)) {
-			this.funcList.push({
+			this.funcList.unshift({
 				name: 'getSomething',
 				label: I18N('GET_SOMETHING'),
 				title: I18N('GET_SOMETHING_TITLE'),
@@ -10433,7 +10560,7 @@ class executeBrawls {
 			const enemie = Object.values(this.brawlInfo.findEnemies).shift();
 
 			// Для потасовок брустара
-			this.args.heroes = await this.updatePuck(enemie.heroes);
+			this.args.heroes = await this.updatePack(enemie.heroes);
  
 			const result = await this.battle(enemie.userId);
 			this.brawlInfo = {
@@ -10443,8 +10570,8 @@ class executeBrawls {
 		}
 	}
 
-	async updatePuck(enemieHeroes) {
-		const pucks = [
+	async updatePack(enemieHeroes) {
+		const packs = [
 			[4030, 4032, 4031, 4043, 4033],
 			[4030, 4040, 4032, 4043, 4033],
 			[4030, 4032, 4043, 4042, 4033],
@@ -10454,9 +10581,9 @@ class executeBrawls {
 			[4030, 4040, 4031, 4043, 4033],
 		];
  
-		for (const puck of pucks) {
+		for (const pack of packs) {
 			const attackers = this.maxUpgrade
-				.filter(e => puck.includes(e.id))
+				.filter(e => pack.includes(e.id))
 				.reduce((obj, e) => ({ ...obj, [e.id]: e }), {});
 			const battle = {
 				attackers,
@@ -10473,13 +10600,13 @@ class executeBrawls {
 					countWinBattles++;
 				}
 				if (countWinBattles > 6) {
-					console.log(puck)
-					return puck;
+					console.log(pack)
+					return pack;
 				}
 			}
 		}
  
-		return pucks[1];
+		return packs[1];
 	}
  
 	async questFarm() {
