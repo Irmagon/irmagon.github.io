@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.203
+// @version			2.206
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1873,6 +1873,20 @@ async function checkChangeSend(sourceData, tempData) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
 			}
 			/**
+			 * Сбор подарка
+			 */
+			if (call.name == 'registration') {
+				if (!call.args?.giftId) {
+					const giftId = await getGiftCode();
+					if (giftId) {
+						call.args.giftId = giftId;
+						changeRequest = true;
+					}
+				} else {
+					sendGiftsCodes([call.args.giftId])
+				}
+			}
+			/**
 			 * Cancellation of the battle in adventures, on VG and with minions of Asgard
 			 * Отмена боя в приключениях, на ВГ и с прислужниками Асгарда
 			 */
@@ -2240,6 +2254,10 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['registration']) {
 				userId = call.result.response.userId;
+				if (localStorage['userId'] != userId) {
+					localStorage['newGiftSendIds'] = '';
+					localStorage['userId'] = userId;
+				}
 				await openOrMigrateDatabase(userId);
 				readQuestInfo = true;
 			}
@@ -6541,7 +6559,7 @@ function getAutoGifts() {
 				});
 			});
 
-			if (!freebieCheckCalls.calls.length) {
+			if (!freebieCheckCalls.calls.length || data) {
 				return;
 			}
 
@@ -6562,6 +6580,30 @@ function getAutoGifts() {
 	)
 }
 
+async function getGiftCode() {
+	const isWrite = false;
+	const data = await fetch('https://zingery.ru/heroes/getGifts.php', {
+		method: 'POST',
+		body: JSON.stringify({ isWrite })
+	}).then(response => response.json());
+ 
+	const valName = 'newGiftSendIds';
+	if (!localStorage[valName]) {
+		localStorage[valName] = '';
+	}
+	const saveGifts = localStorage[valName].split(';');
+ 
+	while (data.length) {
+		let giftId = data.pop()
+		if (!localStorage[valName].includes(giftId)) {
+			saveGifts.push(giftId);
+			localStorage[valName] = saveGifts.slice(-50).join(';');
+			return giftId;
+		}
+	}
+	return null;
+}
+ 
 /**
  * To fill the kills in the Forge of Souls
  *
