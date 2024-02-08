@@ -3,7 +3,7 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.206
+// @version			2.207
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -6582,10 +6582,15 @@ function getAutoGifts() {
 
 async function getGiftCode() {
 	const isWrite = false;
-	const data = await fetch('https://zingery.ru/heroes/getGifts.php', {
+	let data = null;
+	try {
+		data = await fetch('https://zingery.ru/heroes/getGifts.php', {
 		method: 'POST',
 		body: JSON.stringify({ isWrite })
 	}).then(response => response.json());
+	} catch(e) {
+		return null;
+	}
  
 	const valName = 'newGiftSendIds';
 	if (!localStorage[valName]) {
