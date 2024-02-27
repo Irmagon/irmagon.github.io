@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.207
+// @version		2.213
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -477,11 +477,6 @@ const i18nLangData = {
 		MINIONS_WARNING: 'The hero packs for attacking minions are incomplete, should I continue?',
 		FAST_SEASON: 'Fast season',
 		FAST_SEASON_TITLE: 'Skip the map selection screen in a season',
-		GET_SOMETHING: 'Get something',
-		GET_SOMETHING_TITLE: 'Collects everything something',
-		GET_ALL_SOMETHING: 'Get all somethings?',
-		NO_SOMETHING_DATA: 'Some data is missing',
-		COLLECTED_SOMETHING: 'Collected: {count}',
 		SET_NUMBER_LEVELS: 'Specify the number of levels:',
 		NOT_ENOUGH_RESOURECES: 'Not enough resources',
 		IMPROVED_LEVELS: 'Improved levels: {count}',
@@ -809,11 +804,6 @@ const i18nLangData = {
 		MINIONS_WARNING: 'Пачки героев для атаки приспешников неполные, продолжить?',
 		FAST_SEASON: 'Быстрый сезон',
 		FAST_SEASON_TITLE: 'Пропуск экрана с выбором карты в сезоне',
-		GET_SOMETHING: 'Получить кое-что',
-		GET_SOMETHING_TITLE: 'Собирает все кое-что',
-		GET_ALL_SOMETHING: 'Собрать все кое-что?',
-		NO_SOMETHING_DATA: 'Нет кое-каких данных',
-		COLLECTED_SOMETHING: 'Собрано: {count}',
 		SET_NUMBER_LEVELS: 'Указать колличество уровней:',
 		NOT_ENOUGH_RESOURECES: 'Не хватает ресурсов',
 		IMPROVED_LEVELS: 'Улучшено уровней: {count}',
@@ -942,12 +932,6 @@ const checkboxes = {
 		label: I18N('DAILY_QUESTS'),
 		cbox: null,
 		title: I18N('DAILY_QUESTS_TITLE'),
-		default: false
-	},
-	secretWealth: {
-		label: I18N('SECRET_WEALTH'),
-		cbox: null,
-		title: I18N('SECRET_WEALTH_CHECKBOX'),
 		default: false
 	},
 	// Потасовки
@@ -1308,15 +1292,6 @@ const buttons = {
 					title: I18N('SHOPS'),
 				},
 			];
-			if (getSaveVal('argsDataForSomething', false)) {
-				popupButtons.push({
-					msg: I18N('GET_SOMETHING'),
-					result: function () {
-						getSomething();
-					},
-					title: I18N('GET_SOMETHING_TITLE'),
-				})
-			}
  
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1741,10 +1716,6 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				testDailyQuests();
 			}
 
-			if (isChecked('secretWealth')) {
-				buyWithPetExperienceAuto();
-			}
- 
 			if (isChecked('buyForGold')) {
 				buyInStoreForGold();
 			}
@@ -2164,20 +2135,6 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.amount = result;
 					changeRequest = true;
 				}
-			}
-			if (call.name == 'rewardedVideo_boxyFarmReward') {
-				if (!getSaveVal('argsDataForSomething', false)) {
-					this.onReadySuccess = async () => {
-						if (await popup.confirm(I18N('GET_ALL_SOMETHING'), [
-							{ msg: 'Да', result: true },
-							{ msg: 'Нет', result: false },
-							{ result: false, isClose: true }
-						])) {
-							getSomething()
-						}
-			}
-				}
-				setSaveVal('argsDataForSomething', call.args);
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -2640,22 +2597,6 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['adventure_end']) {
 				autoRaidAdventure()
-			}
-			/**
-			 * Do something
-			 * Сделать кое-что
-			 */
-			if (call.ident == callsIdent['splitGetAll']) {
-				if (!(NXFlashVars?.game_url || '').includes('facebook')) {
-					call.result.response.push({
-						"mechanic_level": {
-							"rewarded_video_boxy": {
-								"enabled": 1
-							}
-		}
-					});
-					isChange = true;
-		}
 			}
 			/** Удаление лавки редкостей */
 			if (call.ident == callsIdent['missionRaid']) {
@@ -7197,150 +7138,6 @@ async function justInfo() {
 	});
 }
 
-async function buyWithPetExperience() {
-	const itemLib = lib.getData('inventoryItem');
-	const result = await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"},{"name":"shopGet","args":{"shopId":"26"},"ident":"shopGet"}]}').then(e => e.results.map(n => n.result.response));
-	const inventory = result[0];
-	const slot = Object.values(result[1].slots).find(e => e.cost?.consumable?.[85]);
-
-	const currentCount = inventory.consumable[85];
-	const price = slot.cost.consumable[85];
-
-	const typeBuyItem = Object.keys(slot.reward).pop();
-	const itemIdBuyItem = Object.keys(slot.reward[typeBuyItem]).pop();
-	const countBuyItem = slot.reward[typeBuyItem][itemIdBuyItem];
-	const itemName = cheats.translate(`LIB_${typeBuyItem.toUpperCase()}_NAME_${itemIdBuyItem}`);
-
-	if (slot.bought) {
-		await popup.confirm(I18N('SECRET_WEALTH_ALREADY'), [
-			{ msg: 'Ok', result: true },
-		]);
-		return;
-	}
-
-	const purchaseMsg = I18N('SECRET_WEALTH_BUY', { available: currentCount, countBuy: countBuyItem, name: itemName, price })
-	const answer = await popup.confirm(purchaseMsg, [
-		{ msg: I18N('BTN_NO'), result: false },
-		{ msg: I18N('BTN_YES'), result: true },
-	]);
-
-	if (!answer) {
-		setProgress(I18N('SECRET_WEALTH_CANCELED'), true);
-		return;
-	}
-
-	if (currentCount < price) {
-		const msg = I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
-		await popup.confirm(msg, [
-			{ msg: 'Ok', result: true },
-		]);
-		return;
-	}
-
-	const calls = [{
-		name: "shopBuy",
-		args: {
-			shopId: 26,
-			slot: slot.id,
-			cost: slot.cost,
-			reward: slot.reward
-		},
-		ident: "body"
-	}];
-	const bought = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
-
-	const type = Object.keys(bought).pop();
-	const itemId = Object.keys(bought[type]).pop();
-	const count = bought[type][itemId];
-
-	const resultMsg = I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
-	await popup.confirm(resultMsg, [
-		{ msg: 'Ok', result: true },
-	]);
-}
-
-async function buyWithPetExperienceAuto() {
-	const minCount = 450551;
- 
-	const startCalls = [{ "name": "inventoryGet", "args": {}, "ident": "inventoryGet" }];
-	const libShops = lib.getData('shop');
-	for (const id in libShops) {
-		if (libShops[id].ident.includes('merchantPromo')) {
-			startCalls.push({
-				name: "shopGet", args: { shopId: id }, ident: `shopGet_${id}`
-			})
-		}
-	}
- 
-	const result = await Send({ calls: startCalls }).then(e => e.results.map(n => n.result.response));
-	const inventory = result.shift();
-	const shops = result;
-	const calls = [];
-
-	for (let shop of shops) {
-		const slot = Object.values(shop.slots).find(e => e.cost?.consumable?.[85]);
-
-		if (!slot) {
-			continue;
-		}
- 
-	const currentCount = inventory.consumable[85];
-	const price = slot.cost.consumable[85];
-		const shopName = I18N('SECRET_WEALTH_SHOP', { name: shop.id });
-
-	if (slot.bought) {
-			console.log(shopName + I18N('SECRET_WEALTH_ALREADY'));
-			setProgress(shopName + I18N('SECRET_WEALTH_ALREADY'), true);
-			continue;
-	}
-
-	if (currentCount < price) {
-			const msg = shopName + I18N('SECRET_WEALTH_NOT_ENOUGH', { available: currentCount, need: price });
-		console.log(msg);
-		setProgress(msg, true);
-			continue;
-	}
-
-	if ((currentCount - price) < minCount) {
-			console.log(shopName + I18N('SECRET_WEALTH_UPGRADE_NEW_PET'));
-			setProgress(shopName + I18N('SECRET_WEALTH_UPGRADE_NEW_PET'), true);
-			continue;
-	}
-
-		calls.push({
-		name: "shopBuy",
-		args: {
-				shopId: shop.id,
-			slot: slot.id,
-			cost: slot.cost,
-			reward: slot.reward
-		},
-			ident: "body_" + shop.id
-		});
-	}
-
-	if (!calls.length) {
-		setProgress(I18N('SECRET_WEALTH') + '<br>' + I18N('NOTHING_BUY'), true);
-		return;
-	}
-
-	const boughts = await Send(JSON.stringify({ calls })).then(e => e.results);
- 
-	let textResult = I18N('SECRET_WEALTH');
-	for (const result of boughts) {
-		const bought = result.result.response
-	const type = Object.keys(bought).pop();
-	const itemId = Object.keys(bought[type]).pop();
-	const count = bought[type][itemId];
-		const itemLib = lib.getData('inventoryItem');
-	const itemName = itemLib[type][itemId].label;
-		textResult += ' <br>\n' + I18N('SECRET_WEALTH_PURCHASED', { count, name: itemName });
-	}
-
-	console.log(textResult, boughts);
-	setProgress(textResult, true);
-}
-
 async function getDailyBonus() {
 	const dailyBonusInfo = await Send(JSON.stringify({
 		calls: [{
@@ -8222,51 +8019,6 @@ function getGiftNewYear() {
 			setProgress(msg, 5000);
 		});
 	})
-}
- 
-async function getSomething(countSomething = 0) {
-	const argsForSomething = getSaveVal('argsDataForSomething', false);
-	if (!argsForSomething) {
-		console.log(I18N('NO_SOMETHING_DATA'));
-		setProgress(I18N('NO_SOMETHING_DATA'));
-		return;
-	}
- 
-	const boxes = await Send({ calls: [{ name: "rewardedVideo_boxyGetInfo", args: {}, ident: "body" }] }).then(e => e.results[0].result.response.boxes);
- 
-	const calls = [];
-	for (const boxId in boxes) {
-		if (!boxes[boxId].opened) {
-			const args = { ...argsForSomething };
-			args.boxId = boxId;
-			calls.push({
-				name: "rewardedVideo_boxyFarmReward",
-				args,
-				ident: `body_${boxId}`
-			})
-		}
-	}
- 
-	if (!calls.length) {
-		console.log(I18N('COLLECTED_SOMETHING', { count: countSomething }))
-		setProgress(I18N('COLLECTED_SOMETHING', { count: countSomething }));
-		return;
-	}
- 
-	const result = await Send({ calls }).then(e => e?.results || e);
-	if ('error' in result) {
-		await popup.confirm(I18N('ERROR_MSG', { 
-			name: result.error.name, 
-			description: result.error.description 
-		}), [
-			{ msg: 'Ok', result: false },
-			{ result: false, isClose: true }
-		])
-		return;
-	}
- 
-	countSomething += result.length;
-	getSomething(countSomething);
 }
  
 async function updateArtifacts() {
@@ -9983,8 +9735,7 @@ class doYourBest {
 		reloadGame: async () => {
 			location.reload();
 		},
-		getSomething,
-		}
+	}
 
 	constructor(resolve, reject, questInfo) {
 		this.resolve = resolve;
@@ -9995,15 +9746,6 @@ class doYourBest {
 	async start() {
 		const selectedDoIt = getSaveVal('selectedDoIt', {});
 
-		if (getSaveVal('argsDataForSomething', false)) {
-			this.funcList.unshift({
-				name: 'getSomething',
-				label: I18N('GET_SOMETHING'),
-				title: I18N('GET_SOMETHING_TITLE'),
-				checked: false
-			})
-		}
- 
 		this.funcList.forEach(task => {
 			if (!selectedDoIt[task.name]) {
 				selectedDoIt[task.name] = {
@@ -10619,13 +10361,15 @@ class executeBrawls {
 
 	async updatePack(enemieHeroes) {
 		const packs = [
-			[4030, 4032, 4031, 4043, 4033],
 			[4030, 4040, 4032, 4043, 4033],
-			[4030, 4032, 4043, 4042, 4033],
-			[4000, 4030, 4043, 4042, 4033],
-			[4030, 4040, 4043, 4042, 4033],
-			[4030, 4032, 4041, 4043, 4033],
+			[4040, 4041, 4043, 4042, 4033],
 			[4030, 4040, 4031, 4043, 4033],
+			[4030, 4040, 4043, 4042, 4033],
+			[4040, 4032, 4001, 4043, 4033],
+			[4030, 4040, 4043, 4003, 4033],
+ 
+			[4012, 4013, 4043, 4010, 4040],
+			[4003, 4043, 4002, 4001, 4040],
 		];
  
 		for (const pack of packs) {
@@ -10653,7 +10397,7 @@ class executeBrawls {
 			}
 		}
  
-		return packs[1];
+		return packs[0];
 	}
  
 	async questFarm() {
