@@ -3,13 +3,13 @@
 // @name:en			HWH
 // @name:ru			HWH
 // @namespace		HWH
-// @version			2.213
+// @version			2.215
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY (forked by ThomasGaud)
 // @license 		Copyright ZingerY
-// @homepage		http://ilovemycomp.narod.ru/HeroWarsHelper.user.js
+// @homepage		https://zingery.ru/scripts/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
 // @encoding		utf-8
@@ -69,6 +69,12 @@ let lastHeaders = {};
  * Информация об отправленных подарках
  */
 let freebieCheckInfo = null;
+/**
+ * missionTimer
+ *
+ * missionTimer
+ */
+let missionBattle = null;
 /**
  * User data
  *
@@ -420,6 +426,7 @@ const i18nLangData = {
 		BUY_SOULS_TITLE: 'Buy hero souls from all available shops',
 		BUY_OUTLAND: 'Buy Outland',
 		BUY_OUTLAND_TITLE: 'Buy 9 chests in Outland for 540 emeralds',
+		RAID: 'Raid',
 		AUTO_RAID_ADVENTURE: 'Raid adventure',
 		AUTO_RAID_ADVENTURE_TITLE: 'Raid adventure set number of times',
 		CLAN_STAT: 'Clan statistics',
@@ -457,6 +464,7 @@ const i18nLangData = {
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {bossLvl}, retry?',
 		BOSS_VICTORY_IMPOSSIBLE: 'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
+		MAP: 'Map: ',
 		PLAYER_POS: 'Player positions:',
 		NY_GIFTS: 'Gifts',
 		NY_GIFTS_TITLE: 'Open all New Year\'s gifts',
@@ -746,6 +754,7 @@ const i18nLangData = {
 		BUY_SOULS_TITLE: 'Купить души героев из всех доступных магазинов',
 		BUY_OUTLAND: 'Купить Запределье',
 		BUY_OUTLAND_TITLE: 'Купить 9 сундуков в Запределье за 540 изумрудов',
+		RAID: 'Рейд',
 		AUTO_RAID_ADVENTURE: 'Рейд приключения',
 		AUTO_RAID_ADVENTURE_TITLE: 'Рейд приключения заданное количество раз',
 		CLAN_STAT: 'Клановая статистика',
@@ -784,6 +793,7 @@ const i18nLangData = {
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${bossLvl} не хватило попыток, повторить?',
 		BOSS_VICTORY_IMPOSSIBLE: 'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
 		BOSS_HAS_BEEN_DEF_TEXT: 'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
+		MAP: 'Карта: ',
 		PLAYER_POS: 'Позиции игроков:',
 		NY_GIFTS: 'Подарки',
 		NY_GIFTS_TITLE: 'Открыть все новогодние подарки',
@@ -2032,6 +2042,20 @@ async function checkChangeSend(sourceData, tempData) {
 			if (call.name == 'freebieCheck') {
 				freebieCheckInfo = call;
 			}
+			/** missionTimer */
+			if (call.name == 'missionEnd' && missionBattle) {
+				missionBattle.progress = call.args.progress;
+				missionBattle.result = call.args.result;
+				const result = await Calc(missionBattle);
+ 
+				let timer = getMissionTimer(result.battleTime);
+				const period = Math.ceil(Date.now() / 1000 - result.battleData.startTime);
+				if (period < timer) {
+					timer = timer - period;
+					await countdownTimer(timer);
+				}
+				missionBattle = null;
+			}
 			/**
 			 * Getting mission data for auto-repeat
 			 * Получение данных миссии для автоповтора
@@ -2585,7 +2609,16 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['adventure_getLobbyInfo']) {
 				const users = Object.values(call.result.response.users);
-				let msg = I18N('PLAYER_POS');
+				const mapIdent = call.result.response.mapIdent;
+				const adventureId = call.result.response.adventureId;
+				const maps = {
+					adv_strongford_3pl_hell: 9,
+					adv_valley_3pl_hell: 10,
+					adv_ghirwil_3pl_hell: 11,
+					adv_angels_3pl_hell: 12,
+				}
+				let msg = I18N('MAP') + (mapIdent in maps ? maps[mapIdent] : adventureId);
+				msg += '<br>' + I18N('PLAYER_POS');
 				for (const user of users) {
 					msg += `<br>${user.user.name} - ${user.currentNode}`;
 				}
@@ -2604,6 +2637,10 @@ async function checkChangeResponse(response) {
 					delete call.result.heroesMerchant;
 					isChange = true;
 				}
+			}
+			/** missionTimer */
+			if (call.ident == callsIdent['missionStart']) {
+				missionBattle = call.result.response;
 			}
 		}
 
@@ -2959,9 +2996,22 @@ function getTimer(time) {
 	if (subEndTime < Date.now()) {
 		speedDiv = 1.5;
 	}
-	return Math.max(time / speedDiv + 1.5, 4);
+	return Math.max(Math.ceil(time / speedDiv + 1.5), 4);
 }
 
+/** 
+ * Returns the timer value depending on the subscription
+ * 
+ * Возвращает значение таймера в зависимости от подписки
+ */
+function getMissionTimer(time) {
+	/** missionTimer */
+	let speedDiv = 5;
+	if (subEndTime < Date.now()) {
+		speedDiv = 1.2;
+	}
+	return Math.max(Math.ceil(time / speedDiv + 1.5), 5);
+}
 
 /**
  * Calculates HASH MD5 from string
@@ -6003,6 +6053,18 @@ function hackGame() {
 				return oldGetOpenAmount.call(this);
 			}
  
+		},
+		fixCompany: function () {
+			const GameBattleView = selfGame["game.mediator.gui.popup.battle.GameBattleView"];
+			const BattleThread = selfGame["game.battle.controller.thread.BattleThread"];
+			const getOnViewDisposed = getF(BattleThread, 'get_onViewDisposed');
+			const getThread = getF(GameBattleView, 'get_thread');
+			const oldFunc = GameBattleView.prototype[getThread];
+			GameBattleView.prototype[getThread] = function () {
+				return oldFunc.call(this) || {
+					[getOnViewDisposed]: async () => { }
+				}
+			}
 		}
 	}
  
@@ -6183,7 +6245,7 @@ function hackGame() {
  
 		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
  
-		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		const SD_21 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 21);
 		const SD_1 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 1);
 		const SD_9 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 9);
 		const ident = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 11);
@@ -6192,7 +6254,7 @@ function hackGame() {
 			shopAll[shop.id] = shop;
 			// Снимаем все ограничения с магазинов
 			const shopLibData = Game.DataStorage[DS_32][SDS_5](shop.id)
-			shopLibData[SD_19] = 1;
+			shopLibData[SD_21] = 1;
 			shopLibData[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
 			shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
 				teamLevel: 10
@@ -6202,7 +6264,7 @@ function hackGame() {
 		for (let id in shops) {
 			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
 			if (shopLibData[ident].includes('merchantPromo')) {
-				shopLibData[SD_19] = 0;
+				shopLibData[SD_21] = 0;
 				shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
 					teamLevel: 999
 				});
@@ -6228,14 +6290,14 @@ function hackGame() {
 			const shop = currentShops[id][PSDE_4];
 			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
 				/** Скрываем стандартные магазины */
-				shop[SD_19] = 0;
+				shop[SD_21] = 0;
 			} else {
 				count++;
 				if (count < start || count > end) {
-					shop[SD_19] = 0;
+					shop[SD_21] = 0;
 					continue;
 				}
-				shop[SD_19] = 1;
+				shop[SD_21] = 1;
 				shop[shopName] = cheats.translate("LIB_SHOP_NAME_" + id) + ' ' + id;
 				shop[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
 				shop[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
@@ -6269,13 +6331,13 @@ function hackGame() {
 		const DS_32 = getFn(Game.DataStorage, 32)
 		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
  
-		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		const SD_21 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 21);
 		for (const id in shops) {
 			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
 			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
-				shopLibData[SD_19] = 1;
+				shopLibData[SD_21] = 1;
 			} else {
-				shopLibData[SD_19] = 0;
+				shopLibData[SD_21] = 0;
 			}
 		}
  
@@ -6292,9 +6354,9 @@ function hackGame() {
 		for (let id in currentShops) {
 			const shop = currentShops[id][PSDE_4];
 			if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
-				shop[SD_19] = 1;
+				shop[SD_21] = 1;
 			} else {
-				shop[SD_19] = 0;
+				shop[SD_21] = 0;
 			}
 		}
 		this.goShopId(1);
@@ -6322,7 +6384,7 @@ function hackGame() {
  
 		const SDS_5 = getProtoFn(selfGame["game.data.storage.shop.ShopDescriptionStorage"], 5)
  
-		const SD_19 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 19);
+		const SD_21 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 21);
 		const SD_1 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 1);
 		const SD_9 = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 9);
 		const ident = getProtoFn(selfGame["game.data.storage.shop.ShopDescription"], 11);
@@ -6340,7 +6402,7 @@ function hackGame() {
 			/** Снимаем все ограничения с магазинов */
 			const shopLibData = Game.DataStorage[DS_32][SDS_5](shop.id)
 			if (shopLibData[ident].includes('merchantPromo')) {
-				shopLibData[SD_19] = 1;
+				shopLibData[SD_21] = 1;
 				shopLibData[SD_1] = new selfGame["game.model.user.requirement.Requirement"]
 				shopLibData[SD_9] = new selfGame["game.data.storage.level.LevelRequirement"]({
 					teamLevel: 10
@@ -6352,7 +6414,7 @@ function hackGame() {
 		for (let id in shops) {
 			const shopLibData = Game.DataStorage[DS_32][SDS_5](id)
 			if (!shopLibData[ident].includes('merchantPromo')) {
-				shopLibData[SD_19] = 0;
+				shopLibData[SD_21] = 0;
 			}
 		}
  
@@ -6371,12 +6433,12 @@ function hackGame() {
 		for (let id in currentShops) {
 			const shop = currentShops[id][PSDE_4];
 			if (shop[ident].includes('merchantPromo')) {
-				shop[SD_19] = 1;
+				shop[SD_21] = 1;
 				shop[specialCurrency] = coins;
 				shop[shopName] = cheats.translate("LIB_SHOP_NAME_" + id) + ' ' + id;
 			} else if ([1, 4, 5, 6, 8, 9, 10, 11].includes(+id)) {
 				/** Скрываем стандартные магазины */
-				shop[SD_19] = 0;
+				shop[SD_21] = 0;
 			}
 		}
 		/** Отправляемся в городскую лавку */
@@ -6884,6 +6946,13 @@ this.sendsMission = async function (param) {
 		 * Расчет данных мисии
 		 */
 		BattleCalc(e.results[0].result.response, 'get_tower', async r => {
+			/** missionTimer */
+			let timer = getMissionTimer(r.battleTime);
+			const period = Math.ceil(Date.now() / 1000 - r.battleData.startTime);
+			if (period < timer) {
+				timer = timer - period;
+				await countdownTimer(timer, `${I18N('MISSIONS_PASSED')}: ${param.count}`);
+			}
 
 			let missionEndCall = {
 				"calls": [{
@@ -7486,7 +7555,7 @@ async function autoRaidAdventure() {
 
 	const countRaid = +(await popup.confirm(I18N('RAID_ADVENTURE', { adventureId }), [
 		{ result: false, isClose: true },
-		{ msg: 'Рейд', isInput: true, default: portalSphere.amount },
+		{ msg: I18N('RAID'), isInput: true, default: portalSphere.amount },
 	]));
 
 	if (!countRaid) {
