@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.215
+// @version		2.218
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -162,6 +162,7 @@ this.Send = function (json, pr) {
 	})
 }
 
+this.xyz = (({ name, version, author }) => ({ name, version, author }))(GM_info.script);
 const i18nLangData = {
 	/* English translation by BaBa */
 	en: {
@@ -486,6 +487,7 @@ const i18nLangData = {
 		FAST_SEASON: 'Fast season',
 		FAST_SEASON_TITLE: 'Skip the map selection screen in a season',
 		SET_NUMBER_LEVELS: 'Specify the number of levels:',
+		POSSIBLE_IMPROVE_LEVELS: 'It is possible to improve only {count} levels.<br>Improving?',
 		NOT_ENOUGH_RESOURECES: 'Not enough resources',
 		IMPROVED_LEVELS: 'Improved levels: {count}',
 		ARTIFACTS_UPGRADE: 'Artifacts Upgrade',
@@ -815,6 +817,7 @@ const i18nLangData = {
 		FAST_SEASON: 'Быстрый сезон',
 		FAST_SEASON_TITLE: 'Пропуск экрана с выбором карты в сезоне',
 		SET_NUMBER_LEVELS: 'Указать колличество уровней:',
+		POSSIBLE_IMPROVE_LEVELS: 'Возможно улучшить только {count} уровней.<br>Улучшаем?',
 		NOT_ENOUGH_RESOURECES: 'Не хватает ресурсов',
 		IMPROVED_LEVELS: 'Улучшено уровней: {count}',
 		ARTIFACTS_UPGRADE: 'Улучшение артефактов',
@@ -959,14 +962,12 @@ const checkboxes = {
 			return $result || false;
 		})(),
 	},
-
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
 		default: false
 	},
-
 	showErrors: {
 		label: I18N('SHOW_ERRORS'),
 		cbox: null,
@@ -1166,11 +1167,13 @@ const buttons = {
 					},
 					title: I18N('SEER_TITLE'),
 				},                
+				/*
                 				{
 					msg: I18N('NY_GIFTS'),
 					result: getGiftNewYear,
 					title: I18N('NY_GIFTS_TITLE'),
 				},
+				*/
 			];
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1544,6 +1547,7 @@ document.addEventListener("DOMContentLoaded", () => {
  * Сбор и отправка кодов подарков
  */
 function sendCodes() {
+	return;
 	let codes = [], count = 0;
 	if (!localStorage['giftSendIds']) {
 		localStorage['giftSendIds'] = '';
@@ -1592,6 +1596,7 @@ function checkSendGifts() {
  * Отправка кодов
  */
 function sendGiftsCodes(codes) {
+	return;
 	fetch('https://zingery.ru/heroes/setGifts.php', {
 		method: 'POST',
 		body: JSON.stringify(codes)
@@ -2669,10 +2674,19 @@ async function checkChangeResponse(response) {
  * Запрос ответа на вопрос
  */
 async function getAnswer(question) {
+	const now = Date.now();
+	const body = JSON.stringify({ ...question, now });
+	const signature = window['\x73\x69\x67\x6e'](now);
 	return new Promise((resolve, reject) => {
 		fetch('https://zingery.ru/heroes/getAnswer.php', {
 			method: 'POST',
-			body: JSON.stringify(question)
+			headers: {
+				'X-Request-Signature': signature,
+				'X-Script-Name': GM_info.script.name,
+				'X-Script-Version': GM_info.script.version,
+				'X-Script-Author': GM_info.script.author,
+			},
+			body,
 		}).then(
 			response => response.json()
 		).then(
@@ -8105,6 +8119,16 @@ async function updateArtifacts() {
 	const calls = [];
 	for (let i = count; i > 0; i--) {
 		const upArtifact = quest.getUpgradeArtifact();
+		if (!upArtifact.heroId) {
+			if (await popup.confirm(I18N('POSSIBLE_IMPROVE_LEVELS', { count: calls.length }), [
+				{ msg: I18N('YES'), result: true },
+				{ result: false, isClose: true }
+			])) {
+				break;
+			} else {
+				return;
+			}
+		}
 		const hero = heroes.find(e => e.id == upArtifact.heroId);
 		hero.artifacts[upArtifact.slotId].level++;
 		inventory[upArtifact.costСurrency][upArtifact.costId] -= upArtifact.costValue;
@@ -8135,6 +8159,11 @@ async function updateArtifacts() {
 	});
 }
  
+window.sign = a => {
+	const i = this['\x78\x79\x7a'];
+	return md5([i['\x6e\x61\x6d\x65'], i['\x76\x65\x72\x73\x69\x6f\x6e'], i['\x61\x75\x74\x68\x6f\x72'], ~(a % 1e3)]['\x6a\x6f\x69\x6e']('\x5f'))
+}
+ 
 async function updateSkins() {
 	const count = +await popup.confirm(I18N('SET_NUMBER_LEVELS'), [
 		{ msg: I18N('BTN_GO'), isInput: true, default: 10 },
@@ -8151,6 +8180,16 @@ async function updateSkins() {
 	const calls = [];
 	for (let i = count; i > 0; i--) {
 		const upSkin = quest.getUpgradeSkin();
+		if (!upSkin.heroId) {
+			if (await popup.confirm(I18N('POSSIBLE_IMPROVE_LEVELS', { count: calls.length }), [
+				{ msg: I18N('YES'), result: true },
+				{ result: false, isClose: true }
+			])) {
+				break;
+			} else {
+				return;
+			}
+		}
 		const hero = heroes.find(e => e.id == upSkin.heroId);
 		hero.skins[upSkin.skinId]++;
 		inventory[upSkin.costСurrency][upSkin.costСurrencyId] -= upSkin.cost;
