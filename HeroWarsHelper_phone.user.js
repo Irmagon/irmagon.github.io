@@ -3,7 +3,7 @@
 // @name:en		HWH_Phone
 // @name:ru		HWH_Phone
 // @namespace	HWH_Phone
-// @version		2.218
+// @version		2.219
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -6539,6 +6539,7 @@ function hackGame() {
  * Автосбор подарков
  */
 function getAutoGifts() {
+	return;
 	let valName = 'giftSendIds_' + userInfo.id;
 
 	if (!localStorage['clearGift' + userInfo.id]) {
@@ -6599,6 +6600,7 @@ function getAutoGifts() {
 }
 
 async function getGiftCode() {
+	return null;
 	const isWrite = false;
 	let data = null;
 	try {
@@ -6634,7 +6636,7 @@ async function getGiftCode() {
  */
 async function bossRatingEvent() {
 	const topGet = await Send(JSON.stringify({ calls: [{ name: "topGet", args: { type: "bossRatingTop", extraId: 0 }, ident: "body" }] }));
-	if (!topGet) {
+	if (!topGet || !topGet.results[0].result.response[0]) {
 		setProgress(`${I18N('EVENT')} ${I18N('NOT_AVAILABLE')}`, true);
 		return;
 	}
