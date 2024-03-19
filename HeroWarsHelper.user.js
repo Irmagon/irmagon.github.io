@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.219
+// @version			2.220
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -494,6 +494,9 @@ const i18nLangData = {
 		ARTIFACTS_UPGRADE_TITLE: 'Upgrades the specified amount of the cheapest hero artifacts',
 		SKINS_UPGRADE: 'Skins Upgrade',
 		SKINS_UPGRADE_TITLE: 'Upgrades the specified amount of the cheapest hero skins',
+		HINT: '<br>Hint: ',
+		PICTURE: '<br>Picture: ',
+		ANSWER: '<br>Answer: ',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -824,6 +827,9 @@ const i18nLangData = {
 		ARTIFACTS_UPGRADE_TITLE: 'Улучшает указанное количество самых дешевых артефактов героев',
 		SKINS_UPGRADE: 'Улучшение обликов',
 		SKINS_UPGRADE_TITLE: 'Улучшает указанное количество самых дешевых обликов героев',
+		HINT: '<br>Подсказка: ',
+		PICTURE: '<br>На картинке: ',
+		ANSWER: '<br>Ответ: ',
 	}
 }
 
@@ -2297,13 +2303,23 @@ async function checkChangeResponse(response) {
 				lastQuestion = quest;
 				if (isChecked('getAnswer')) {
 					const answer = await getAnswer(lastQuestion);
+					let showText = '';
 					if (answer) {
 						lastAnswer = answer;
 						console.log(answer);
-						setProgress(`${I18N('ANSWER_KNOWN')}: ${answer}`, true);
+						showText = `${I18N('ANSWER_KNOWN')}: ${answer}`;
 					} else {
-						setProgress(I18N('ANSWER_NOT_KNOWN'), true);
+						showText = I18N('ANSWER_NOT_KNOWN');
 					}
+ 
+					try {
+						const hint = hintQuest(quest);
+						if (hint) {
+							showText += I18N('HINT') + hint;
+						}
+					} catch(e) {}
+ 
+					setProgress(showText, true);
 				}
 			}
 			/**
@@ -8219,6 +8235,85 @@ async function updateSkins() {
 			setProgress(I18N('IMPROVED_LEVELS', { count: e.results.length }), false);
 		}
 	});
+}
+ 
+function getQuestionInfo(img, nameOnly = false) {
+	const libHeroes = Object.values(lib.data.hero);
+	const parts = img.split(':');
+	const id = parts[1];
+	switch (parts[0]) {
+		case 'titanArtifact_id':
+			return cheats.translate("LIB_TITAN_ARTIFACT_NAME_" + id);
+		case 'titan':
+			return cheats.translate("LIB_HERO_NAME_" + id);
+		case 'skill':
+			return cheats.translate("LIB_SKILL_" + id);
+		case 'inventoryItem_gear':
+			return cheats.translate("LIB_GEAR_NAME_" + id);
+		case 'inventoryItem_coin':
+			return cheats.translate("LIB_COIN_NAME_" + id);
+		case 'artifact':
+			if (nameOnly) {
+				return cheats.translate("LIB_ARTIFACT_NAME_" + id);
+			}
+			heroes = libHeroes.filter(h => h.id < 100 && h.artifacts.includes(+id));
+			return {
+				/** Как называется этот артефакт? */
+				name: cheats.translate("LIB_ARTIFACT_NAME_" + id),
+				/** Какому герою принадлежит этот артефакт? */
+				heroes: heroes.map(h => cheats.translate("LIB_HERO_NAME_" + h.id))
+			};
+		case 'hero':
+			if (nameOnly) {
+				return cheats.translate("LIB_HERO_NAME_" + id);
+			}
+			artifacts = lib.data.hero[id].artifacts;
+			return {
+				/** Как зовут этого героя? */
+				name: cheats.translate("LIB_HERO_NAME_" + id),
+				/** Какой артефакт принадлежит этому герою? */
+				artifact: artifacts.map(a => cheats.translate("LIB_ARTIFACT_NAME_" + a))
+			};
+	}
+}
+ 
+function hintQuest(quest) {
+	const result = {};
+	if (quest?.questionIcon) {
+		const info = getQuestionInfo(quest.questionIcon);
+		if (info?.heroes) {
+			/** Какому герою принадлежит этот артефакт? */
+			result.answer = quest.answers.filter(e => info.heroes.includes(e.answerText.slice(1)));
+		}
+		if (info?.artifact) {
+			/** Какой артефакт принадлежит этому герою? */
+			result.answer = quest.answers.filter(e => info.artifact.includes(e.answerText.slice(1)));
+		}
+		if (typeof info == 'string') {
+			result.info = { name: info };
+		} else {
+			result.info = info;
+		}
+	}
+ 
+	if (quest.answers[0]?.answerIcon) {
+		result.answer = quest.answers.filter(e => quest.question.includes(getQuestionInfo(e.answerIcon, true)))
+	}
+ 
+	if ((!result?.answer || !result.answer.length) && !result.info?.name) {
+		return false;
+	}
+ 
+	let resultText = '';
+	if (result?.info) {
+		resultText += I18N('PICTURE') + result.info.name;
+	}
+	console.log(result);
+	if (result?.answer && result.answer.length) {
+		resultText += I18N('ANSWER') + result.answer[0].id + (!result.answer[0].answerIcon ? ' - ' + result.answer[0].answerText : '');
+	}
+ 
+	return resultText;
 }
  
 /**
