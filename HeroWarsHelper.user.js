@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.220
+// @version			2.222
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -90,6 +90,7 @@ const original = {
 	open: XMLHttpRequest.prototype.open,
 	send: XMLHttpRequest.prototype.send,
 	setRequestHeader: XMLHttpRequest.prototype.setRequestHeader,
+	SendWebSocket: WebSocket.prototype.send,
 };
 /**
  * Decoder for converting byte data to JSON string
@@ -902,7 +903,7 @@ const checkboxes = {
 		label: I18N('AUTO_EXPEDITION'),
 		cbox: null,
 		title: I18N('AUTO_EXPEDITION_TITLE'),
-		default: true
+		default: false
 	},
 	cancelBattle: {
 		label: I18N('CANCEL_FIGHT'),
@@ -967,12 +968,14 @@ const checkboxes = {
 			}
 			return $result || false;
 		})(),
+		hide: true,
 	},
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
-		default: false
+		default: false,
+		hide: true,
 	},
 	showErrors: {
 		label: I18N('SHOW_ERRORS'),
@@ -1333,6 +1336,9 @@ const buttons = {
 function addControlButtons() {
 	for (let name in buttons) {
 		button = buttons[name];
+		if (button.hide) {
+			continue;
+		}
 		button['button'] = scriptMenu.addButton(button.name, button.func, button.title);
 	}
 }
@@ -1362,7 +1368,12 @@ let isSendsMission = false;
  * Данные о прошедшей мисии
  */
 let lastMissionStart = {}
-
+/**
+ * Start time of the last battle in the company
+ * 
+ * Время начала последнего боя в кампании
+ */
+let lastMissionBattleStart = 0;
 /**
  * Data on the past attack on the boss
  *
@@ -1646,6 +1657,29 @@ function confShow(message, yesCallback, noCallback) {
 	});
 }
 /**
+ * Override/proxy the method for creating a WS package send
+ *
+ * Переопределяем/проксируем метод создания отправки WS пакета 
+ */
+WebSocket.prototype.send = function (data) {
+	if (!this.isSetOnMessage) {
+		const oldOnmessage = this.onmessage;
+		this.onmessage = function (event) {
+			try {
+				const data = JSON.parse(event.data);
+				if (!this.isWebSocketLogin && data.result.type == "iframeEvent.login") {
+					this.isWebSocketLogin = true;
+				} else if (data.result.type == "iframeEvent.login") {
+					return;
+				}
+			} catch (e) { }
+			return oldOnmessage.apply(this, arguments);
+		}
+		this.isSetOnMessage = true;
+	}
+	original.SendWebSocket.call(this, data);
+}
+/**
  * Overriding/Proxying the Ajax Request Creation Method
  *
  * Переопределяем/проксируем метод создания Ajax запроса
@@ -1867,6 +1901,7 @@ async function checkChangeSend(sourceData, tempData) {
 			/**
 			 * Сбор подарка
 			 */
+			/*
 			if (call.name == 'registration') {
 				if (!call.args?.giftId) {
 					const giftId = await getGiftCode();
@@ -1878,6 +1913,7 @@ async function checkChangeSend(sourceData, tempData) {
 					sendGiftsCodes([call.args.giftId])
 				}
 			}
+			*/
 			/**
 			 * Cancellation of the battle in adventures, on VG and with minions of Asgard
 			 * Отмена боя в приключениях, на ВГ и с прислужниками Асгарда
@@ -2059,8 +2095,8 @@ async function checkChangeSend(sourceData, tempData) {
 				missionBattle.result = call.args.result;
 				const result = await Calc(missionBattle);
  
-				let timer = getMissionTimer(result.battleTime);
-				const period = Math.ceil(Date.now() / 1000 - result.battleData.startTime);
+				let timer = getTimer(result.battleTime);
+				const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 				if (period < timer) {
 					timer = timer - period;
 					await countdownTimer(timer);
@@ -2093,10 +2129,13 @@ async function checkChangeSend(sourceData, tempData) {
 			/**
 			 * Getting mission data
 			 * Получение данных миссии
+			 * missionTimer
 			 */
 			if (call.name == 'missionStart') {
 				lastMissionStart = call.args;
+				lastMissionBattleStart = Date.now();
 			}
+			
 			/**
 			 * Specify the quantity for Titan Orbs and Pet Eggs
 			 * Указать количество для сфер титанов и яиц петов
@@ -2848,6 +2887,9 @@ function createInterface() {
 function addControls() {
 	const checkboxDetails = scriptMenu.addDetails(I18N('SETTINGS'));
 	for (let name in checkboxes) {
+		if (checkboxes[name].hide) {
+			continue;
+		}
 		checkboxes[name].cbox = scriptMenu.addCheckbox(checkboxes[name].label, checkboxes[name].title, checkboxDetails);
 		/**
 		 * Getting the state of checkboxes from storage
@@ -3030,20 +3072,6 @@ function getTimer(time) {
 }
 
 /** 
- * Returns the timer value depending on the subscription
- * 
- * Возвращает значение таймера в зависимости от подписки
- */
-function getMissionTimer(time) {
-	/** missionTimer */
-	let speedDiv = 5;
-	if (subEndTime < Date.now()) {
-		speedDiv = 1.2;
-	}
-	return Math.max(Math.ceil(time / speedDiv + 1.5), 5);
-}
-
-/**
  * Calculates HASH MD5 from string
  *
  * Расчитывает HASH MD5 из строки
@@ -6554,7 +6582,6 @@ function hackGame() {
  * Автосбор подарков
  */
 function getAutoGifts() {
-	return;
 	let valName = 'giftSendIds_' + userInfo.id;
 
 	if (!localStorage['clearGift' + userInfo.id]) {
@@ -6566,6 +6593,9 @@ function getAutoGifts() {
 		localStorage[valName] = '';
 	}
 
+	const now = Date.now();
+	const body = JSON.stringify({ now });
+	const signature = window['\x73\x69\x67\x6e'](now);
 	/**
 	 * Submit a request to receive gift codes
 	 *
@@ -6573,7 +6603,13 @@ function getAutoGifts() {
 	 */
 	fetch('https://zingery.ru/heroes/getGifts.php', {
 			method: 'POST',
-			body: JSON.stringify({scriptInfo, userInfo})
+			headers: {
+				'X-Request-Signature': signature,
+				'X-Script-Name': GM_info.script.name,
+				'X-Script-Version': GM_info.script.version,
+				'X-Script-Author': GM_info.script.author,
+			},
+			body
 	}).then(
 		response => response.json()
 	).then(
@@ -6585,15 +6621,20 @@ function getAutoGifts() {
 				if (localStorage[valName].includes(giftId)) return;
 				//localStorage[valName] += ';' + giftId;
 				freebieCheckCalls.calls.push({
-					name: "freebieCheck",
+					name: "registration",
 					args: {
+						user: { referrer: {} },
 						giftId
+					},
+					context: {
+						actionTs: Math.floor(performance.now()),
+						cookie: window?.NXAppInfo?.session_id || null
 					},
 					ident: giftId
 				});
 			});
 
-			if (!freebieCheckCalls.calls.length || data) {
+			if (!freebieCheckCalls.calls.length) {
 				return;
 			}
 
@@ -6948,7 +6989,7 @@ this.sendsMission = async function (param) {
 		}, ])
 		return;
 	}
-
+	lastMissionBattleStart = Date.now();
 	let missionStartCall = {
 		"calls": [{
 			"name": "missionStart",
@@ -6979,8 +7020,8 @@ this.sendsMission = async function (param) {
 		 */
 		BattleCalc(e.results[0].result.response, 'get_tower', async r => {
 			/** missionTimer */
-			let timer = getMissionTimer(r.battleTime);
-			const period = Math.ceil(Date.now() / 1000 - r.battleData.startTime);
+			let timer = getTimer(r.battleTime);
+			const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 			if (period < timer) {
 				timer = timer - period;
 				await countdownTimer(timer, `${I18N('MISSIONS_PASSED')}: ${param.count}`);
