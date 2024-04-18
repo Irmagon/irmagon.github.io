@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name		HWH_Phone
-// @name:en		HWH_Phone
-// @name:ru		HWH_Phone
-// @namespace	HWH_Phone
+// @name			HeroWarsHelper
+// @name:en			HeroWarsHelper
+// @name:ru			HeroWarsHelper
+// @namespace		HeroWarsHelper
 // @version		2.224
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
@@ -33,7 +33,7 @@ console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
  *
  * Информация о скрипте
  */
-const scriptInfo = (({'HeroWarsHelper', version, author, homepage, lastModified}, updateUrl, source) =>
+const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
 	({name, version, author, homepage, lastModified, updateUrl, source}))
 	(GM_info.script, GM_info.scriptUpdateURL, arguments.callee.toString());
 /**
@@ -163,7 +163,7 @@ this.Send = function (json, pr) {
 	})
 }
 
-this.xyz = (({ 'HeroWarsHelper', version, author }) => ({ name, version, author }))(GM_info.script);
+this.xyz = (({ name, version, author }) => ({ name, version, author }))(GM_info.script);
 const i18nLangData = {
 	/* English translation by BaBa */
 	en: {
@@ -2739,7 +2739,7 @@ async function getAnswer(question) {
 			method: 'POST',
 			headers: {
 				'X-Request-Signature': signature,
-				'X-Script-Name': 'HeroWarsHelper',
+				'X-Script-Name': GM_info.script.name,
 				'X-Script-Version': GM_info.script.version,
 				'X-Script-Author': GM_info.script.author,
 			},
@@ -2882,7 +2882,7 @@ function createInterface() {
 	scriptMenu.init({
 		showMenu: true
 	});
-	scriptMenu.addHeader('HWH', justInfo);
+	scriptMenu.addHeader('HWPhone', justInfo);
 	scriptMenu.addHeader('v' + GM_info.script.version);
 }
 
@@ -6608,7 +6608,7 @@ function getAutoGifts() {
 			method: 'POST',
 			headers: {
 				'X-Request-Signature': signature,
-				'X-Script-Name': 'HeroWarsHelper',
+				'X-Script-Name': GM_info.script.name,
 				'X-Script-Version': GM_info.script.version,
 				'X-Script-Author': GM_info.script.author,
 			},
