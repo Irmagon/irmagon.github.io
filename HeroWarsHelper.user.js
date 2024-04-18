@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name			HWH
-// @name:en			HWH
-// @name:ru			HWH
-// @namespace		HWH
+// @name			HeroWarsHelper
+// @name:en			HeroWarsHelper
+// @name:ru			HeroWarsHelper
+// @namespace		HeroWarsHelper
 // @version			2.224
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
@@ -33,7 +33,7 @@ console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
  *
  * Информация о скрипте
  */
-const scriptInfo = (({'HeroWarsHelper', version, author, homepage, lastModified}, updateUrl, source) =>
+const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
 	({name, version, author, homepage, lastModified, updateUrl, source}))
 	(GM_info.script, GM_info.scriptUpdateURL, arguments.callee.toString());
 /**
@@ -2739,7 +2739,7 @@ async function getAnswer(question) {
 			method: 'POST',
 			headers: {
 				'X-Request-Signature': signature,
-				'X-Script-Name': 'HeroWarsHelper',
+				'X-Script-Name': GM_info.script.name,
 				'X-Script-Version': GM_info.script.version,
 				'X-Script-Author': GM_info.script.author,
 			},
@@ -6607,7 +6607,7 @@ function getAutoGifts() {
 			method: 'POST',
 			headers: {
 				'X-Request-Signature': signature,
-				'X-Script-Name': 'HeroWarsHelper',
+				'X-Script-Name': GM_info.script.name,
 				'X-Script-Version': GM_info.script.version,
 				'X-Script-Author': GM_info.script.author,
 			},
