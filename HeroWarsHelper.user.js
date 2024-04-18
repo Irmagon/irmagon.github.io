@@ -163,7 +163,7 @@ this.Send = function (json, pr) {
 	})
 }
 
-this.xyz = (({ 'HeroWarsHelper', version, author }) => ({ name, version, author }))(GM_info.script);
+this.xyz = (({ name, version, author }) => ({ name, version, author }))(GM_info.script);
 const i18nLangData = {
 	/* English translation by BaBa */
 	en: {
