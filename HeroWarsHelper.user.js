@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.222
+// @version			2.224
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -442,10 +442,10 @@ const i18nLangData = {
 		REWARDS_AND_MAIL: 'Rewars and Mail',
 		REWARDS_AND_MAIL_TITLE: 'Collects rewards and mail',
 		COLLECT_REWARDS_AND_MAIL: 'Collected {countQuests} rewards and {countMail} letters',
-		TIMER_ALREADY: 'Timer already started',
-		NO_ATTEMPTS_TIMER_START: 'No attempts, timer started',
+		TIMER_ALREADY: 'Timer already started {time}',
+		NO_ATTEMPTS_TIMER_START: 'No attempts, timer started {time}',
 		EPIC_BRAWL_RESULT: 'Wins: {wins}/{attempts}, Coins: {coins}, Streak: {progress}/{nextStage} [Close]{end}',
-		ATTEMPT_ENDED: '<br>Attempts ended, timer started',
+		ATTEMPT_ENDED: '<br>Attempts ended, timer started {time}',
 		EPIC_BRAWL: 'Cosmic Battle',
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
 		FURNACE: 'Furnace',
@@ -498,6 +498,7 @@ const i18nLangData = {
 		HINT: '<br>Hint: ',
 		PICTURE: '<br>Picture: ',
 		ANSWER: '<br>Answer: ',
+		NO_HEROES_PACK: 'Fight at least one battle to save the attacking team',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -774,10 +775,10 @@ const i18nLangData = {
 		REWARDS_AND_MAIL: 'Собрать',
 		REWARDS_AND_MAIL_TITLE: 'Собирает награды и почту',
 		COLLECT_REWARDS_AND_MAIL: 'Собрано {countQuests} наград и {countMail} писем',
-		TIMER_ALREADY: 'Таймер уже запущен',
-		NO_ATTEMPTS_TIMER_START: 'Попыток нет, запущен таймер',
+		TIMER_ALREADY: 'Таймер уже запущен {time}',
+		NO_ATTEMPTS_TIMER_START: 'Попыток нет, запущен таймер {time}',
 		EPIC_BRAWL_RESULT: '{i} Победы: {wins}/{attempts}, Монеты: {coins}, Серия: {progress}/{nextStage} [Закрыть]{end}',
-		ATTEMPT_ENDED: '<br>Попытки закончились, запущен таймер',
+		ATTEMPT_ENDED: '<br>Попытки закончились, запущен таймер {time}',
 		EPIC_BRAWL: 'Вселенская битва',
 		EPIC_BRAWL_TITLE: 'Тратит попытки во Вселенской битве',
 		RELOAD_GAME: 'Перезагрузить игру',
@@ -831,6 +832,7 @@ const i18nLangData = {
 		HINT: '<br>Подсказка: ',
 		PICTURE: '<br>На картинке: ',
 		ANSWER: '<br>Ответ: ',
+		NO_HEROES_PACK: 'Проведите хотя бы один бой для сохранения атакующей команды',
 	}
 }
 
@@ -2880,7 +2882,7 @@ function createInterface() {
 	scriptMenu.init({
 		showMenu: true
 	});
-	scriptMenu.addHeader(GM_info.script.name, justInfo);
+	scriptMenu.addHeader('HWH', justInfo);
 	scriptMenu.addHeader('v' + GM_info.script.version);
 }
 
@@ -7882,6 +7884,42 @@ class epicBrawl {
 		return this;
 	}
 
+	runTimeout(func, timeDiff) {
+		const worker = new Worker(URL.createObjectURL(new Blob([`
+				self.onmessage = function(e) {
+					const timeDiff = e.data;
+ 
+					if (timeDiff > 0) {
+						setTimeout(() => {
+							self.postMessage(1);
+							self.close();
+						}, timeDiff);
+					}
+				};
+			`])));
+		worker.postMessage(timeDiff);
+		worker.onmessage = () => {
+			func();
+		};
+		return true;
+	}
+ 
+	timeDiff(date1, date2) {
+		const date1Obj = new Date(date1);
+		const date2Obj = new Date(date2);
+ 
+		const timeDiff = Math.abs(date2Obj - date1Obj);
+ 
+		const totalSeconds = timeDiff / 1000;
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = Math.floor(totalSeconds % 60);
+ 
+		const formattedMinutes = String(minutes).padStart(2, '0');
+		const formattedSeconds = String(seconds).padStart(2, '0');
+ 
+		return `${formattedMinutes}:${formattedSeconds}`;
+	}
+ 
 	check() {
 		console.log(new Date(this.time))
 		if (Date.now() > this.time) {
@@ -7889,27 +7927,34 @@ class epicBrawl {
 			this.start()
 			return;
 		}
-		this.timeout = setTimeout(this.check, 6e4);
+		this.timeout = this.runTimeout(() => this.check(), 6e4);
+		return this.timeDiff(this.time, Date.now())
 	}
 
 	async start() {
 		if (this.timeout) {
+			const time = this.timeDiff(this.time, Date.now());
 			console.log(new Date(this.time))
-			setProgress(I18N('TIMER_ALREADY'), 3000);
+			setProgress(I18N('TIMER_ALREADY', { time }), false, hideProgress);
 			return;
 		}
-		setProgress(I18N('EPIC_BRAWL'), true);
+		setProgress(I18N('EPIC_BRAWL'), false, hideProgress);
 		const teamInfo = await Send('{"calls":[{"name":"teamGetAll","args":{},"ident":"teamGetAll"},{"name":"teamGetFavor","args":{},"ident":"teamGetFavor"},{"name":"userGetInfo","args":{},"ident":"userGetInfo"}]}').then(e => e.results.map(n => n.result.response));
 		const refill = teamInfo[2].refillable.find(n => n.id == 52)
 		this.time = (refill.lastRefill + 3600) * 1000
 		const attempts = refill.amount;
 		if (!attempts) {
 			console.log(new Date(this.time));
-			this.check();
-			setProgress(I18N('NO_ATTEMPTS_TIMER_START'), 3000);
+			const time = this.check();
+			setProgress(I18N('NO_ATTEMPTS_TIMER_START', { time }), false, hideProgress);
 			return;
 		}
 
+		if (!teamInfo[0].epic_brawl) {
+			setProgress(I18N('NO_HEROES_PACK'), false, hideProgress);
+			return;
+		}
+ 
 		const args = {
 			heroes: teamInfo[0].epic_brawl.filter(e => e < 1000),
 			pet: teamInfo[0].epic_brawl.filter(e => e > 6000).pop(),
@@ -7950,13 +7995,13 @@ class epicBrawl {
 		}
 
 		console.log(new Date(this.time));
-		this.check();
+		const time = this.check();
 		setProgress(I18N('EPIC_BRAWL_RESULT', {
 			wins, attempts, coins,
 			i: '',
 			progress: streak.progress,
 			nextStage: streak.nextStage,
-			end: I18N('ATTEMPT_ENDED'),
+			end: I18N('ATTEMPT_ENDED', { time }),
 		}), false, hideProgress);
 	}
 }
