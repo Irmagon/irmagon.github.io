@@ -1086,30 +1086,29 @@ const buttons = {
 		title: I18N('ACTIONS_TITLE'),
 		func: async function () {
 			const popupButtons = [
-				{
-					msg: I18N('OUTLAND'),
-					result: getOutland,
-					title: I18N('OUTLAND_TITLE'),
-				},
-				{
-					msg: I18N('TOWER'),
-					result: testTower,
-					title: I18N('TOWER_TITLE'),
-				},
                 {
-                    msg: I18N('DUNGEON'),
-                    result: testDungeon,
-                    title: I18N('DUNGEON_TITLE'),
+                    msg: I18N('EXPEDITIONS'),
+                    result: checkExpedition,
+                    title: I18N('EXPEDITIONS_TITLE'),
                 },
-                {
-			msg: I18N('EXPEDITIONS'),
-			result: checkExpedition,
-			title: I18N('EXPEDITIONS_TITLE'),
-				},
                 {
                     msg: I18N('ADVENTURE'),
                     result: () => {testAdventure();},
                     title: I18N('ADVENTURE_TITLE'),
+                },
+                {
+                    msg: I18N('DAILY_QUESTS'),
+                    title: I18N('DAILY_QUESTS_TITLE'),
+                    result: async function () {
+                        const quests = new dailyQuests(() => { }, () => { });
+                        await quests.autoInit();
+                        quests.start();
+                    },
+                },
+                {
+                    msg: I18N('DUNGEON'),
+                    result: testDungeon,
+                    title: I18N('DUNGEON_TITLE'),
                 },
 				{
 					msg: I18N('MINIONS'),
@@ -1117,6 +1116,31 @@ const buttons = {
 					title: I18N('MINIONS_TITLE'),
 				},
 				{
+					msg: I18N('SEER'),
+					result: rollAscension,
+					title: I18N('SEER_TITLE'),
+				},
+                {
+					msg: I18N('REWARDS'),
+					result: questAllFarm,
+					title: I18N('REWARDS_TITLE'),
+				},
+				{
+					msg: I18N('MAIL'),
+					result: mailGetAll,
+					title: I18N('MAIL_TITLE'),
+				},
+                {
+					msg: I18N('TOWER'),
+					result: testTower,
+					title: I18N('TOWER_TITLE'),
+				},
+                {
+					msg: I18N('OUTLAND'),
+					result: getOutland,
+					title: I18N('OUTLAND_TITLE'),
+				},
+                {
 					msg: I18N('ESTER_EGGS'),
 					result: offerFarmAllReward,
 					title: I18N('ESTER_EGGS_TITLE'),
@@ -1152,23 +1176,6 @@ const buttons = {
                     },
                     title: I18N('FURNACE_TITLE'),
                 },
-				{
-					msg: I18N('REWARDS'),
-					result: questAllFarm,
-					title: I18N('REWARDS_TITLE'),
-				},
-				{
-					msg: I18N('MAIL'),
-					result: mailGetAll,
-					title: I18N('MAIL_TITLE'),
-				},
-				{
-					msg: I18N('SEER'),
-					result: function () {
-						confShow(`${I18N('RUN_SCRIPT')} ${I18N('SEER')}?`, rollAscension);
-					},
-					title: I18N('SEER_TITLE'),
-				},
 				/*
                 				{
 					msg: I18N('NY_GIFTS'),
@@ -1307,22 +1314,12 @@ const buttons = {
 					title: I18N('SHOPS'),
 				},
 			];
-
 			popupButtons.push({ result: false, isClose: true })
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
 			if (typeof answer === 'function') {
 				answer();
 			}
 		}
-	},
-	dailyQuests: {
-		name: I18N('DAILY_QUESTS'),
-		title: I18N('DAILY_QUESTS_TITLE'),
-		func: async function () {
-			const quests = new dailyQuests(() => { }, () => { });
-			await quests.autoInit();
-			quests.start();
-		},
 	},
     getOutland: {
 		name: I18N('TO_DO_EVERYTHING'),
