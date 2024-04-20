@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name			HeroWarsHelper
-// @name:en			HeroWarsHelper
-// @name:ru			HeroWarsHelper
+// @name			HWH_Phone
+// @name:en			HWH_Phone
+// @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
 // @version		2.224
 // @description		Automation of actions for the game Hero Wars
