@@ -1050,6 +1050,14 @@ const inputs = {
 function getInput(inputName) {
 	return inputs[inputName].input.value;
 }
+
+/**
+ * Скрываем кнопку титанов в субботу и воскресенье
+ */
+function titanhide() {
+    if (new Date().getDay() != 0 && new Date().getDay() != 6) {return false;} else {return true;}
+}
+
 /**
  * Button List
  *
@@ -1069,7 +1077,8 @@ const buttons = {
 	testTitanArena: {
 		name: I18N('TITAN_ARENA'),
 		title: I18N('TITAN_ARENA_TITLE'),
-		func: testTitanArena
+		func: testTitanArena,
+        hide: titanhide()
 	},
 	goToSanctuary: {
 		name: I18N('SANCTUARY'),
