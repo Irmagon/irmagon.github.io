@@ -891,7 +891,7 @@ const checkboxes = {
 		label: I18N('SKIP_FIGHTS'),
 		cbox: null,
 		title: I18N('SKIP_FIGHTS_TITLE'),
-		default: false
+		default: true
 	},
 	/*
 	endlessCards: {
@@ -905,19 +905,19 @@ const checkboxes = {
 		label: I18N('AUTO_EXPEDITION'),
 		cbox: null,
 		title: I18N('AUTO_EXPEDITION_TITLE'),
-		default: false
+		default: true
 	},
 	cancelBattle: {
 		label: I18N('CANCEL_FIGHT'),
 		cbox: null,
 		title: I18N('CANCEL_FIGHT_TITLE'),
-		default: false,
+		default: true,
 	},
 	preCalcBattle: {
 		label: I18N('BATTLE_RECALCULATION'),
 		cbox: null,
 		title: I18N('BATTLE_RECALCULATION_TITLE'),
-		default: false
+		default: true
 	},
 	countControl: {
 		label: I18N('QUANTITY_CONTROL'),
@@ -970,7 +970,7 @@ const checkboxes = {
 			}
 			return $result || false;
 		})(),
-		hide: false,
+		hide: true,
 	},
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
@@ -995,7 +995,7 @@ const checkboxes = {
 		label: I18N('HIDE_SERVERS'),
 		cbox: null,
 		title: I18N('HIDE_SERVERS_TITLE'),
-		default: false
+		default: true
 	},
 	fastSeason: {
 		label: I18N('FAST_SEASON'),
@@ -1024,7 +1024,7 @@ const inputs = {
 	countTitanit: {
 		input: null,
 		title: I18N('HOW_MUCH_TITANITE'),
-		default: 150,
+		default: 300,
 	},
 	speedBattle: {
 		input: null,
@@ -1078,7 +1078,7 @@ const buttons = {
 		name: I18N('TITAN_ARENA'),
 		title: I18N('TITAN_ARENA_TITLE'),
 		func: testTitanArena,
-        hide: titanhide()
+        	hide: titanhide()
 	},
 	goToSanctuary: {
 		name: I18N('SANCTUARY'),
