@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.224
+// @version			2.225
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -970,7 +970,7 @@ const checkboxes = {
 			}
 			return $result || false;
 		})(),
-		hide: true,
+		hide: false,
 	},
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
@@ -2103,7 +2103,7 @@ async function checkChangeSend(sourceData, tempData) {
 				missionBattle.result = call.args.result;
 				const result = await Calc(missionBattle);
  
-				let timer = getTimer(result.battleTime);
+				let timer = getTimer(result.battleTime) + 5;
 				const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 				if (period < timer) {
 					timer = timer - period;
@@ -7028,7 +7028,7 @@ this.sendsMission = async function (param) {
 		 */
 		BattleCalc(e.results[0].result.response, 'get_tower', async r => {
 			/** missionTimer */
-			let timer = getTimer(r.battleTime);
+			let timer = getTimer(r.battleTime) + 5;
 			const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 			if (period < timer) {
 				timer = timer - period;
@@ -10657,7 +10657,9 @@ class executeBrawls {
 
 	async updatePack(enemieHeroes) {
 		const packs = [
-			[4030, 4040, 4032, 4043, 4033],
+			[4012, 4013, 4011, 4010, 4003],
+			[4033, 4043, 4040, 4030, 4003],
+			/*[4030, 4040, 4032, 4043, 4033],
 			[4040, 4041, 4043, 4042, 4033],
 			[4030, 4040, 4031, 4043, 4033],
 			[4030, 4040, 4043, 4042, 4033],
@@ -10665,7 +10667,7 @@ class executeBrawls {
 			[4030, 4040, 4043, 4003, 4033],
  
 			[4012, 4013, 4043, 4010, 4040],
-			[4003, 4043, 4002, 4001, 4040],
+			[4003, 4043, 4002, 4001, 4040],*/
 		];
  
 		for (const pack of packs) {
