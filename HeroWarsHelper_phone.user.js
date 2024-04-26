@@ -3,22 +3,22 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version		2.225
+// @version			2.228
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY
 // @license 		Copyright ZingerY
 // @homepage		https://zingery.ru/scripts/HeroWarsHelper.user.js
-// @icon		http://ilovemycomp.narod.ru/VaultBoyIco16.ico
-// @icon64		http://ilovemycomp.narod.ru/VaultBoyIco64.png
+// @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
+// @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
 // @encoding		utf-8
 // @include			https://apps-1701433570146040.apps.fbsbx.com/*
-// @include		https://*.nextersglobal.com/*
-// @include		https://*.hero-wars*.com/*
-// @match		https://www.solfors.com/
-// @match		https://t.me/s/hw_ru
-// @run-at		document-start
+// @include			https://*.nextersglobal.com/*
+// @include			https://*.hero-wars*.com/*
+// @match			https://www.solfors.com/
+// @match			https://t.me/s/hw_ru
+// @run-at			document-start
 // ==/UserScript==
 
 (function() {
@@ -970,7 +970,7 @@ const checkboxes = {
 			}
 			return $result || false;
 		})(),
-		hide: true,
+		hide: false,
 	},
 	getAnswer: {
 		label: I18N('AUTO_QUIZ'),
@@ -10577,6 +10577,11 @@ class executeBrawls {
 		args: {},
 		ident: "teamGetMaxUpgrade"
 	}
+	callBrawlGetInfo = {
+		name: "brawl_getInfo",
+		args: {},
+		ident: "brawl_getInfo"
+	}
 
 	stats = {
 		win: 0,
@@ -10652,18 +10657,43 @@ class executeBrawls {
 
 	async updatePack(enemieHeroes) {
 		const packs = [
-			[4012, 4013, 4011, 4010, 4003],
-			[4033, 4043, 4040, 4030, 4003],
-			/*[4030, 4040, 4032, 4043, 4033],
-			[4040, 4041, 4043, 4042, 4033],
-			[4030, 4040, 4031, 4043, 4033],
-			[4030, 4040, 4043, 4042, 4033],
-			[4040, 4032, 4001, 4043, 4033],
-			[4030, 4040, 4043, 4003, 4033],
+			// Разное
+			[4003, 4010, 4011, 4012, 4013],
+			[4030, 4032, 4033, 4040, 4043],
+			[4033, 4040, 4041, 4042, 4043],
+			[4030, 4031, 4033, 4040, 4043],
+			[4030, 4033, 4040, 4042, 4043],
+			[4001, 4032, 4033, 4040, 4043],
+			[4010, 4012, 4013, 4040, 4043],
+			[4001, 4002, 4003, 4040, 4043],
+			// 4003  Гиперион
+			[4000, 4001, 4003, 4033, 4043],
+			[4000, 4001, 4003, 4023, 4030],
+			[4000, 4001, 4003, 4023, 4033],
+			[4000, 4001, 4003, 4013, 4033],
+			[4003, 4010, 4012, 4013, 4043],
+			[4003, 4010, 4012, 4013, 4033],
+			[4003, 4030, 4032, 4042, 4043],
+			[4003, 4030, 4031, 4032, 4033],
+			[4003, 4040, 4041, 4042, 4043],
+			[4003, 4030, 4033, 4040, 4043],
+			// 4013  Араджи
+			[4010, 4011, 4012, 4013, 4033],
+			[4010, 4011, 4012, 4013, 4043],
+			[4010, 4011, 4013, 4042, 4043],
+			[4010, 4011, 4013, 4033, 4043],
+			[4001, 4010, 4011, 4013, 4033],
+			[4010, 4011, 4013, 4030, 4033],
+			[4010, 4011, 4013, 4040, 4043],
+			[4013, 4030, 4033, 4040, 4043],
+			[4013, 4030, 4033, 4042, 4043],
+			[4013, 4020, 4022, 4023, 4033],
+		].filter(p => p.includes(this.mandatoryId))
  
-			[4012, 4013, 4043, 4010, 4040],
-			[4003, 4043, 4002, 4001, 4040],*/
-		];
+		const bestPack = {
+			pack: packs[0],
+			countWin: 0,
+		}
  
 		for (const pack of packs) {
 			const attackers = this.maxUpgrade
@@ -10688,9 +10718,14 @@ class executeBrawls {
 					return pack;
 				}
 			}
+			if (countWinBattles > bestPack.countWin) {
+				bestPack.countWin = countWinBattles;
+				bestPack.pack = pack;
+			}
 		}
  
-		return packs[0];
+		console.log(bestPack);
+		return bestPack.pack;
 	}
  
 	async questFarm() {
@@ -10706,11 +10741,14 @@ class executeBrawls {
 				this.callBrawlQuestGetInfo,
 				this.callBrawlFindEnemies,
 				this.callTeamGetMaxUpgrade,
+				this.callBrawlGetInfo,
 			]
 		}));
 
 		let attempts = data.results[0].result.response.refillable.find(n => n.id == 48);
 		this.maxUpgrade = Object.values(data.results[3].result.response.titan);
+		this.info = data.results[4].result.response;
+		this.mandatoryId = lib.data.brawl.promoHero[this.info.id].promoHero;
 		return {
 			attempts: attempts.amount,
 			questInfo: data.results[1].result.response,
