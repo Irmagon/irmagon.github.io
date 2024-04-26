@@ -2,17 +2,17 @@
 // @name			HeroWarsHelper
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
-// @namespace		HeroWarsHelper
+// @namespace			HeroWarsHelper
 // @version			2.228
-// @description		Automation of actions for the game Hero Wars
-// @description:en	Automation of actions for the game Hero Wars
-// @description:ru	Автоматизация действий для игры Хроники Хаоса
+// @description			Automation of actions for the game Hero Wars
+// @description:en		Automation of actions for the game Hero Wars
+// @description:ru		Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY
-// @license 		Copyright ZingerY
-// @homepage		https://zingery.ru/scripts/HeroWarsHelper.user.js
+// @license 			Copyright ZingerY
+// @homepage			https://zingery.ru/scripts/HeroWarsHelper.user.js
 // @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
 // @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
-// @encoding		utf-8
+// @encoding			utf-8
 // @include			https://apps-1701433570146040.apps.fbsbx.com/*
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
