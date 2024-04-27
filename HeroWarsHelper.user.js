@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.228
+// @version			2.229
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1040,6 +1040,11 @@ const inputs = {
 		input: null,
 		title: I18N('NUMBER_OF_AUTO_BATTLE'),
 		default: 10,
+	},
+	FPS: {
+		input: null,
+		title: 'FPS',
+		default: 25,
 	}
 }
 /**
@@ -1048,9 +1053,23 @@ const inputs = {
  * Поплучить данные поля ввода
  */
 function getInput(inputName) {
-	return inputs[inputName].input.value;
+	return inputs[inputName]?.input?.value;
 }
 
+/** 
+ * Control FPS
+ * 
+ * Контроль FPS 
+ */
+const oldRequestAnimationFrame = this.requestAnimationFrame;
+this.requestAnimationFrame = async function (e) {
+	const FPS = Number(getInput('FPS')) || -1;
+	const delay = Math.min(1e3 / FPS, 1e3);
+	if (delay > 0) {
+		await new Promise((e) => setTimeout(e, delay));
+	}
+	oldRequestAnimationFrame(e);
+}
 /**
  * Скрываем кнопку титанов в субботу и воскресенье
  */
@@ -10663,6 +10682,10 @@ class executeBrawls {
 
 	async updatePack(enemieHeroes) {
 		const packs = [
+			// 4023 Эдем
+			[4020, 4022, 4023, 4042, 4043],
+			[4023, 4030, 4033, 4042, 4043],
+			[4023, 4040, 4041, 4042, 4043],
 			// Разное
 			[4003, 4010, 4011, 4012, 4013],
 			[4030, 4032, 4033, 4040, 4043],
@@ -10719,7 +10742,7 @@ class executeBrawls {
 				if (result.result.win) {
 					countWinBattles++;
 				}
-				if (countWinBattles > 6) {
+				if (countWinBattles > 7) {
 					console.log(pack)
 					return pack;
 				}
