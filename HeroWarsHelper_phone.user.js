@@ -1044,7 +1044,7 @@ const inputs = {
 	FPS: {
 		input: null,
 		title: 'FPS',
-		default: 25,
+		default: 50,
 	}
 }
 /**
