@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.230
+// @version			2.231
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1420,6 +1420,8 @@ let isCancalBossBattle = true;
  * Данные о прошедшей битве
  */
 let lastBattleArg = {}
+let lastBossBattleStart = null;
+this.addBattleTimer = 4;
 /**
  * The name of the function of the beginning of the battle
  *
@@ -2047,6 +2049,21 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'towerStartBattle') {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
+				lastBossBattleStart = Date.now();
+			}
+			if (call.name == 'invasion_bossEnd') {
+				const lastBattle = lastBattleInfo;
+				if (lastBattle && call.args.result.win) {
+					lastBattle.progress = call.args.progress;
+					const result = await Calc(lastBattle);
+					let timer = getTimer(result.battleTime) + addBattleTimer;
+					const period = Math.ceil((Date.now() - lastBossBattleStart) / 1000);
+					console.log(timer, period);
+					if (period < timer) {
+						timer = timer - period;
+						await countdownTimer(timer);
+					}
+				}
 			}
 			/**
 			 * Disable spending divination cards
@@ -2080,7 +2097,7 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.result = result.result;
 					}
 						
-					let timer = getTimer(result.battleTime);
+					let timer = getTimer(result.battleTime) + addBattleTimer;
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
 					console.log(timer, period);
 					if (period < timer) {
@@ -2117,7 +2134,7 @@ async function checkChangeSend(sourceData, tempData) {
 				missionBattle.result = call.args.result;
 				const result = await Calc(missionBattle);
  
-				let timer = getTimer(result.battleTime) + 5;
+				let timer = getTimer(result.battleTime) + addBattleTimer;
 				const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 				if (period < timer) {
 					timer = timer - period;
