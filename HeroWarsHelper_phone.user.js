@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.231
+// @version			2.232
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -239,7 +239,7 @@ const i18nLangData = {
 		/* Misc */
 		BOTTOM_URLS: '<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank">tg</a>',
 		GIFTS_SENT: 'Gifts sent!',
-		DO_YOU_WANT: "Do you really want to do this?",
+		DO_YOU_WANT: 'Do you really want to do this?',
 		BTN_RUN: 'Run',
 		BTN_CANCEL: 'Cancel',
 		BTN_OK: 'OK',
@@ -386,7 +386,7 @@ const i18nLangData = {
 		WINS: 'Wins',
 		FIGHTS: 'Fights',
 		STAGE: 'Stage',
-		DONT_HAVE_LIVES: 'You don\'t have lives',
+		DONT_HAVE_LIVES: "You don't have lives",
 		LIVES: 'Lives',
 		SECRET_WEALTH_ALREADY: 'Item for Pet Potions already purchased',
 		SECRET_WEALTH_NOT_ENOUGH: 'Not Enough Pet Potion, You Have {available}, Need {need}',
@@ -455,7 +455,8 @@ const i18nLangData = {
 		SHOW_ERRORS: 'Show errors',
 		SHOW_ERRORS_TITLE: 'Show server request errors',
 		ERROR_MSG: 'Error: {name}<br>{description}',
-		EVENT_AUTO_BOSS: 'Maximum number of battles for calculation:</br>{length} ∗ {countTestBattle} = {maxCalcBattle}</br>If you have a weak computer, it may take a long time for this, click on the cross to cancel.</br>Should I search for the best pack from all or the first suitable one?',
+		EVENT_AUTO_BOSS:
+			'Maximum number of battles for calculation:</br>{length} ∗ {countTestBattle} = {maxCalcBattle}</br>If you have a weak computer, it may take a long time for this, click on the cross to cancel.</br>Should I search for the best pack from all or the first suitable one?',
 		BEST_SLOW: 'Best (slower)',
 		FIRST_FAST: 'First (faster)',
 		FREEZE_INTERFACE: 'Calculating... <br>The interface may freeze.',
@@ -464,12 +465,14 @@ const i18nLangData = {
 		BEST_PACK: 'Best pack:',
 		BOSS_HAS_BEEN_DEF: 'Boss {bossLvl} has been defeated.',
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {bossLvl}, retry?',
-		BOSS_VICTORY_IMPOSSIBLE: 'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
-		BOSS_HAS_BEEN_DEF_TEXT: 'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
+		BOSS_VICTORY_IMPOSSIBLE:
+			'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
+		BOSS_HAS_BEEN_DEF_TEXT:
+			'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
 		MAP: 'Map: ',
 		PLAYER_POS: 'Player positions:',
 		NY_GIFTS: 'Gifts',
-		NY_GIFTS_TITLE: 'Open all New Year\'s gifts',
+		NY_GIFTS_TITLE: "Open all New Year's gifts",
 		NY_NO_GIFTS: 'No gifts not received',
 		NY_GIFTS_COLLECTED: '{count} gifts collected',
 		CHANGE_MAP: 'Island map',
@@ -477,13 +480,15 @@ const i18nLangData = {
 		SELECT_ISLAND_MAP: 'Select an island map:',
 		FIRST_MAP: 'First map',
 		SECOND_MAP: 'Second map',
+		THIRD_MAP: 'Third card',
 		SECRET_WEALTH_SHOP: 'Secret Wealth {name}: ',
 		SHOPS: 'Shops',
 		SHOPS_DEFAULT: 'Default',
 		SHOPS_DEFAULT_TITLE: 'Default stores',
 		SHOPS_LIST: 'Shops {number}',
 		SHOPS_LIST_TITLE: 'List of shops {number}',
-		SHOPS_WARNING: 'Stores<br><span style="color:red">If you buy brawl store coins for emeralds, you must use them immediately, otherwise they will disappear after restarting the game!</span>',
+		SHOPS_WARNING:
+			'Stores<br><span style="color:red">If you buy brawl store coins for emeralds, you must use them immediately, otherwise they will disappear after restarting the game!</span>',
 		MINIONS_WARNING: 'The hero packs for attacking minions are incomplete, should I continue?',
 		FAST_SEASON: 'Fast season',
 		FAST_SEASON_TITLE: 'Skip the map selection screen in a season',
@@ -573,7 +578,7 @@ const i18nLangData = {
 		/* Разное */
 		BOTTOM_URLS: '<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>',
 		GIFTS_SENT: 'Подарки отправлены!',
-		DO_YOU_WANT: "Вы действительно хотите это сделать?",
+		DO_YOU_WANT: 'Вы действительно хотите это сделать?',
 		BTN_RUN: 'Запускай',
 		BTN_CANCEL: 'Отмена',
 		BTN_OK: 'Ок',
@@ -789,7 +794,8 @@ const i18nLangData = {
 		FURNACE_TITLE: 'Набивает килы и собирает награду',
 
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
-		EVENT_AUTO_BOSS: 'Максимальное количество боев для расчета:</br>{length} * {countTestBattle} = {maxCalcBattle}</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
+		EVENT_AUTO_BOSS:
+			'Максимальное количество боев для расчета:</br>{length} * {countTestBattle} = {maxCalcBattle}</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
 		BEST_SLOW: 'Лучший (медленее)',
 		FIRST_FAST: 'Первый (быстрее)',
 		FREEZE_INTERFACE: 'Идет расчет... <br> Интерфейс может зависнуть.',
@@ -798,8 +804,10 @@ const i18nLangData = {
 		BEST_PACK: 'Наилучший пак: ',
 		BOSS_HAS_BEEN_DEF: 'Босс {bossLvl} побежден',
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${bossLvl} не хватило попыток, повторить?',
-		BOSS_VICTORY_IMPOSSIBLE: 'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
-		BOSS_HAS_BEEN_DEF_TEXT: 'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
+		BOSS_VICTORY_IMPOSSIBLE:
+			'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
+		BOSS_HAS_BEEN_DEF_TEXT:
+			'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
 		MAP: 'Карта: ',
 		PLAYER_POS: 'Позиции игроков:',
 		NY_GIFTS: 'Подарки',
@@ -811,13 +819,15 @@ const i18nLangData = {
 		SELECT_ISLAND_MAP: 'Выберите карту острова:',
 		FIRST_MAP: 'Первая карта',
 		SECOND_MAP: 'Вторая карта',
+		THIRD_MAP: 'Третья карта',
 		SECRET_WEALTH_SHOP: 'Тайное богатство {name}: ',
 		SHOPS: 'Магазины',
 		SHOPS_DEFAULT: 'Стандартные',
 		SHOPS_DEFAULT_TITLE: 'Стандартные магазины',
 		SHOPS_LIST: 'Магазины {number}',
 		SHOPS_LIST_TITLE: 'Список магазинов {number}',
-		SHOPS_WARNING: 'Магазины<br><span style="color:red">Если Вы купите монеты магазинов потасовок за изумруды, то их надо использовать сразу, иначе после перезагрузки игры они пропадут!</span>',
+		SHOPS_WARNING:
+			'Магазины<br><span style="color:red">Если Вы купите монеты магазинов потасовок за изумруды, то их надо использовать сразу, иначе после перезагрузки игры они пропадут!</span>',
 		MINIONS_WARNING: 'Пачки героев для атаки приспешников неполные, продолжить?',
 		FAST_SEASON: 'Быстрый сезон',
 		FAST_SEASON_TITLE: 'Пропуск экрана с выбором карты в сезоне',
@@ -833,8 +843,8 @@ const i18nLangData = {
 		PICTURE: '<br>На картинке: ',
 		ANSWER: '<br>Ответ: ',
 		NO_HEROES_PACK: 'Проведите хотя бы один бой для сохранения атакующей команды',
-	}
-}
+	},
+};
 
 function getLang() {
 	let lang = '';
@@ -1292,9 +1302,9 @@ const buttons = {
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [
 							{ msg: I18N('FIRST_MAP'), result: 1 },
 							{ msg: I18N('SECOND_MAP'), result: 2 },
+							{ msg: I18N('THIRD_MAP'), result: 3 },
 							{ result: false, isClose: true },
-						]
-						);
+						]);
 						if (result) {
 							cheats.changeIslandMap(result);
 						}
@@ -2056,7 +2066,7 @@ async function checkChangeSend(sourceData, tempData) {
 				if (lastBattle && call.args.result.win) {
 					lastBattle.progress = call.args.progress;
 					const result = await Calc(lastBattle);
-					let timer = getTimer(result.battleTime) + addBattleTimer;
+					let timer = getTimer(result.battleTime, 1) + addBattleTimer;
 					const period = Math.ceil((Date.now() - lastBossBattleStart) / 1000);
 					console.log(timer, period);
 					if (period < timer) {
@@ -2554,6 +2564,17 @@ async function checkChangeResponse(response) {
 			 */
 			if (isChecked('countControl') && call.ident == callsIdent['pet_chestOpen']) {
 				const rewards = call.result.response.rewards;
+				if (rewards.length > 10) {
+					/**
+					 * Removing pet cards
+					 * Убираем карточки петов
+					 */
+					for (const reward of rewards) {
+						if (reward.petCard) {
+							delete reward.petCard;
+						}
+					}
+				}
 				rewards.forEach(e => {
 					for (let f in e) {
 						if (!allReward[f]) {
@@ -2570,6 +2591,20 @@ async function checkChangeResponse(response) {
 				});
 				call.result.response.rewards = [allReward];
 				isChange = true;
+			}
+			/**
+			 * Removing titan cards
+			 * Убираем карточки титанов
+			 */
+			if (call.ident == callsIdent['titanUseSummonCircle']) {
+				if (call.result.response.rewards.length > 10) {
+					for (const reward of call.result.response.rewards) {
+						if (reward.titanCard) {
+							delete reward.titanCard;
+						}
+					}
+					isChange = true;
+				}
 			}
 			/**
 			 * Auto-repeat opening matryoshkas
@@ -3102,10 +3137,10 @@ function setProgress(text, hide, onclick) {
  * 
  * Возвращает значение таймера в зависимости от подписки
  */
-function getTimer(time) {
+function getTimer(time, div) {
 	let speedDiv = 5;
 	if (subEndTime < Date.now()) {
-		speedDiv = 1.5;
+		speedDiv = div || 1.5;
 	}
 	return Math.max(Math.ceil(time / speedDiv + 1.5), 4);
 }
