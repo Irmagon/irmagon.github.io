@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.232
+// @version			2.233
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -466,7 +466,7 @@ const i18nLangData = {
 		BOSS_HAS_BEEN_DEF: 'Boss {bossLvl} has been defeated.',
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Not enough attempts to defeat boss {bossLvl}, retry?',
 		BOSS_VICTORY_IMPOSSIBLE:
-			'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles? <p style="color:red;">Using this feature may be considered as DDoS attack or HTTP flooding and result in permanent ban</p>',
+			'Based on the recalculation of {battles} battles, victory has not been achieved. Would you like to continue the search for a winning battle in real battles?',
 		BOSS_HAS_BEEN_DEF_TEXT:
 			'Boss {bossLvl} defeated in<br>{countBattle}/{countMaxBattle} attempts<br>(Please synchronize or restart the game to update the data)',
 		MAP: 'Map: ',
@@ -521,7 +521,7 @@ const i18nLangData = {
 		BATTLE_RECALCULATION_TITLE: 'Предварительный расчет боя',
 		QUANTITY_CONTROL: 'Контроль кол-ва',
 		QUANTITY_CONTROL_TITLE: 'Возможность указывать количество открываемых "лутбоксов"',
-		REPEAT_CAMPAIGN: 'Повтор в компании',
+		REPEAT_CAMPAIGN: 'Повтор в кампании',
 		REPEAT_CAMPAIGN_TITLE: 'Автоповтор боев в кампании',
 		DISABLE_DONAT: 'Отключить донат',
 		DISABLE_DONAT_TITLE: 'Убирает все предложения доната',
@@ -805,7 +805,7 @@ const i18nLangData = {
 		BOSS_HAS_BEEN_DEF: 'Босс {bossLvl} побежден',
 		NOT_ENOUGH_ATTEMPTS_BOSS: 'Для победы босса ${bossLvl} не хватило попыток, повторить?',
 		BOSS_VICTORY_IMPOSSIBLE:
-			'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях? <p style="color:red;">Использование этой функции может быть расценено как DDoS атака или HTTP-флуд и привести к перманентному бану</p>',
+			'По результатам прерасчета {battles} боев победу получить не удалось. Вы хотите продолжить поиск победного боя на реальных боях?',
 		BOSS_HAS_BEEN_DEF_TEXT:
 			'Босс {bossLvl} побежден за<br>{countBattle}/{countMaxBattle} попыток<br>(Сделайте синхронизацию или перезагрузите игру для обновления данных)',
 		MAP: 'Карта: ',
@@ -1842,6 +1842,8 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				if (typeof this.onReadySuccess == 'function') {
 					setTimeout(this.onReadySuccess, 500);
 				}
+				/** Удаляем из истории запросов битвы с боссом */
+				if ('invasion_bossStart' in requestHistory[this.uniqid].calls) delete requestHistory[this.uniqid];
 			}
 			if (oldReady) {
 				return oldReady.apply(this, arguments);
@@ -3082,8 +3084,7 @@ function send(json, callback, pr) {
 		 * Если результат запроса получен вызываем колбек функцию
 		 */
 		if(xhr.readyState == 4) {
-			let randTimeout = Math.random() * 200 + 200;
-			setTimeout(callback, randTimeout, xhr.response, pr);
+			callback(xhr.response, pr);
 		}
 	};
 	/**
@@ -5852,7 +5853,7 @@ function hackGame() {
 			const battleData = battleInstant[getF(Game.BattleInstantPlay, 'get_rawBattleInfo')]();
 			const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult[getProtoFn(Game.MultiBattleResult, 2)][0]));
 			const timeLimit = battlePresets[getF(Game.BattlePresets, 'get_timeLimit')]();
-			const battleTime = Math.max(...battleLog.map(e => e.time < timeLimit ? e.time : 0));
+			const battleTime = Math.max(...battleLog.map((e) => (e.time < timeLimit && e.time !== 168.8 ? e.time : 0)));
 			callback({
 				battleTime,
 				battleData,
@@ -8943,7 +8944,6 @@ function executeAutoBattle(resolve, reject) {
 	let battleArg = {};
 	let countBattle = 0;
 	let findCoeff = 0;
-	let lastCalcBattle = null;
 
 	this.start = function (battleArgs, battleInfo) {
 		battleArg = battleArgs;
@@ -9085,14 +9085,11 @@ function executeAutoBattle(resolve, reject) {
 			endAutoBattle(`${I18N('RETRY_LIMIT_EXCEEDED')}: ${countMaxBattle}`)
 			return;
 		}
-		let calls = [{
+		send({calls: [{
 			name: nameFuncStartBattle,
 			args: battleArg,
 			ident: "body"
-		}];
-		send(JSON.stringify({
-			calls
-		}), calcResultBattle);
+		}]}, calcResultBattle);
 	}
 	/**
 	 * Battle calculation
@@ -9118,7 +9115,7 @@ function executeAutoBattle(resolve, reject) {
 			nameFuncStartBattle == 'invasion_bossStart') {
 			battle = e.results[0].result.response;
 		}
-		lastCalcBattle = battle;
+		lastBattleInfo = battle;
 		BattleCalc(battle, getBattleType(battle.type), resultBattle);
 	}
 	/**
@@ -9201,7 +9198,7 @@ function executeAutoBattle(resolve, reject) {
 			if (nameFuncStartBattle == 'invasion_bossStart' ||
 				nameFuncStartBattle == 'bossAttack') {
 				const countMaxBattle = getInput('countAutoBattle');
-				const bossLvl = lastCalcBattle.typeId >= 130 ? lastCalcBattle.typeId : '';
+				const bossLvl = lastBattleInfo.typeId >= 130 ? lastBattleInfo.typeId : '';
 				const result = await popup.confirm(
 					I18N('BOSS_HAS_BEEN_DEF_TEXT', { bossLvl, countBattle, countMaxBattle }), [
 					{ msg: I18N('BTN_OK'), result: 0 },
