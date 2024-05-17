@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.233
+// @version			2.234
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1438,6 +1438,7 @@ let isCancalBossBattle = true;
 let lastBattleArg = {}
 let lastBossBattleStart = null;
 this.addBattleTimer = 4;
+this.invasionTimer = 2500;
 /**
  * The name of the function of the beginning of the battle
  *
@@ -1828,6 +1829,9 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		 */
 		const oldReady = this.onreadystatechange;
 		this.onreadystatechange = async function (e) {
+			if (this.errorRequest) {
+				return oldReady.apply(this, arguments);
+			}
 			if(this.readyState == 4 && this.status == 200) {
 				isTextResponse = this.responseType === "text" || this.responseType === "";
 				let response = isTextResponse ? this.responseText : this.response;
@@ -1873,6 +1877,9 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 			this.responseText = JSON.stringify({
 				"result": true
 			});
+			if (typeof this.onReadySuccess == 'function') {
+				setTimeout(this.onReadySuccess, 500);
+			}
 			return oldReady.apply(this, arguments);
 		}
 		this.onreadystatechange();
@@ -1987,6 +1994,9 @@ async function checkChangeSend(sourceData, tempData) {
 						resultPopup = await showMsg(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_CANCEL'));
 					}
 					if (resultPopup) {
+						if (call.name == 'invasion_bossEnd') {
+							this.errorRequest = true;
+						}
 						fixBattle(call.args.progress[0].attackers.heroes);
 						fixBattle(call.args.progress[0].defenders.heroes);
 						changeRequest = true;
@@ -2067,6 +2077,14 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'towerStartBattle') {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
+ 
+				if (call.name == 'invasion_bossStart') {
+					const timePassed = Date.now() - lastBossBattleStart;
+					if (timePassed < invasionTimer) {
+						await new Promise((e) => setTimeout(e, invasionTimer - timePassed));
+					}
+					invasionTimer -= 1;
+				}
 				lastBossBattleStart = Date.now();
 			}
 			if (call.name == 'invasion_bossEnd') {
@@ -8948,6 +8966,7 @@ function testAutoBattle() {
 function executeAutoBattle(resolve, reject) {
 	let battleArg = {};
 	let countBattle = 0;
+	let countError = 0;
 	let findCoeff = 0;
 
 	this.start = function (battleArgs, battleInfo) {
@@ -9103,8 +9122,15 @@ function executeAutoBattle(resolve, reject) {
 	 */
 	async function calcResultBattle(e) {
 		if ('error' in e) {
-			const result = await popup.confirm(
-				I18N('ERROR_DURING_THE_BATTLE'), [
+			if (e.error.description === 'too many tries') {
+				invasionTimer += 100;
+				countBattle--;
+				countError++;
+				console.log(`Errors: ${countError}`, e.error);
+				startBattle();
+				return;
+			}
+			const result = await popup.confirm(I18N('ERROR_DURING_THE_BATTLE') + '<br>' + e.error.description, [
 				{ msg: I18N('BTN_OK'), result: false },
 				{ msg: I18N('RELOAD_GAME'), result: true },
 			]);
