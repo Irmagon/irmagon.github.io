@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.234
+// @version			2.236
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -599,7 +599,7 @@ const i18nLangData = {
 		THIS_TIME: 'На этот раз',
 		VICTORY: '<span style="color:green;">ПОБЕДА</span>',
 		DEFEAT: '<span style="color:red;">ПОРАЖЕНИЕ</span>',
-		CHANCE_TO_WIN: 'Шансы на победу <span style="color:red;">на основе прерасчета</span>',
+		CHANCE_TO_WIN: 'Шансы на победу <span style="color:green;">на основе прерасчета</span>',
 		OPEN_DOLLS: 'матрешек рекурсивно',
 		SENT_QUESTION: 'Вопрос отправлен',
 		SETTINGS: 'Настройки',
@@ -1575,7 +1575,8 @@ const random = function (min, max) {
 setInterval(function () {
 	let now = Date.now();
 	for (let i in requestHistory) {
-		if (now - i > 300000) {
+		const time = +i.split('_')[0];
+		if (now - time > 300000) {
 			delete requestHistory[i];
 		}
 	}
@@ -1720,7 +1721,7 @@ WebSocket.prototype.send = function (data) {
  * Переопределяем/проксируем метод создания Ajax запроса
  */
 XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
-	this.uniqid = Date.now();
+	this.uniqid = Date.now() + '_' + random(1000000, 10000000);
 	this.errorRequest = false;
 	if (method == 'POST' && url.includes('.nextersglobal.com/api/') && /api\/$/.test(url)) {
 		if (!apiUrl) {
@@ -3062,7 +3063,7 @@ function send(json, callback, pr) {
 	for (const call of json.calls) {
 		if (!call?.context?.actionTs) {
 			call.context = {
-				actionTs: performance.now()
+				actionTs: Math.floor(performance.now())
 			}
 		}
 	}
