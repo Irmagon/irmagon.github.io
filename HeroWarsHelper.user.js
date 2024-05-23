@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.236
+// @version			2.240
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -543,7 +543,7 @@ const i18nLangData = {
 		TO_DO_EVERYTHING_TITLE: 'Выполнить несколько действий',
 		OUTLAND: 'Запределье',
 		OUTLAND_TITLE: 'Собрать Запределье',
-		TITAN_ARENA: 'Титаны',
+		TITAN_ARENA: 'Турнир',
 		TITAN_ARENA_TITLE: 'Автопрохождение Турнира Стихий',
 		DUNGEON: 'Подземелье',
 		DUNGEON_TITLE: 'Автопрохождение подземелья',
@@ -1071,15 +1071,18 @@ function getInput(inputName) {
  * 
  * Контроль FPS 
  */
+let nextAnimationFrame = Date.now();
 const oldRequestAnimationFrame = this.requestAnimationFrame;
 this.requestAnimationFrame = async function (e) {
 	const FPS = Number(getInput('FPS')) || -1;
-	const delay = Math.min(1e3 / FPS, 1e3);
+	const now = Date.now();
+	const delay = nextAnimationFrame - now;
+	nextAnimationFrame = Math.max(now, nextAnimationFrame) + Math.min(1e3 / FPS, 1e3);
 	if (delay > 0) {
 		await new Promise((e) => setTimeout(e, delay));
 	}
 	oldRequestAnimationFrame(e);
-}
+};
 /**
  * Скрываем кнопку титанов в субботу и воскресенье
  */
@@ -5783,7 +5786,6 @@ function hackGame() {
 		{name:"BooleanProperty", prop:"engine.core.utils.property.BooleanProperty"},
 		{name:"RuleStorage", prop:"game.data.storage.rule.RuleStorage"},
 		{name:"BattleConfig", prop:"battle.BattleConfig"},
-		{name:"SpecialShopModel", prop:"game.model.user.shop.SpecialShopModel"},
 		{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
 		{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
 		{ name: "BattleLogEncoder", prop: "battle.log.BattleLogEncoder" },
@@ -5872,7 +5874,7 @@ function hackGame() {
 		if (!Game.BattlePresets) throw Error('Use connectGame');
 		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
 		battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
-		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 8)].add((battleInstant) => {
+		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 9)].add((battleInstant) => {
 			const battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
 			const battleData = battleInstant[getF(Game.BattleInstantPlay, 'get_rawBattleInfo')]();
 			const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult[getProtoFn(Game.MultiBattleResult, 2)][0]));
@@ -5963,9 +5965,9 @@ function hackGame() {
 				try {
 					this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
-					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 17)](), !1);
+					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 20)](), !1);
 					a = new Game.BattleInstantPlay(c, a);
-					a[getProtoFn(Game.BattleInstantPlay, 8)].add(Game.bindFunc(this, this.P$h));
+					a[getProtoFn(Game.BattleInstantPlay, 9)].add(Game.bindFunc(this, this.P$h));
 					a.start()
 				} catch (error) {
 					console.error('company', error)
@@ -5993,9 +5995,9 @@ function hackGame() {
 					return;
 				}
 				try {
-					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,17)](), !1);
+					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,20)](), !1);
 					a = new Game.BattleInstantPlay(a, p);
-					a[getProtoFn(Game.BattleInstantPlay,8)].add(Game.bindFunc(this, this.P$h));
+					a[getProtoFn(Game.BattleInstantPlay, 9)].add(Game.bindFunc(this, this.P$h));
 					a.start()
 				} catch (error) {
 					console.error('tower', error)
@@ -6072,9 +6074,9 @@ function hackGame() {
 			}
 		},
 		endlessCards: function() {
-			let PDD_15 = getProtoFn(Game.PlayerDungeonData, 15);
-			let oldEndlessCards = Game.PlayerDungeonData.prototype[PDD_15];
-			Game.PlayerDungeonData.prototype[PDD_15] = function () {
+			let PDD_19 = getProtoFn(Game.PlayerDungeonData, 19);
+			let oldEndlessCards = Game.PlayerDungeonData.prototype[PDD_19];
+			Game.PlayerDungeonData.prototype[PDD_19] = function () {
 				if (countPredictionCard <= 0) {
 					return true;
 				} else {
@@ -6098,17 +6100,17 @@ function hackGame() {
 						return 0;
 					}
 					const BSM_2 = getProtoFn(Game.BattleSettingsModel, 2);
-					const BC_48 = getProtoFn(Game.BattleController, 48);
+					const BC_49 = getProtoFn(Game.BattleController, 49);
 					const BSM_1 = getProtoFn(Game.BattleSettingsModel, 1);
 					const BC_14 = getProtoFn(Game.BattleController, 14);
 					const BC_3 = getFn(Game.BattleController, 3);
 					if (this[BC_12][BSM_2][BP_get_value]()) {
-						var a = speedBattle * this[BC_48]();
+						var a = speedBattle * this[BC_49]();
 					} else {
 						a = this[BC_12][BSM_1][BP_get_value]();
 						const maxSpeed = Math.max(...this[BC_14]);
 						const multiple = a == this[BC_14].indexOf(maxSpeed) ? (maxSpeed >= 4 ? speedBattle : this[BC_14][a]) : this[BC_14][a];
-						a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_48]();
+						a = multiple * Game.BattleController[BC_3][BP_get_value]() * this[BC_49]();
 					}
 					const BSM_24 = getProtoFn(Game.BattleSettingsModel, 24);
 					a > this[BC_12][BSM_24][BP_get_value]() && (a = this[BC_12][BSM_24][BP_get_value]());
@@ -6130,33 +6132,14 @@ function hackGame() {
 		},
 
 		/**
-		 * Remove the rare shop
-		 *
-		 * Удаление торговца редкими товарами
-		 */
-		/*
-		removeWelcomeShop: function () {
-			let SSM_3 = getProtoFn(Game.SpecialShopModel, 3);
-			const oldWelcomeShop = Game.SpecialShopModel.prototype[SSM_3];
-			Game.SpecialShopModel.prototype[SSM_3] = function () {
-				if (isChecked('noOfferDonat')) {
-					return null;
-				} else {
-					return oldWelcomeShop.call(this);
-				}
-			}
-		},
-		*/
-
-		/**
 		 * Acceleration button without Valkyries favor
 		 *
 		 * Кнопка ускорения без Покровительства Валькирий
 		 */
 		battleFastKey: function () {
-			const BGM_42 = getProtoFn(Game.BattleGuiMediator, 42);
-			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_42];
-			Game.BattleGuiMediator.prototype[BGM_42] = function () {
+			const BGM_43 = getProtoFn(Game.BattleGuiMediator, 43);
+			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_43];
+			Game.BattleGuiMediator.prototype[BGM_43] = function () {
 				let flag = true;
 				//console.log(flag)
 				if (!flag) {
@@ -8969,6 +8952,8 @@ function executeAutoBattle(resolve, reject) {
 	let countBattle = 0;
 	let countError = 0;
 	let findCoeff = 0;
+	const svgJustice = '<svg width="20" height="20" viewBox="0 0 124 125" xmlns="http://www.w3.org/2000/svg"><path d="m83.469 126c-0.46865-6.1262-0.46865-12.252-0.46865-18.711h-16.045c10.132-10.855 19.327-20.706 28.064-30.066 10.016 9.6489 19.72 18.998 29.703 28.062 0.27804 0.15907 0.27804 0.60352-0.18958 1.3813-5.3591 0.33333-10.251 0.33333-15.532 0.33333v19h-25.531z" fill="#fff"/><path d="m1 95.444c12.875 2.5387 17.394-8.7693 25.46-15.2-3.6455-4.493-7.1695-8.8362-10.923-13.463 1.8819-1.5701 3.531-2.9459 5.132-4.2817 10.131 10.162 20.566 20.63 31.159 31.255-1.4202 1.248-3.014 2.6486-5.1088 4.4895-3.997-3.2829-8.2255-6.7558-13.336-10.954-4.4597 4.7402-9.1377 9.4079-13.383 14.44-1.0525 1.2475-0.81208 3.6681-0.96798 5.5658-0.1465 1.7833-0.031399 3.5881-0.031399 5.2638-4.4746 1.3163-7.5702 0.045479-10.286-3.2347-2.0996-2.536-4.7515-4.6147-7.4359-6.6113-0.2781-2.0852-0.2781-4.4557-0.2781-7.2704z" fill="#fff"/><path d="m56.583 1c1.462 0.99453 2.3405 2.3612 3.5822 2.9177 4.796 2.1495 9.7078 4.0404 14.972 6.1892-1.3196 1.4205-2.3844 2.5667-3.6675 3.9479-4.6789-2.3097-9.1967-4.7002-13.866-6.7454-1.3718-0.60089-3.4882-0.83644-4.7276-0.19854-12.434 6.3995-25.293 11.227-39.442 11.952-1.3853 0.071029-2.7357 0.82343-4.3676 1.3442-0.098518 19.588-1.0976 39.312 4.9741 58.453 0.87321 2.7528 4.0243 5.4955-1.3674 8.2709-1.908-6.2273-4.8894-12.273-5.4544-18.537-1.347-14.932-1.7496-29.963-2.1456-44.964-0.23445-8.882 1.8818-7.608 7.6637-8.6836 13.884-2.5826 27.688-5.5229 39.552-13.637 1.0985-0.30994 2.4874-0.30994 4.293-0.30994z" fill="#fff"/><path d="m77.25 40.25c4.6164-4.5957 8.9828-8.9413 13.586-13.523-0.82584-1.2177-1.6594-2.4468-2.711-3.9974-1.1184 0.99479-2.2423 1.8982-3.2567 2.9113-14.256 14.238-28.497 28.491-42.742 42.739-4.6322 4.6333-4.6244 4.6236-9.1529 0.11954-1.2981-1.2911-2.6625-2.5154-4.0808-3.8496 12.165-12.516 24.197-24.844 36.162-37.236 3.4269-3.5494 7.0639-7.0004 9.8908-11.001 4.6344-6.5583 11.826-5.9395 18.296-7.3726 5.0111-1.1099 10.1-1.8669 15.558-2.8537-1.9913 9.1303-2.9107 18.708-6.3853 27.246-2.0512 5.0404-8.1393 8.4438-12.435 12.559-0.70014 0.67075-1.58 1.1546-2.2763 1.8286-11.439 11.073-22.977 22.05-34.214 33.325-3.0146 3.0246-5.0557 3.7352-7.8322 0.082039-1.2943-1.7029-3.0637-3.0448-4.7814-4.7087 12.112-12.076 24.118-24.047 36.375-36.268z" fill="#fff"/><path d="m25.427 60.752c-1.0618-4.1351-2.0943-8.0457-2.3419-12.005-0.33994-5.4357-0.085051-10.909-0.085051-15.09 10.034-3.3622 19.325-6.6947 28.773-9.5042 2.7333-0.81285 5.9129-0.12475 8.8879-0.12475 0.072605 0.4608 0.14521 0.92161 0.21782 1.3824-0.64372 0.70077-1.5127 2.1176-1.8979 1.9965-7.5363-2.3711-12.497 4.4383-19.107 5.2513-2.3969 0.29482-4.7836 1.3698-7.1292 1.2429-5.3664-0.29051-6.7914 2.8078-6.6939 7.1683 0.10588 4.7365 0.7491 9.4608 0.8596 14.197 0.044007 1.8863-0.7119 3.7913-1.4829 5.4852z" fill="#fff"/><path d="m32.401 100.79c6.641 3.946 13.05 7.5793 19.253 11.536 2.5643 1.636 4.3897 1.06 6.947-0.053719 2.9755-1.2958 6.4425-1.4628 9.6963-2.1197 0.11015 0.48685 0.22028 0.97369 0.33043 1.4605-2.7757 1.5505-5.7232 2.8624-8.2865 4.7079-3.7518 2.7013-6.9746 2.4645-10.793-0.077393-7.4676-4.9712-15.216-9.5201-23.251-14.493 1.3392-1.6136 2.2176-2.6718 3.2413-3.9053 0.97209 1.0538 1.7599 1.9078 2.8626 2.944z" fill="#fff"/><path d="m76.302 77.201c5.3375-4.7298 4.8756-11.325 6.7282-17.041 0.45599-1.407 1.2983-2.6888 2.4783-5.0663 1.0125 18.801-5.5266 28.447-29.897 39.047 1.2422-1.3903 2.3102-3.0044 3.7576-4.1312 5.4881-4.2723 11.099-8.3869 16.933-12.808z" fill="#fff"/><path d="m102.79 70.526c-0.47968 1.9339-0.77965 3.4856-1.0775 5.0262-4.3423-1.5413-3.2306-4.7811-2.8024-8.2213 0.94483-7.5901 1.2623-15.258 2.1838-22.852 0.27037-2.2281 1.7107-4.3143 2.6149-6.4655 0.42888 0.16543 0.85776 0.33086 1.2867 0.49629 0 7.4213 0.19556 14.85-0.092293 22.26-0.12217 3.1448-1.2582 6.2503-2.1132 9.7557z" fill="#fff"/></svg>';
+	const svgBoss = '<svg width="20" height="20" viewBox="0 0 40 41" xmlns="http://www.w3.org/2000/svg" xmlns:v="https://svgstorm.com"><g fill="None" fill-opacity="0" stroke="#000" stroke-opacity="0" stroke-width=".3"><path d="m0 41h40v-41h-40v41m21-29c2.86 0.35 5.39-0.27 8-1 0.73 3.58-0.47 5.9-4 4-0.43 7-1.36 10.92-1.78 18.22-0.42 7.31-5.98 7.49-6.55 0.11-0.56-7.38-1.02-11.3-1.67-18.33-3.45 2.06-4.68-0.47-4-4 2.51 0.8 5.19 1.28 8 1 2.1-3.22-5.49-10.99 1.03-10.97 6.51 0.02-1.22 7.74 0.97 10.97m-15 7c7.33 0.16 9.3 6.46 8 13-4.18-3.02-7.36-8.15-13-8-0.52-6.43 2.33-12.07 6-17 1.69 3.13-2.24 7.85-1 12m27-12c3.71 4.94 6.48 10.54 6 17-5.45 0.03-8.87 5.12-13 8v-10c9.86-0.21 7.38-9.43 7-15z"/></g><g fill="None" fill-opacity="0" stroke="#fff" stroke-width=".3"><path d="m21 12c-2.19-3.23 5.54-10.95-0.97-10.97-6.52-0.02 1.07 7.75-1.03 10.97-2.81 0.28-5.49-0.2-8-1-0.68 3.53 0.55 6.06 4 4 0.65 7.03 1.11 10.95 1.67 18.33 0.57 7.38 6.13 7.2 6.55-0.11 0.42-7.3 1.35-11.22 1.78-18.22 3.53 1.9 4.73-0.42 4-4-2.61 0.73-5.14 1.35-8 1m-1 17c-1.59-3.6-1.71-10.47 0-14 1.59 3.6 1.71 10.47 0 14z"/></g><g fill="None" fill-opacity="0" stroke="#fff" stroke-width=".3"><path d="m6 19c-1.24-4.15 2.69-8.87 1-12-3.67 4.93-6.52 10.57-6 17 5.64-0.15 8.82 4.98 13 8 1.3-6.54-0.67-12.84-8-13z"/></g><g fill="None" fill-opacity="0" stroke="#fff" stroke-width=".3"><path d="m33 7c0.38 5.57 2.86 14.79-7 15v10c4.13-2.88 7.55-7.97 13-8 0.48-6.46-2.29-12.06-6-17z"/></g><g fill="None" fill-opacity="0" stroke="#000" stroke-opacity="0" stroke-width=".3"><path d="m20 29c1.71-3.53 1.59-10.4 0-14-1.71 3.53-1.59 10.4 0 14z"/></g><g fill-opacity="0" stroke="None"><path d="m0 41h40v-41h-40v41m21-29c2.86 0.35 5.39-0.27 8-1 0.73 3.58-0.47 5.9-4 4-0.43 7-1.36 10.92-1.78 18.22-0.42 7.31-5.98 7.49-6.55 0.11-0.56-7.38-1.02-11.3-1.67-18.33-3.45 2.06-4.68-0.47-4-4 2.51 0.8 5.19 1.28 8 1 2.1-3.22-5.49-10.99 1.03-10.97 6.51 0.02-1.22 7.74 0.97 10.97m-15 7c7.33 0.16 9.3 6.46 8 13-4.18-3.02-7.36-8.15-13-8-0.52-6.43 2.33-12.07 6-17 1.69 3.13-2.24 7.85-1 12m27-12c3.71 4.94 6.48 10.54 6 17-5.45 0.03-8.87 5.12-13 8v-10c9.86-0.21 7.38-9.43 7-15z"/></g><g fill="#fff" stroke="None"><path d="m21 12c-2.19-3.23 5.54-10.95-0.97-10.97-6.52-0.02 1.07 7.75-1.03 10.97-2.81 0.28-5.49-0.2-8-1-0.68 3.53 0.55 6.06 4 4 0.65 7.03 1.11 10.95 1.67 18.33 0.57 7.38 6.13 7.2 6.55-0.11 0.42-7.3 1.35-11.22 1.78-18.22 3.53 1.9 4.73-0.42 4-4-2.61 0.73-5.14 1.35-8 1m-1 17c-1.59-3.6-1.71-10.47 0-14 1.59 3.6 1.71 10.47 0 14z"/></g><g fill="#fff" stroke="None"><path d="m6 19c-1.24-4.15 2.69-8.87 1-12-3.67 4.93-6.52 10.57-6 17 5.64-0.15 8.82 4.98 13 8 1.3-6.54-0.67-12.84-8-13z"/></g><g fill="#fff" stroke="None"><path d="m33 7c0.38 5.57 2.86 14.79-7 15v10c4.13-2.88 7.55-7.97 13-8 0.48-6.46-2.29-12.06-6-17z"/></g><g fill-opacity="0" stroke="None"><path d="m20 29c1.71-3.53 1.59-10.4 0-14-1.71 3.53-1.59 10.4 0 14z"/></g></svg>';
 
 	this.start = function (battleArgs, battleInfo) {
 		battleArg = battleArgs;
@@ -9170,7 +9155,13 @@ function executeAutoBattle(resolve, reject) {
 				return;
 			}
 		} else {
-			setProgress(`${countBattle}/${countMaxBattle}`);
+			if (nameFuncStartBattle == 'invasion_bossStart') {
+				const bossLvl = lastBattleInfo.typeId >= 130 ? lastBattleInfo.typeId : '';
+				const justice = lastBattleInfo?.effects?.attackers?.percentInOutDamageMod_any_99_100_300_99_1000 || 0;
+				setProgress(`${svgBoss} ${bossLvl} ${svgJustice} ${justice} <br>${countBattle}/${countMaxBattle}`);
+			} else {
+				setProgress(`${countBattle}/${countMaxBattle}`);
+			}
 		}
 		if (nameFuncStartBattle == 'towerStartBattle' ||
 			nameFuncStartBattle == 'bossAttack' ||
@@ -9231,12 +9222,19 @@ function executeAutoBattle(resolve, reject) {
 				nameFuncStartBattle == 'bossAttack') {
 				const countMaxBattle = getInput('countAutoBattle');
 				const bossLvl = lastBattleInfo.typeId >= 130 ? lastBattleInfo.typeId : '';
+				const justice = lastBattleInfo?.effects?.attackers?.percentInOutDamageMod_any_99_100_300_99_1000 || 0;
 				const result = await popup.confirm(
-					I18N('BOSS_HAS_BEEN_DEF_TEXT', { bossLvl, countBattle, countMaxBattle }), [
+					I18N('BOSS_HAS_BEEN_DEF_TEXT', {
+						bossLvl: `${svgBoss} ${bossLvl} ${svgJustice} ${justice}`,
+						countBattle,
+						countMaxBattle,
+					}),
+					[
 					{ msg: I18N('BTN_OK'), result: 0 },
 					{ msg: I18N('MAKE_A_SYNC'), result: 1 },
 					{ msg: I18N('RELOAD_GAME'), result: 2 },
-				]);
+					]
+				);
 				if (result) {
 					if (result == 1) {
 						cheats.refreshGame();
@@ -9770,6 +9768,9 @@ class dailyQuests {
 				}
 				/* Идентификатор скина в библиотеке */
 				const skinInfo = skinLib[skinId];
+				if (!skinInfo.statData.levels?.[level + 1]) {
+					continue;
+				}
 				const costNextLevel = skinInfo.statData.levels[level + 1].cost;
 
 				const costСurrency = Object.keys(costNextLevel).pop();
