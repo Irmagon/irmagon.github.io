@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.243
+// @version			2.244
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -4359,7 +4359,7 @@ class Expedition {
 			if (hero.xp > 0 && !dataExped.useHeroes.includes(hero.id)) {
 				let heroPower = hero.power;
 				// Лара Крофт * 3
-				if (hero.id == 63) {
+				if (hero.id == 63 && hero.color >= 16) {
 					heroPower *= 3;
 			}
 				heroesArr.push({ id: hero.id, power: heroPower });
