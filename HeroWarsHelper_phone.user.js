@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.244
+// @version			2.247
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -16,18 +16,19 @@
 // @include			https://apps-1701433570146040.apps.fbsbx.com/*
 // @include			https://*.nextersglobal.com/*
 // @include			https://*.hero-wars*.com/*
-// @match			https://www.solfors.com/
-// @match			https://t.me/s/hw_ru
 // @run-at			document-start
 // ==/UserScript==
 
 (function() {
+if (!this.NXFlashVars && location.host.includes('hero-wars.com')) {
+	return;
+}
 /**
  * Start script
  *
  * Стартуем скрипт
  */
-console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
+console.log('%cStart ' + GM_info.script.name + ', v' + GM_info.script.version, 'color: #fea');
 /**
  * Script info
  *
@@ -36,15 +37,6 @@ console.log('Start ' + GM_info.script.name + ', v' + GM_info.script.version);
 const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
 	({name, version, author, homepage, lastModified, updateUrl, source}))
 	(GM_info.script, GM_info.scriptUpdateURL, arguments.callee.toString());
-/**
- * If we are on the gifts page, then we collect and send them to the server
- *
- * Если находимся на странице подарков, то собираем и отправляем их на сервер
- */
-if (['www.solfors.com', 't.me'].includes(location.host)) {
-	setTimeout(sendCodes, 2000);
-	return;
-}
 /**
  * Information for completing daily quests
  *
@@ -175,7 +167,7 @@ const i18nLangData = {
 		AUTO_EXPEDITION: 'Auto Expedition',
 		AUTO_EXPEDITION_TITLE: 'Auto-sending expeditions',
 		CANCEL_FIGHT: 'Cancel battle',
-		CANCEL_FIGHT_TITLE: 'The possibility of canceling the battle on VG',
+		CANCEL_FIGHT_TITLE: 'Ability to cancel manual combat on GW, CoW and Asgard',
 		GIFTS: 'Gifts',
 		GIFTS_TITLE: 'Collect gifts automatically',
 		BATTLE_RECALCULATION: 'Battle recalculation',
@@ -514,7 +506,7 @@ const i18nLangData = {
 		AUTO_EXPEDITION: 'АвтоЭкспедиции',
 		AUTO_EXPEDITION_TITLE: 'Автоотправка экспедиций',
 		CANCEL_FIGHT: 'Отмена боя',
-		CANCEL_FIGHT_TITLE: 'Возможность отмены боя на ВГ, СМ и в Асгарде',
+		CANCEL_FIGHT_TITLE: 'Возможность отмены ручного боя на ВГ, СМ и в Асгарде',
 		GIFTS: 'Подарки',
 		GIFTS_TITLE: 'Собирать подарки автоматически',
 		BATTLE_RECALCULATION: 'Прерасчет боя',
@@ -1592,88 +1584,6 @@ setInterval(function () {
 	}
 }, 300000);
 /**
- * DOM Loading Event page
- *
- * Событие загрузки DOM дерева страницы
- */
-document.addEventListener("DOMContentLoaded", () => {
-	/**
-	 * Create the script interface
-	 *
-	 * Создание интерфеса скрипта
-	 */
-	createInterface();
-});
-/**
- * Gift codes collecting and sending codes
- *
- * Сбор и отправка кодов подарков
- */
-function sendCodes() {
-	return;
-	let codes = [], count = 0;
-	if (!localStorage['giftSendIds']) {
-		localStorage['giftSendIds'] = '';
-	}
-	document.querySelectorAll('a[target="_blank"]').forEach(e => {
-		let url = e?.href;
-		if (!url) return;
-		url = new URL(url);
-		let giftId = url.searchParams.get('gift_id');
-		if (!giftId || localStorage['giftSendIds'].includes(giftId)) return;
-		localStorage['giftSendIds'] += ';' + giftId;
-		codes.push(giftId);
-		count++;
-	});
-
-	if (codes.length) {
-		localStorage['giftSendIds'] = localStorage['giftSendIds'].split(';').splice(-50).join(';');
-		sendGiftsCodes(codes);
-	}
-
-	if (!count) {
-		setTimeout(sendCodes, 2000);
-	}
-}
-/**
- * Checking sent codes
- *
- * Проверка отправленных кодов
- */
-function checkSendGifts() {
-	if (!freebieCheckInfo) {
-		return;
-	}
-
-	let giftId = freebieCheckInfo.args.giftId;
-	let valName = 'giftSendIds_' + userInfo.id;
-	localStorage[valName] = localStorage[valName] ?? '';
-	if (!localStorage[valName].includes(giftId)) {
-		localStorage[valName] += ';' + giftId;
-		sendGiftsCodes([giftId]);
-	}
-}
-/**
- * Sending codes
- *
- * Отправка кодов
- */
-function sendGiftsCodes(codes) {
-	return;
-	fetch('https://zingery.ru/heroes/setGifts.php', {
-		method: 'POST',
-		body: JSON.stringify(codes)
-	}).then(
-		response => response.json()
-	).then(
-		data => {
-			if (data.result) {
-				console.log(I18N('GIFTS_SENT'));
-			}
-		}
-	)
-}
-/**
  * Displays the dialog box
  *
  * Отображает диалоговое окно
@@ -1807,7 +1717,6 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				checkExpedition();
 			}
 
-			checkSendGifts();
 			getAutoGifts();
 
 			cheats.activateHacks();
@@ -1952,22 +1861,6 @@ async function checkChangeSend(sourceData, tempData) {
 			if (!artifactChestOpen) {
 				requestHistory[this.uniqid].calls[call.name] = call.ident;
 			}
-			/**
-			 * Сбор подарка
-			 */
-			/*
-			if (call.name == 'registration') {
-				if (!call.args?.giftId) {
-					const giftId = await getGiftCode();
-					if (giftId) {
-						call.args.giftId = giftId;
-						changeRequest = true;
-					}
-				} else {
-					sendGiftsCodes([call.args.giftId])
-				}
-			}
-			*/
 			/**
 			 * Cancellation of the battle in adventures, on VG and with minions of Asgard
 			 * Отмена боя в приключениях, на ВГ и с прислужниками Асгарда
@@ -2990,6 +2883,7 @@ function createInterface() {
 }
 
 function addControls() {
+	createInterface();
 	const checkboxDetails = scriptMenu.addDetails(I18N('SETTINGS'));
 	for (let name in checkboxes) {
 		if (checkboxes[name].hide) {
