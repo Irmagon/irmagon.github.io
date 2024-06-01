@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.249
+// @version			2.254
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -466,9 +466,7 @@ const i18nLangData = {
 		CHANGE_MAP: 'Island map',
 		CHANGE_MAP_TITLE: 'Change island map',
 		SELECT_ISLAND_MAP: 'Select an island map:',
-		FIRST_MAP: 'First map',
-		SECOND_MAP: 'Second map',
-		THIRD_MAP: 'Third card',
+		MAP_NUM: 'Map {num}',
 		SECRET_WEALTH_SHOP: 'Secret Wealth {name}: ',
 		SHOPS: 'Shops',
 		SHOPS_DEFAULT: 'Default',
@@ -492,6 +490,9 @@ const i18nLangData = {
 		PICTURE: '<br>Picture: ',
 		ANSWER: '<br>Answer: ',
 		NO_HEROES_PACK: 'Fight at least one battle to save the attacking team',
+		BRAWL_AUTO_PACK: 'Automatic selection of packs',
+		BRAWL_AUTO_PACK_NOT_CUR_HERO: 'Automatic pack selection is not suitable for the current hero',
+		BRAWL_DAILY_TASK_COMPLETED: 'Daily task completed, continue attacking?',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -596,7 +597,7 @@ const i18nLangData = {
 		BTN_NO_I_AM_AGAINST: 'Нет, я отказываюсь от этого!',
 		VALUES: 'Значения',
 		EXPEDITIONS_SENT: 'Экспедиции:<br>Собрано: {countGet}<br>Отправлено: {countSend}',
-		EXPEDITIONS_NOTHING: 'Нечего собриать/отправлять',
+		EXPEDITIONS_NOTHING: 'Нечего собирать/отправлять',
 		TITANIT: 'Титанит',
 		COMPLETED: 'завершено',
 		FLOOR: 'Этаж',
@@ -670,7 +671,7 @@ const i18nLangData = {
 		COLLECT_MISC: 'Собрать всякую херню',
 		COLLECT_MISC_TITLE: 'Собрать пасхалки, камни облика, ключи, монеты арены и Хрусталь души',
 		COLLECT_QUEST_REWARDS: 'Собрать награды за квесты',
-		MAKE_A_SYNC: 'Сделать синхронизацю',
+		MAKE_A_SYNC: 'Сделать синхронизацию',
 
 		RUN_FUNCTION: 'Выполнить следующие функции?',
 		BTN_GO: 'Погнали!',
@@ -806,9 +807,7 @@ const i18nLangData = {
 		CHANGE_MAP: 'Карта острова',
 		CHANGE_MAP_TITLE: 'Сменить карту острова',
 		SELECT_ISLAND_MAP: 'Выберите карту острова:',
-		FIRST_MAP: 'Первая карта',
-		SECOND_MAP: 'Вторая карта',
-		THIRD_MAP: 'Третья карта',
+		MAP_NUM: 'Карта {num}',
 		SECRET_WEALTH_SHOP: 'Тайное богатство {name}: ',
 		SHOPS: 'Магазины',
 		SHOPS_DEFAULT: 'Стандартные',
@@ -832,6 +831,9 @@ const i18nLangData = {
 		PICTURE: '<br>На картинке: ',
 		ANSWER: '<br>Ответ: ',
 		NO_HEROES_PACK: 'Проведите хотя бы один бой для сохранения атакующей команды',
+		BRAWL_AUTO_PACK: 'Автоподбор пачки',
+		BRAWL_AUTO_PACK_NOT_CUR_HERO: 'Автоматический подбор пачки не подходит для текущего героя',
+		BRAWL_DAILY_TASK_COMPLETED: 'Ежедневное задание выполнено, продолжить атаку?',
 	},
 };
 
@@ -1282,10 +1284,16 @@ const buttons = {
 				{
 					msg: I18N('CHANGE_MAP'),
 					result: async function () {
+						const maps = [];
+						for (let num = 1; num < 5; num++) {
+							maps.push({
+								msg: I18N('MAP_NUM', { num }),
+								result: num,
+							});
+						}
+ 
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [
-							{ msg: I18N('FIRST_MAP'), result: 1 },
-							{ msg: I18N('SECOND_MAP'), result: 2 },
-							{ msg: I18N('THIRD_MAP'), result: 3 },
+							...maps,
 							{ result: false, isClose: true },
 						]);
 						if (result) {
@@ -1861,24 +1869,37 @@ async function checkChangeSend(sourceData, tempData) {
 				}
 				}
 				// Потасовки
-                if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {
-					if (await popup.confirm(I18N('START_AUTO_BRAWLS'), [
-						{ msg: I18N('BTN_NO'), result: false },
-						{ msg: I18N('BTN_YES'), result: true },
-					])) {
-						this.onReadySuccess = testBrawls;
-						isBrawlsAutoStart = true;
-					}
-				}
+				if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_endBattle') {}
 			}
 			/**
 			 * Save pack for Brawls
 			 *
 			 * Сохраняем пачку для потасовок
 			 */
-			if (call.name == 'brawl_startBattle') {
+			if (isChecked('autoBrawls') && !isBrawlsAutoStart && call.name == 'brawl_startBattle') {
 				console.log(JSON.stringify(call.args));
 				brawlsPack = call.args;
+				if (
+					await popup.confirm(
+						I18N('START_AUTO_BRAWLS'),
+						[
+							{ msg: I18N('BTN_NO'), result: false },
+							{ msg: I18N('BTN_YES'), result: true },
+						],
+						[
+							{
+								name: 'isAuto',
+								label: I18N('BRAWL_AUTO_PACK'),
+								checked: false,
+							},
+						]
+					)
+				) {
+					isBrawlsAutoStart = true;
+					const isAuto = popup.getCheckBoxes().find((e) => e.name === 'isAuto');
+					this.errorRequest = true;
+					testBrawls(isAuto.checked);
+			}
 			}
 			/**
 			 * Canceled fight in Asgard
@@ -10188,10 +10209,10 @@ class executeAdventure {
  *
  * Прохождение потасовок
  */
-function testBrawls() {
+function testBrawls(isAuto) {
 	return new Promise((resolve, reject) => {
 		const brawls = new executeBrawls(resolve, reject);
-		brawls.start(brawlsPack);
+		brawls.start(brawlsPack, isAuto);
 	});
 }
 /**
@@ -10250,20 +10271,21 @@ class executeBrawls {
 		this.reject = reject;
 	}
 
-	async start(args) {
+	async start(args, isAuto) {
+		this.isAuto = isAuto;
 		this.args = args;
 		isCancalBattle = false;
 		this.brawlInfo = await this.getBrawlInfo();
 		this.attempts = this.brawlInfo.attempts;
 
-		if (!this.attempts) {
-			this.end(I18N('DONT_HAVE_LIVES'))
+		if (!this.attempts && !this.info.boughtEndlessLivesToday) {
+			this.end(I18N('DONT_HAVE_LIVES'));
 			return;
 		}
 
 		while (1) {
 			if (!isBrawlsAutoStart) {
-				this.end(I18N('BTN_CANCELED'))
+				this.end(I18N('BTN_CANCELED'));
 				return;
 			}
 
@@ -10271,76 +10293,65 @@ class executeBrawls {
 			const stage = this.stage[maxStage];
 			const progress = this.brawlInfo.questInfo.progress;
 
-			setProgress(`${I18N('STAGE')} ${stage}: ${progress}/${maxStage}<br>${I18N('FIGHTS')}: ${this.stats.count}<br>${I18N('WINS')}: ${this.stats.win}<br>${I18N('LOSSES')}: ${this.stats.loss}<br>${I18N('LIVES')}: ${this.attempts}<br>${I18N('STOP')}`, false, function () {
+			setProgress(
+				`${I18N('STAGE')} ${stage}: ${progress}/${maxStage}<br>${I18N('FIGHTS')}: ${this.stats.count}<br>${I18N('WINS')}: ${
+					this.stats.win
+				}<br>${I18N('LOSSES')}: ${this.stats.loss}<br>${I18N('LIVES')}: ${this.attempts}<br>${I18N('STOP')}`,
+				false,
+				function () {
 				isBrawlsAutoStart = false;
-			});
+				}
+			);
 
 			if (this.brawlInfo.questInfo.canFarm) {
 				const result = await this.questFarm();
 				console.log(result);
 			}
 
-			if (this.brawlInfo.questInfo.stage == 12 && this.brawlInfo.questInfo.progress == 12) {
-				this.end(I18N('SUCCESS'))
+			if (!this.continueAttack && 
+				this.brawlInfo.questInfo.stage == 12 && 
+				this.brawlInfo.questInfo.progress == 12) {
+				if (
+					await popup.confirm(I18N('BRAWL_DAILY_TASK_COMPLETED'), [
+						{ msg: I18N('BTN_NO'), result: true },
+						{ msg: I18N('BTN_YES'), result: false },
+					])
+				) {
+					this.end(I18N('SUCCESS'));
 				return;
+				} else {
+					this.continueAttack = true;
+			}
 			}
 
-			if (!this.attempts) {
-				this.end(I18N('DONT_HAVE_LIVES'))
+			if (!this.attempts && !this.info.boughtEndlessLivesToday) {
+				this.end(I18N('DONT_HAVE_LIVES'));
 				return;
 			}
 
 			const enemie = Object.values(this.brawlInfo.findEnemies).shift();
 
-			// Для потасовок брустара
-			this.args.heroes = await this.updatePack(enemie.heroes);
+			// Автоматический подбор пачки
+			if (this.isAuto) {
+				if (this.mandatoryId !== 42) {
+					this.end(I18N('BRAWL_AUTO_PACK_NOT_CUR_HERO'));
+					return;
+				}
+				this.args = await this.updatePack(enemie.heroes);
+			}
  
 			const result = await this.battle(enemie.userId);
 			this.brawlInfo = {
 				questInfo: result[1].result.response,
 				findEnemies: result[2].result.response,
+			};
 			}
 		}
-	}
 
 	async updatePack(enemieHeroes) {
 		const packs = [
-			// 4023 Эдем
-			[4020, 4022, 4023, 4042, 4043],
-			[4023, 4030, 4033, 4042, 4043],
-			[4023, 4040, 4041, 4042, 4043],
-			// Разное
-			[4003, 4010, 4011, 4012, 4013],
-			[4030, 4032, 4033, 4040, 4043],
-			[4033, 4040, 4041, 4042, 4043],
-			[4030, 4031, 4033, 4040, 4043],
-			[4030, 4033, 4040, 4042, 4043],
-			[4001, 4032, 4033, 4040, 4043],
-			[4010, 4012, 4013, 4040, 4043],
-			[4001, 4002, 4003, 4040, 4043],
-			// 4003  Гиперион
-			[4000, 4001, 4003, 4033, 4043],
-			[4000, 4001, 4003, 4023, 4030],
-			[4000, 4001, 4003, 4023, 4033],
-			[4000, 4001, 4003, 4013, 4033],
-			[4003, 4010, 4012, 4013, 4043],
-			[4003, 4010, 4012, 4013, 4033],
-			[4003, 4030, 4032, 4042, 4043],
-			[4003, 4030, 4031, 4032, 4033],
-			[4003, 4040, 4041, 4042, 4043],
-			[4003, 4030, 4033, 4040, 4043],
-			// 4013  Араджи
-			[4010, 4011, 4012, 4013, 4033],
-			[4010, 4011, 4012, 4013, 4043],
-			[4010, 4011, 4013, 4042, 4043],
-			[4010, 4011, 4013, 4033, 4043],
-			[4001, 4010, 4011, 4013, 4033],
-			[4010, 4011, 4013, 4030, 4033],
-			[4010, 4011, 4013, 4040, 4043],
-			[4013, 4030, 4033, 4040, 4043],
-			[4013, 4030, 4033, 4042, 4043],
-			[4013, 4020, 4022, 4023, 4033],
-		].filter(p => p.includes(this.mandatoryId))
+				{id:7,args:{userId:8263523,heroes:[62,9,40,51,42],pet:6008,favor:{9:6005,40:6004,42:6007,51:6006,62:6003}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6035:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:518209,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:76563.6,magicResist:29975,skin:195,favorPetId:6007,favorPower:11064},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6032:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:438205,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:88978.6,magicResist:22960,skin:0,favorPetId:6006,favorPower:11064},62:{id:62,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{437:130,438:130,439:130,440:130,6017:130},power:173991,star:6,runes:[43750,43750,43750,43750,43750],skins:{320:60,343:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[8,7,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2530,hp:276010,intelligence:19245,physicalAttack:50,strength:3543,armor:12890,magicPenetration:23658,magicPower:80966.6,magicResist:12447.6,skin:0,favorPetId:6003,favorPower:11064},6008:{id:6008,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6036:130,6037:130},power:181943,type:"pet",perks:[5],name:null,armorPenetration:47911,intelligence:11064,strength:12360}}},{id:5,args:{userId:8263470,heroes:[29,55,9,51,42],pet:6006,favor:{9:6004,29:6002,42:6001,51:6006,55:6005}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6022:130,8270:1,8271:1},power:198525,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:10007.6,strength:3068,armor:19995,dodge:17631.28,magicPower:54823,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},29:{id:29,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{145:130,146:130,147:130,148:130,6012:130},power:189790,star:6,runes:[43750,43750,43750,43750,43750],skins:{29:60,72:60,88:60,147:60,242:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[9,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2885,hp:491431,intelligence:18331,physicalAttack:106,strength:3020,armor:27759,magicPenetration:9957.6,magicPower:76792.6,magicResist:31377,skin:0,favorPetId:6002,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6007:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:617785,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:66606,magicResist:29975,skin:195,favorPetId:6001,favorPower:11064},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6032:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:438205,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:88978.6,magicResist:22960,skin:0,favorPetId:6006,favorPower:11064},55:{id:55,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{325:130,326:130,327:130,328:130,6027:130},power:190778,star:6,runes:[43750,43750,43750,43750,43750],skins:{239:60,278:60,309:60,327:60,346:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2631,hp:400015,intelligence:19438,physicalAttack:7020.32,strength:3286,armor:22935,armorPenetration:36870,magicPower:70661.6,magicResist:10010,skin:0,favorPetId:6005,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:4,args:{userId:8263410,heroes:[9,40,56,51,42],pet:6008,favor:{9:6005,40:6004,42:6007,51:6001,56:6006}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6035:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:518209,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:76563.6,magicResist:29975,skin:195,favorPetId:6007,favorPower:11064},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6007:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:537781,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:79021,magicResist:22960,skin:0,favorPetId:6001,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6032:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:235111,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:75598.6,magicResist:13990,skin:0,favorPetId:6006,favorPower:11064},6008:{id:6008,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6036:130,6037:130},power:181943,type:"pet",perks:[5],name:null,armorPenetration:47911,intelligence:11064,strength:12360}}},{id:2,args:{userId:8263340,heroes:[29,9,56,51,42],pet:6006,favor:{9:6005,29:6002,42:6001,51:6006,56:6007}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},29:{id:29,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{145:130,146:130,147:130,148:130,6012:130},power:189790,star:6,runes:[43750,43750,43750,43750,43750],skins:{29:60,72:60,88:60,147:60,242:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[9,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2885,hp:491431,intelligence:18331,physicalAttack:106,strength:3020,armor:27759,magicPenetration:9957.6,magicPower:76792.6,magicResist:31377,skin:0,favorPetId:6002,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6007:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:617785,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:66606,magicResist:29975,skin:195,favorPetId:6001,favorPower:11064},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6032:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:438205,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:88978.6,magicResist:22960,skin:0,favorPetId:6006,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6035:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:235111,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:75598.6,magicResist:13990,skin:0,favorPetId:6007,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:1,args:{userId:8263376,heroes:[31,9,48,16,42],pet:6006,favor:{9:6005,16:6004,31:6001,42:6007,48:6e3}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},16:{id:16,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{301:130,302:130,303:130,350:130,6022:130},power:193730,star:6,runes:[43750,43750,43750,43750,43750],skins:{16:60,58:60,177:60,192:60,258:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[6,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17007,hp:286172,intelligence:3196,physicalAttack:40354.6,strength:3207,armor:16985,armorPenetration:33360,dodge:17014.28,magicResist:6866,skin:0,favorPetId:6004,favorPower:11064},31:{id:31,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{155:130,156:130,157:130,158:130,6007:130},power:190305,star:6,runes:[43750,43750,43750,43750,43750],skins:{44:60,94:60,133:60,200:60,295:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[9,5,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2781,dodge:12620,hp:474060,intelligence:18945,physicalAttack:78,strength:2916,armor:28049.6,magicPower:57729,magicResist:15252,skin:0,favorPetId:6001,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6035:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:518209,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:76563.6,magicResist:29975,skin:195,favorPetId:6007,favorPower:11064},48:{id:48,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{240:130,241:130,242:130,243:130,6002:130},power:190584,star:6,runes:[43750,43750,43750,43750,43750],skins:{103:60,165:60,217:60,296:60,326:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[5,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17308,hp:397737,intelligence:2888,physicalAttack:40298.32,physicalCritChance:12280,strength:3169,armor:12185,armorPenetration:20137.6,magicResist:24816,skin:0,favorPetId:6e3,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:3,args:{userId:8263465,heroes:[46,9,56,51,42],pet:6006,favor:{9:6005,42:6001,51:6006,56:6007}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6007:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:617785,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:66606,magicResist:29975,skin:195,favorPetId:6001,favorPower:11064},46:{id:46,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{230:130,231:130,232:130,233:130},power:177096,star:6,runes:[43750,43750,43750,43750,43750],skins:{101:60,159:60,178:60,262:60,315:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:0,type:"hero",perks:[9,5,1,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2122,hp:637517,intelligence:16208,physicalAttack:50,strength:5151,armor:28550,magicPower:64538,magicResist:22237,skin:0,favorPetId:0,favorPower:0},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6032:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:438205,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:88978.6,magicResist:22960,skin:0,favorPetId:6006,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6035:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:235111,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:75598.6,magicResist:13990,skin:0,favorPetId:6007,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:6,args:{userId:8263484,heroes:[62,9,40,16,42],pet:6008,favor:{9:6005,16:6e3,40:6004,42:6007,62:6003}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},16:{id:16,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{301:130,302:130,303:130,350:130,6002:130},power:191091,star:6,runes:[43750,43750,43750,43750,43750],skins:{16:60,58:60,177:60,192:60,258:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[6,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17007,hp:286172,intelligence:3196,physicalAttack:37367.32,strength:3207,armor:16985,armorPenetration:43317.6,dodge:14027,magicResist:6866,skin:0,favorPetId:6e3,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6035:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:518209,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:76563.6,magicResist:29975,skin:195,favorPetId:6007,favorPower:11064},62:{id:62,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{437:130,438:130,439:130,440:130,6017:130},power:173991,star:6,runes:[43750,43750,43750,43750,43750],skins:{320:60,343:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[8,7,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2530,hp:276010,intelligence:19245,physicalAttack:50,strength:3543,armor:12890,magicPenetration:23658,magicPower:80966.6,magicResist:12447.6,skin:0,favorPetId:6003,favorPower:11064},6008:{id:6008,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6036:130,6037:130},power:181943,type:"pet",perks:[5],name:null,armorPenetration:47911,intelligence:11064,strength:12360}}},{id:8,args:{userId:8263225,heroes:[35,9,48,16,42],pet:6006,favor:{9:6005,16:6e3,35:6006,42:6007,48:6001}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},16:{id:16,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{301:130,302:130,303:130,350:130,6002:130},power:191091,star:6,runes:[43750,43750,43750,43750,43750],skins:{16:60,58:60,177:60,192:60,258:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[6,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17007,hp:286172,intelligence:3196,physicalAttack:37367.32,strength:3207,armor:16985,armorPenetration:43317.6,dodge:14027,magicResist:6866,skin:0,favorPetId:6e3,favorPower:11064},35:{id:35,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{175:130,176:130,177:130,178:130,6032:130},power:189498,star:6,runes:[43750,43750,43750,43750,43750],skins:{48:60,74:60,79:60,194:60,293:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[8,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2647,hp:424763,intelligence:3554,physicalAttack:50,strength:17676,armor:41168.6,magicPower:69799.6,magicResist:43058,skin:0,favorPetId:6006,favorPower:11064},42:{id:"42",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{210:130,211:130,212:130,213:130,6035:130},power:189864,star:6,runes:[43750,43750,43750,43750,43750],skins:{91:60,115:60,121:60,195:60,307:60},currentSkin:195,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2442,hp:518209,intelligence:3476,physicalAttack:50,strength:18155,armor:37797.6,magicPower:76563.6,magicResist:29975,skin:195,favorPetId:6007,favorPower:11064},48:{id:48,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{240:130,241:130,242:130,243:130,6007:130},power:190335,star:6,runes:[43750,43750,43750,43750,43750],skins:{103:60,165:60,217:60,296:60,326:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[5,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17308,hp:497313,intelligence:2888,physicalAttack:33328,physicalCritChance:12280,strength:3169,armor:22142.6,armorPenetration:10180,magicResist:24816,skin:0,favorPetId:6001,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}}
+		];
  
 		const bestPack = {
 			pack: packs[0],
@@ -10348,14 +10359,12 @@ class executeBrawls {
 		}
  
 		for (const pack of packs) {
-			const attackers = this.maxUpgrade
-				.filter(e => pack.includes(e.id))
-				.reduce((obj, e) => ({ ...obj, [e.id]: e }), {});
+			const attackers = pack.attackers;
 			const battle = {
 				attackers,
 				defenders: [enemieHeroes],
-				type: "brawl_titan",
-			}
+				type: 'brawl',
+			};
  
 			let countWinBattles = 0;
 			let countTestBattle = 10;
@@ -10367,12 +10376,12 @@ class executeBrawls {
 				}
 				if (countWinBattles > 7) {
 					console.log(pack)
-					return pack;
+					return pack.args;
 				}
 			}
 			if (countWinBattles > bestPack.countWin) {
 				bestPack.countWin = countWinBattles;
-				bestPack.pack = pack;
+				bestPack.pack = pack.args;
 			}
 		}
  
@@ -10398,7 +10407,13 @@ class executeBrawls {
 		}));
 
 		let attempts = data.results[0].result.response.refillable.find(n => n.id == 48);
-		this.maxUpgrade = Object.values(data.results[3].result.response.titan);
+ 
+		const maxUpgrade = data.results[3].result.response;
+		const maxHero = Object.values(maxUpgrade.hero);
+		const maxTitan = Object.values(maxUpgrade.titan);
+		const maxPet = Object.values(maxUpgrade.pet);
+		this.maxUpgrade = [...maxHero, ...maxPet];
+ 
 		this.info = data.results[4].result.response;
 		this.mandatoryId = lib.data.brawl.promoHero[this.info.id].promoHero;
 		return {
@@ -10422,7 +10437,9 @@ class executeBrawls {
 			this.stats.win++;
 		} else {
 		this.stats.loss++;
+			if (!this.info.boughtEndlessLivesToday) {
 			this.attempts--;
+		}
 		}
 		return await this.endBattle(result);
 		// return await this.cancelBattle(result);
