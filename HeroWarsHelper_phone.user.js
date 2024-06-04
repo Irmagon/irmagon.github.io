@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.255
+// @version			2.256
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -2843,6 +2843,7 @@ this.getSignature = function(headers, data) {
  * Создает интерфейс
  */
 function createInterface() {
+	popup.init();
 	scriptMenu.init({
 		showMenu: true
 	});
@@ -3066,7 +3067,7 @@ const popup = new (function () {
 	this.checkboxes = [];
 	this.dialogPromice = null;
 
-	function init() {
+	this.init = function () {
 		addStyle();
 		addBlocks();
 		addEventListeners();
@@ -3458,8 +3459,6 @@ const popup = new (function () {
 			this.show();
 		});
 	}
-
-	document.addEventListener('DOMContentLoaded', init);
 });
  
 /**
