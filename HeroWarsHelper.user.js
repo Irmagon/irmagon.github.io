@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.256
+// @version			2.259
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -6257,6 +6257,8 @@ function hackGame() {
 					const level = levels[id];
 					level.clientData.graphics.fogged = level.clientData.graphics.visible
 				}
+				const adv = b.raw.seasonAdventure.list[1];
+				adv.clientData.asset = 'dialog_season_adventure_tiles';
 			} catch (e) {
 				console.warn(e);
 			}
@@ -7443,41 +7445,52 @@ function rewardsAndMailFarm() {
 		}
 		send(JSON.stringify(questGetAllCall), function (data) {
 			if (!data) return;
-			let questGetAll = data.results[0].result.response.filter(e => e.state == 2);
+			let questGetAll = data.results[0].result.response.filter((e) => e.state == 2);
 			const questBattlePass = lib.getData('quest').battlePass;
 			const questChainBPass = lib.getData('battlePass').questChain;
 
 			const questAllFarmCall = {
-				calls: []
-			}
-			let number = 0;
+				calls: [],
+			};
 			for (let quest of questGetAll) {
-				if (quest.id > 1e6) {
+				if (quest.id >= 2001e4) {
+					continue;
+				}
+				if (quest.id > 1e6 && quest.id < 2e7) {
 					const questInfo = questBattlePass[quest.id];
 					const chain = questChainBPass[questInfo.chain];
 					if (chain.requirement?.battlePassTicket) {
 						continue;
 					}
 				}
+				if (quest.id >= 2e7) {
+					questIds.push(quest.id);
+					continue;
+				}
 					questAllFarmCall.calls.push({
-						name: "questFarm",
+					name: 'questFarm',
 						args: {
-							questId: quest.id
+						questId: quest.id,
 						},
-						ident: `questFarm_${number}`
+					ident: `questFarm_${quest.id}`,
 					});
-					number++;
 				}
 
+			questAllFarmCall.calls.push({
+				name: 'quest_questsFarm',
+				args: { questIds },
+				ident: 'quest_questsFarm',
+			});
+ 
 			let letters = data?.results[1]?.result?.response?.letters;
 			letterIds = lettersFilter(letters);
 
 			if (letterIds.length) {
 				questAllFarmCall.calls.push({
-					name: "mailFarm",
+					name: 'mailFarm',
 					args: { letterIds },
-					ident: "mailFarm"
-				})
+					ident: 'mailFarm',
+				});
 			}
 
 			if (!questAllFarmCall.calls.length) {
@@ -7486,10 +7499,10 @@ function rewardsAndMailFarm() {
 				return;
 			}
 
-			send(JSON.stringify(questAllFarmCall), function (res) {
-				let reSend = false;
+			send(JSON.stringify(questAllFarmCall), async function (res) {
 				let countQuests = 0;
 				let countMail = 0;
+				let questsIds = [];
 				for (let call of res.results) {
 					if (call.ident.includes('questFarm')) {
 						countQuests++;
@@ -7497,20 +7510,48 @@ function rewardsAndMailFarm() {
 						countMail = Object.keys(call.result.response).length;
 					}
 
-					/** TODO: Переписать чтоб не вызывать функцию дважды */
 					const newQuests = call.result.newQuests;
 					if (newQuests) {
 						for (let quest of newQuests) {
-							if (quest.id < 1e6 && quest.state == 2) {
-								reSend = true;
+							if ((quest.id < 1e6 || (quest.id >= 2e7 && quest.id < 2001e4)) && quest.state == 2) {
+								questsIds.push(quest.id);
 							}
 						}
 					}
 				}
-				setProgress(I18N('COLLECT_REWARDS_AND_MAIL', { countQuests, countMail }), true);
-				if (reSend) {
-					rewardsAndMailFarm()
+ 
+				while (questsIds.length) {
+					const questIds = [];
+					const calls = [];
+					for (let questId of questsIds) {
+						if (questId < 1e6) {
+							calls.push({
+								name: 'questFarm',
+								args: {
+									questId,
+								},
+								ident: `questFarm_${questId}`,
+							});
+							countQuests++;
+						} else if (questId >= 2e7 && questId < 2001e4) {
+							questIds.push(questId);
+							countQuests++;
+						}
 				}
+					calls.push({
+						name: 'quest_questsFarm',
+						args: { questIds },
+						ident: 'body',
+					});
+					const newQuests = await Send({ calls }).then((e) => e.results[0].result.newQuests);
+					if (newQuests) {
+						questsIds = newQuests.filter((e) => e.state == 2).map((e) => e.id);
+					} else {
+						questsIds = [];
+					}
+				}
+ 
+				setProgress(I18N('COLLECT_REWARDS_AND_MAIL', { countQuests, countMail }), true);
 				resolve();
 			});
 		});
