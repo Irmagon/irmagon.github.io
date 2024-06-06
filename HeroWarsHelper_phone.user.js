@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.259
+// @version			2.260
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -7447,13 +7447,14 @@ function rewardsAndMailFarm() {
 		}
 		send(JSON.stringify(questGetAllCall), function (data) {
 			if (!data) return;
-			let questGetAll = data.results[0].result.response.filter((e) => e.state == 2);
+			const questGetAll = data.results[0].result.response.filter((e) => e.state == 2);
 			const questBattlePass = lib.getData('quest').battlePass;
 			const questChainBPass = lib.getData('battlePass').questChain;
 
 			const questAllFarmCall = {
 				calls: [],
 			};
+			const questIds = [];
 			for (let quest of questGetAll) {
 				if (quest.id >= 2001e4) {
 					continue;
