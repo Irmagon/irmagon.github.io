@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.260
+// @version			2.262
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -493,6 +493,8 @@ const i18nLangData = {
 		BRAWL_AUTO_PACK: 'Automatic selection of packs',
 		BRAWL_AUTO_PACK_NOT_CUR_HERO: 'Automatic pack selection is not suitable for the current hero',
 		BRAWL_DAILY_TASK_COMPLETED: 'Daily task completed, continue attacking?',
+		CALC_STAT: 'Calculate statistics',
+		ELEMENT_TOURNAMENT_REWARD: 'Unclaimed bonus for Elemental Tournament',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -834,6 +836,8 @@ const i18nLangData = {
 		BRAWL_AUTO_PACK: 'Автоподбор пачки',
 		BRAWL_AUTO_PACK_NOT_CUR_HERO: 'Автоматический подбор пачки не подходит для текущего героя',
 		BRAWL_DAILY_TASK_COMPLETED: 'Ежедневное задание выполнено, продолжить атаку?',
+		CALC_STAT: 'Посчитать статистику',
+		ELEMENT_TOURNAMENT_REWARD: 'Несобранная награда за Турнир Стихий',
 	},
 };
 
@@ -1265,7 +1269,7 @@ const buttons = {
 					msg: I18N('EPIC_BRAWL'),
 					result: async function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
-							const brawl = new epicBrawl;
+							const brawl = new epicBrawl();
 							brawl.start();
 						});
 					},
@@ -1292,10 +1296,7 @@ const buttons = {
 							});
 						}
  
-						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [
-							...maps,
-							{ result: false, isClose: true },
-						]);
+						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [...maps, { result: false, isClose: true }]);
 						if (result) {
 							cheats.changeIslandMap(result);
 						}
@@ -1905,22 +1906,31 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Canceled fight in Asgard
 			 * Отмена боя в Асгарде
 			 */
-			if (call.name == 'clanRaid_endBossBattle' &&
-				isCancalBossBattle &&
-				isChecked('cancelBattle')) {
-				bossDamage = call.args.progress[0].defenders.heroes[1].extra;
-				sumDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
-				let resultPopup = await showMsgs(
+			if (call.name == 'clanRaid_endBossBattle' && isChecked('cancelBattle')) {
+				const bossDamage = call.args.progress[0].defenders.heroes[1].extra;
+				const sumDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
+				const resultPopup = await popup.confirm(
 					`${I18N('MSG_YOU_APPLIED')} ${sumDamage.toLocaleString()} ${I18N('MSG_DAMAGE')}.`,
-					I18N('BTN_OK'), I18N('BTN_AUTO_F5'), I18N('MSG_CANCEL_AND_STAT'))
+					[
+						{ msg: I18N('BTN_OK'), result: false },
+						{ msg: I18N('BTN_AUTO_F5'), result: true },
+					],
+					[
+						{
+							name: 'isStat',
+							label: I18N('CALC_STAT'),
+							checked: false,
+						},
+					]
+				);
 				if (resultPopup) {
 					fixBattle(call.args.progress[0].attackers.heroes);
 					fixBattle(call.args.progress[0].defenders.heroes);
 					changeRequest = true;
-					if (resultPopup > 1) {
-						this.onReadySuccess = testBossBattle;
-						// setTimeout(bossBattle, 1000);
 					}
+				const isStat = popup.getCheckBoxes().find((e) => e.name === 'isStat');
+				if (isStat.checked) {
+					this.onReadySuccess = testBossBattle;
 				}
 			}
 			/**
@@ -2667,8 +2677,46 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['missionStart']) {
 				missionBattle = call.result.response;
 			}
+			/** Награды турнира стихий */
+			if (call.ident == callsIdent['hallOfFameGetTrophies']) {
+				const trophys = call.result.response;
+				const calls = [];
+				for (const week in trophys) {
+					const trophy = trophys[week];
+					if (!trophy.championRewardFarmed) {
+						calls.push({ name: 'hallOfFameFarmTrophyReward', args: { trophyId: week, rewardType: 'champion' }, ident: 'body_' + week });
 		}
+				}
+				if (calls.length) {
+					Send({ calls })
+						.then((e) => e.results.map((e) => e.result.response))
+						.then(async results => {
+							let coin = 0,
+								gold = 0,
+								starmoney = 0;
+							for (const r of results) {
+								coin += r?.coin ? +r.coin[19] : 0;
+								gold += r?.gold ? +r.gold : 0;
+								starmoney += r?.starmoney ? +r.starmoney : 0;
+							}
 
+							let msg = I18N('ELEMENT_TOURNAMENT_REWARD') + '<br>';
+							if (coin) {
+								msg += cheats.translate('LIB_COIN_NAME_19') + `: ${coin}<br>`;
+							}
+							if (gold) {
+								msg += cheats.translate('LIB_PSEUDO_COIN') + `: ${gold}<br>`;
+							}
+							if (starmoney) {
+								msg += cheats.translate('LIB_PSEUDO_STARMONEY') + `: ${starmoney}<br>`;
+							}
+ 
+							await popup.confirm(msg, [{ msg: I18N('BTN_OK'), result: 0 }]);
+						});
+				}
+			}
+		}
+ 
 		if (mainReward && artifactChestOpen) {
 			console.log(allReward);
 			mainReward[artifactChestOpenCallName == 'artifactChestOpen' ? 'chestReward' : 'reward'] = [allReward];
@@ -8358,7 +8406,7 @@ function executeRaidNodes(resolve, reject) {
 function testBossBattle() {
 	return new Promise((resolve, reject) => {
 		const bossBattle = new executeBossBattle(resolve, reject);
-		bossBattle.start(lastBossBattle, lastBossBattleInfo);
+		bossBattle.start(lastBossBattleInfo);
 	});
 }
 
@@ -8368,14 +8416,8 @@ function testBossBattle() {
  * Повтор атаки босса Асгарда
  */
 function executeBossBattle(resolve, reject) {
-	let lastBossBattleArgs = {};
-	let reachDamage = 0;
-	let countBattle = 0;
-	let countMaxBattle = 10;
-	let lastDamage = 0;
 
-	this.start = function (battleArg, battleInfo) {
-		lastBossBattleArgs = battleArg;
+	this.start = function (battleInfo) {
 		preCalcBattle(battleInfo);
 	}
 
@@ -8399,17 +8441,6 @@ function executeBossBattle(resolve, reject) {
 			.then(resultPreCalcBattle);
 	}
 
-	function fixDamage(damage) {
-		for (let i = 1e6; i > 1; i /= 10) {
-			if (damage > i) {
-				let n = i / 10;
-				damage = Math.ceil(damage / n) * n;
-				break;
-			}
-		}
-		return damage;
-	}
-
 	async function resultPreCalcBattle(damages) {
 		let maxDamage = 0;
 		let minDamage = 1e10;
@@ -8426,99 +8457,15 @@ function executeBossBattle(resolve, reject) {
 		avgDamage /= damages.length;
 		console.log(damages.map(e => e.toLocaleString()).join('\n'), avgDamage, maxDamage);
 
-		reachDamage = fixDamage(avgDamage);
-		const result = await popup.confirm(
+		await popup.confirm(
 			`${I18N('ROUND_STAT')} ${damages.length} ${I18N('BATTLE')}:` +
 			`<br>${I18N('MINIMUM')}: ` + minDamage.toLocaleString() +
 			`<br>${I18N('MAXIMUM')}: ` + maxDamage.toLocaleString() +
 			`<br>${I18N('AVERAGE')}: ` + avgDamage.toLocaleString()
-			/*+ '<br>Поиск урона больше чем ' + reachDamage.toLocaleString()*/
 			, [
 				{ msg: I18N('BTN_OK'), result: 0},
-			/* {msg: 'Погнали', isInput: true, default: reachDamage}, */
 		])
-		if (result) {
-			reachDamage = result;
-			isCancalBossBattle = false;
-			startBossBattle();
-			return;
-		}
 		endBossBattle(I18N('BTN_CANCEL'));
-	}
-
-	function startBossBattle() {
-		countBattle++;
-		countMaxBattle = getInput('countAutoBattle');
-		if (countBattle > countMaxBattle) {
-			setProgress('Превышен лимит попыток: ' + countMaxBattle, true);
-			endBossBattle('Превышен лимит попыток: ' + countMaxBattle);
-			return;
-		}
-		let calls = [{
-			name: "clanRaid_startBossBattle",
-			args: lastBossBattleArgs,
-			ident: "body"
-		}];
-		send(JSON.stringify({calls}), calcResultBattle);
-	}
-
-	function calcResultBattle(e) {
-		BattleCalc(e.results[0].result.response.battle, "get_clanPvp", resultBattle);
-	}
-
-	async function resultBattle(e) {
-		let extra = e.progress[0].defenders.heroes[1].extra
-		resultDamage = extra.damageTaken + extra.damageTakenNextLevel
-		console.log(resultDamage);
-		scriptMenu.setStatus(countBattle + ') ' + resultDamage.toLocaleString());
-		lastDamage = resultDamage;
-		if (resultDamage > reachDamage && await popup.confirm(countBattle + ') Урон ' + resultDamage.toLocaleString(), [
-			{msg: 'Ок', result: true},
-			{msg: 'Не пойдет', result: false},
-		]))  {
-			endBattle(e, false);
-			return;
-		}
-		cancelEndBattle(e);
-	}
-
-	function cancelEndBattle (r) {
-		const fixBattle = function (heroes) {
-			for (const ids in heroes) {
-				hero = heroes[ids];
-				hero.energy = random(1, 999);
-				if (hero.hp > 0) {
-					hero.hp = random(1, hero.hp);
-				}
-			}
-		}
-		fixBattle(r.progress[0].attackers.heroes);
-		fixBattle(r.progress[0].defenders.heroes);
-		endBattle(r, true);
-	}
-
-	function endBattle(battleResult, isCancal) {
-		let calls = [{
-			name: "clanRaid_endBossBattle",
-			args: {
-				result: battleResult.result,
-				progress: battleResult.progress
-			},
-			ident: "body"
-		}];
-
-		send(JSON.stringify({calls}), e => {
-			console.log(e);
-			if (isCancal) {
-				startBossBattle();
-				return;
-			}
-			scriptMenu.setStatus('Босс пробит нанесен урон: ' + lastDamage);
-			setTimeout(() => {
-				scriptMenu.setStatus('');
-			}, 5000);
-			endBossBattle('Узпех!');
-		});
 	}
 
 	/**
@@ -8527,7 +8474,6 @@ function executeBossBattle(resolve, reject) {
 	 * Завершение задачи
 	 */
 	function endBossBattle(reason, info) {
-		isCancalBossBattle = true;
 		console.log(reason, info);
 		resolve();
 	}
