@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.262
+// @version			2.265
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -5881,7 +5881,7 @@ function hackGame() {
 	 * Описание подменяемых функций
 	 */
 	replaceFunction = {
-		company: function() {
+		company: function () {
 			let PMD_12 = getProtoFn(Game.PlayerMissionData, 12);
 			let oldSkipMisson = Game.PlayerMissionData.prototype[PMD_12];
 			Game.PlayerMissionData.prototype[PMD_12] = function (a, b, c) {
@@ -5893,26 +5893,32 @@ function hackGame() {
 				try {
 					this[getProtoFn(Game.PlayerMissionData, 9)] = new Game.PlayerMissionBattle(a, b, c);
 
-					var a = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 20)](), !1);
+					var a = new Game.BattlePresets(
+						!1,
+						!1,
+						!0,
+						Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 20)](),
+						!1
+					);
 					a = new Game.BattleInstantPlay(c, a);
 					a[getProtoFn(Game.BattleInstantPlay, 9)].add(Game.bindFunc(this, this.P$h));
-					a.start()
+					a.start();
 				} catch (error) {
-					console.error('company', error)
+					console.error('company', error);
 					oldSkipMisson.call(this, a, b, c);
 				}
-			}
+			};
 
 			Game.PlayerMissionData.prototype.P$h = function (a) {
 				let GM_2 = getFn(Game.GameModel, 2);
 				let GM_P2 = getProtoFn(Game.GameModel, 2);
 				let CM_20 = getProtoFn(Game.CommandManager, 20);
 				let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
-				let MBR_15 = getF(Game.MultiBattleResult, "get_result");
+				let MBR_15 = getF(Game.MultiBattleResult, 'get_result');
 				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
 				let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
-				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]))
-			}
+				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]));
+			};
 		},
 		tower: function() {
 			let PTD_67 = getProtoFn(Game.PlayerTowerData, 67);
@@ -5923,26 +5929,32 @@ function hackGame() {
 					return;
 				}
 				try {
-					var p = new Game.BattlePresets(!1, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage,20)](), !1);
+					var p = new Game.BattlePresets(
+						!1,
+						!1,
+						!0,
+						Game.DataStorage[getFn(Game.DataStorage, 24)][getProtoFn(Game.BattleConfigStorage, 20)](),
+						!1
+					);
 					a = new Game.BattleInstantPlay(a, p);
 					a[getProtoFn(Game.BattleInstantPlay, 9)].add(Game.bindFunc(this, this.P$h));
-					a.start()
+					a.start();
 				} catch (error) {
-					console.error('tower', error)
+					console.error('tower', error);
 					oldSkipMisson.call(this, a, b, c);
 				}
-			}
+			};
 
 			Game.PlayerTowerData.prototype.P$h = function (a) {
-				const GM_2 = getFnP(Game.GameModel, "get_instance");
+				const GM_2 = getFnP(Game.GameModel, 'get_instance');
 				const GM_P2 = getProtoFn(Game.GameModel, 2);
 				const CM_29 = getProtoFn(Game.CommandManager, 29);
 				const TCL_5 = getProtoFn(Game.TowerCommandList, 5);
-				const MBR_15 = getF(Game.MultiBattleResult, "get_result");
+				const MBR_15 = getF(Game.MultiBattleResult, 'get_result');
 				const RPCCB_15 = getProtoFn(Game.RPCCommandBase, 17);
 				const PTD_78 = getProtoFn(Game.PlayerTowerData, 78);
 				Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]));
-			}
+			};
 		},
 		// skipSelectHero: function() {
 		// 	if (!HOST) throw Error('Use connectGame');
@@ -5960,27 +5972,40 @@ function hackGame() {
 					Game.BattlePopup.prototype[getProtoFn(Game.BattlePausePopup, 4)].call(this, a);
 					this[getProtoFn(Game.BattlePausePopup, 3)]();
 					this[getProtoFn(Game.DisplayObjectContainer, 3)](this.clip[getProtoFn(Game.GuiClipContainer, 2)]());
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 1)][getProtoFn(Game.ClipLabelBase, 9)](Game.Translate.translate("UI_POPUP_BATTLE_PAUSE"));
-
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](Game.Translate.translate("UI_POPUP_BATTLE_RETREAT"), (q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 17)])));
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](
-						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 14)](),
-						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 13)]() ?
-						(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)])) :
-						(q = this[getProtoFn(Game.BattlePausePopup, 1)], Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)]))
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 1)][getProtoFn(Game.ClipLabelBase, 9)](
+						Game.Translate.translate('UI_POPUP_BATTLE_PAUSE')
 					);
 
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 0)][getProtoFn(Game.ClipLabelBase, 24)]();
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 3)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 9)]());
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 4)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 10)]());
-					this.clip[getProtoFn(Game.BattlePausePopupClip, 6)][getProtoFn(Game.SettingToggleButton, 3)](this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]());
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 2)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](
+						Game.Translate.translate('UI_POPUP_BATTLE_RETREAT'),
+						((q = this[getProtoFn(Game.BattlePausePopup, 1)]), Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 17)]))
+					);
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 2)](
+						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 14)](),
+						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 13)]()
+							? ((q = this[getProtoFn(Game.BattlePausePopup, 1)]), Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)]))
+							: ((q = this[getProtoFn(Game.BattlePausePopup, 1)]), Game.bindFunc(q, q[getProtoFn(Game.BattlePausePopupMediator, 18)]))
+					);
+
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 5)][getProtoFn(Game.ClipButtonLabeledCentered, 0)][
+						getProtoFn(Game.ClipLabelBase, 24)
+					]();
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 3)][getProtoFn(Game.SettingToggleButton, 3)](
+						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 9)]()
+					);
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 4)][getProtoFn(Game.SettingToggleButton, 3)](
+						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 10)]()
+					);
+					this.clip[getProtoFn(Game.BattlePausePopupClip, 6)][getProtoFn(Game.SettingToggleButton, 3)](
+						this[getProtoFn(Game.BattlePausePopup, 1)][getProtoFn(Game.BattlePausePopupMediator, 11)]()
+					);
 				} catch(error) {
-					console.error('passBattle', error)
+					console.error('passBattle', error);
 					oldPassBattle.call(this, a);
 				}
-			}
+			};
 
-			let retreatButtonLabel = getF(Game.BattlePausePopupMediator, "get_retreatButtonLabel");
+			let retreatButtonLabel = getF(Game.BattlePausePopupMediator, 'get_retreatButtonLabel');
 			let oldFunc = Game.BattlePausePopupMediator.prototype[retreatButtonLabel];
 			Game.BattlePausePopupMediator.prototype[retreatButtonLabel] = function () {
 				if (isChecked('passBattle')) {
@@ -5988,7 +6013,7 @@ function hackGame() {
 				} else {
 					return oldFunc.call(this);
 				}
-			}
+			};
 		},
 		endlessCards: function() {
 			let PDD_20 = getProtoFn(Game.PlayerDungeonData, 20);
@@ -5999,10 +6024,10 @@ function hackGame() {
 				} else {
 					return oldEndlessCards.call(this);
 				}
-			}
+			};
 		},
 		speedBattle: function () {
-			const get_timeScale = getF(Game.BattleController, "get_timeScale");
+			const get_timeScale = getF(Game.BattleController, 'get_timeScale');
 			const oldSpeedBattle = Game.BattleController.prototype[get_timeScale];
 			Game.BattleController.prototype[get_timeScale] = function () {
 				const speedBattle = Number.parseFloat(getInput('speedBattle'));
@@ -6012,7 +6037,7 @@ function hackGame() {
 				try {
 					const BC_12 = getProtoFn(Game.BattleController, 12);
 					const BSM_12 = getProtoFn(Game.BattleSettingsModel, 12);
-					const BP_get_value = getF(Game.BooleanProperty, "get_value");
+					const BP_get_value = getF(Game.BooleanProperty, 'get_value');
 					if (this[BC_12][BSM_12][BP_get_value]()) {
 						return 0;
 					}
@@ -6032,18 +6057,21 @@ function hackGame() {
 					const BSM_24 = getProtoFn(Game.BattleSettingsModel, 24);
 					a > this[BC_12][BSM_24][BP_get_value]() && (a = this[BC_12][BSM_24][BP_get_value]());
 					const DS_23 = getFn(Game.DataStorage, 23);
-					const get_battleSpeedMultiplier = getF(Game.RuleStorage, "get_battleSpeedMultiplier", true);
+					const get_battleSpeedMultiplier = getF(Game.RuleStorage, 'get_battleSpeedMultiplier', true);
 					var b = Game.DataStorage[DS_23][get_battleSpeedMultiplier]();
 					const R_1 = getFn(selfGame.Reflect, 1);
 					const BC_1 = getFn(Game.BattleController, 1);
-					const get_config = getF(Game.BattlePresets, "get_config");
-					null != b && (a = selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) ? a * selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident) : a * selfGame.Reflect[R_1](b, "default"));
-					return a
+					const get_config = getF(Game.BattlePresets, 'get_config');
+					null != b &&
+						(a = selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident)
+							? a * selfGame.Reflect[R_1](b, this[BC_1][get_config]().ident)
+							: a * selfGame.Reflect[R_1](b, 'default'));
+					return a;
 				} catch(error) {
-					console.error('passBatspeedBattletle', error)
+					console.error('passBatspeedBattletle', error);
 					return oldSpeedBattle.call(this);
 				}
-			}
+			};
 		},
 
 		/**
@@ -6070,10 +6098,10 @@ function hackGame() {
 					console.error(error);
 					return oldBattleFastKey.call(this);
 			}
-		}
+			};
 		},
 		fastSeason: function () {
-			const GameNavigator = selfGame["game.screen.navigator.GameNavigator"];
+			const GameNavigator = selfGame['game.screen.navigator.GameNavigator'];
 			const oldFuncName = getProtoFn(GameNavigator, 16);
 			const newFuncName = getProtoFn(GameNavigator, 14);
 			const oldFastSeason = GameNavigator.prototype[oldFuncName];
@@ -6084,11 +6112,11 @@ function hackGame() {
 				} else {
 					return oldFastSeason.apply(this, [a, b]);
 	}
-	}
+			};
 		},
 		ShowChestReward: function () {
-			const TitanArtifactChest = selfGame["game.mechanics.titan_arena.mediator.chest.TitanArtifactChestRewardPopupMediator"];
-			const getOpenAmountTitan = getF(TitanArtifactChest, "get_openAmount");
+			const TitanArtifactChest = selfGame['game.mechanics.titan_arena.mediator.chest.TitanArtifactChestRewardPopupMediator'];
+			const getOpenAmountTitan = getF(TitanArtifactChest, 'get_openAmount');
 			const oldGetOpenAmountTitan = TitanArtifactChest.prototype[getOpenAmountTitan];
 			TitanArtifactChest.prototype[getOpenAmountTitan] = function () {
 				if (correctShowOpenArtifact) {
@@ -6096,10 +6124,10 @@ function hackGame() {
 					return 100;
 				}
 				return oldGetOpenAmountTitan.call(this);
-			}
+			};
 
-			const ArtifactChest = selfGame["game.view.popup.artifactchest.rewardpopup.ArtifactChestRewardPopupMediator"];
-			const getOpenAmount = getF(ArtifactChest, "get_openAmount");
+			const ArtifactChest = selfGame['game.view.popup.artifactchest.rewardpopup.ArtifactChestRewardPopupMediator'];
+			const getOpenAmount = getF(ArtifactChest, 'get_openAmount');
 			const oldGetOpenAmount = ArtifactChest.prototype[getOpenAmount];
 			ArtifactChest.prototype[getOpenAmount] = function () {
 				if (correctShowOpenArtifact) {
@@ -6107,22 +6135,47 @@ function hackGame() {
 					return 100;
 				}
 				return oldGetOpenAmount.call(this);
-			}
- 
+			};
 		},
 		fixCompany: function () {
-			const GameBattleView = selfGame["game.mediator.gui.popup.battle.GameBattleView"];
-			const BattleThread = selfGame["game.battle.controller.thread.BattleThread"];
+			const GameBattleView = selfGame['game.mediator.gui.popup.battle.GameBattleView'];
+			const BattleThread = selfGame['game.battle.controller.thread.BattleThread'];
 			const getOnViewDisposed = getF(BattleThread, 'get_onViewDisposed');
 			const getThread = getF(GameBattleView, 'get_thread');
 			const oldFunc = GameBattleView.prototype[getThread];
 			GameBattleView.prototype[getThread] = function () {
-				return oldFunc.call(this) || {
-					[getOnViewDisposed]: async () => { }
-				}
+				return (
+					oldFunc.call(this) || {
+						[getOnViewDisposed]: async () => {},
 			}
+				);
+			};
+		},
+		BuyTitanArtifact: function () {
+			const BuyItemPopup = selfGame['game.view.popup.shop.buy.BuyItemPopup'];
+			const oldFunc = BuyItemPopup.prototype.$;
+			BuyItemPopup.prototype.$ = function () {
+				if (isChecked('countControl')) {
+					const BuyTitanArtifactItemPopup = selfGame['game.view.popup.shop.buy.BuyTitanArtifactItemPopup'];
+					const BTAP_0 = getProtoFn(BuyTitanArtifactItemPopup, 0);
+					if (this[BTAP_0]) {
+						const BuyTitanArtifactPopupMediator = selfGame['game.mediator.gui.popup.shop.buy.BuyTitanArtifactItemPopupMediator'];
+						const BTAM_1 = getProtoFn(BuyTitanArtifactPopupMediator, 1);
+						const BuyItemPopupMediator = selfGame['game.mediator.gui.popup.shop.buy.BuyItemPopupMediator'];
+						const BIPM_5 = getProtoFn(BuyItemPopupMediator, 5);
+						const BIPM_7 = getProtoFn(BuyItemPopupMediator, 7);
+						const BIPM_9 = getProtoFn(BuyItemPopupMediator, 9);
+ 
+						let need = Math.min(this[BTAP_0][BTAM_1](), this[BTAP_0][BIPM_7]);
+						need = need ? need : 60;
+						this[BTAP_0][BIPM_9] = need;
+						this[BTAP_0][BIPM_5] = 10;
 		}
 	}
+				oldFunc.call(this);
+			};
+		},
+	};
  
 	/**
 	 * Starts replacing recorded functions
@@ -7527,11 +7580,13 @@ function rewardsAndMailFarm() {
 					});
 				}
 
+			if (questIds.length) {
 			questAllFarmCall.calls.push({
 				name: 'quest_questsFarm',
 				args: { questIds },
 				ident: 'quest_questsFarm',
 			});
+			}
  
 			let letters = data?.results[1]?.result?.response?.letters;
 			letterIds = lettersFilter(letters);
@@ -7557,7 +7612,9 @@ function rewardsAndMailFarm() {
 				for (let call of res.results) {
 					if (call.ident.includes('questFarm')) {
 						countQuests++;
-					} else {
+					} else if (call.ident.includes('questsFarm')) {
+						countQuests += Object.keys(call.result.response).length;
+					} else if (call.ident.includes('mailFarm')) {
 						countMail = Object.keys(call.result.response).length;
 					}
 
