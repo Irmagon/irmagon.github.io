@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.265
+// @version			2.266
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -2685,25 +2685,41 @@ async function checkChangeResponse(response) {
 				for (const week in trophys) {
 					const trophy = trophys[week];
 					if (!trophy.championRewardFarmed) {
-						calls.push({ name: 'hallOfFameFarmTrophyReward', args: { trophyId: week, rewardType: 'champion' }, ident: 'body_' + week });
+						calls.push({
+							name: 'hallOfFameFarmTrophyReward',
+							args: { trophyId: week, rewardType: 'champion' },
+							ident: 'body_champion_' + week,
+						});
 		}
+					if (Object.keys(trophy.clanReward).length && !trophy.clanRewardFarmed) {
+						calls.push({
+							name: 'hallOfFameFarmTrophyReward',
+							args: { trophyId: week, rewardType: 'clan' },
+							ident: 'body_clan_' + week,
+						});
+					}
 				}
 				if (calls.length) {
 					Send({ calls })
 						.then((e) => e.results.map((e) => e.result.response))
 						.then(async results => {
-							let coin = 0,
+							let coin18 = 0,
+								coin19 = 0,
 								gold = 0,
 								starmoney = 0;
 							for (const r of results) {
-								coin += r?.coin ? +r.coin[19] : 0;
+								coin18 += r?.coin ? +r.coin[18] : 0;
+								coin19 += r?.coin ? +r.coin[19] : 0;
 								gold += r?.gold ? +r.gold : 0;
 								starmoney += r?.starmoney ? +r.starmoney : 0;
 							}
 
 							let msg = I18N('ELEMENT_TOURNAMENT_REWARD') + '<br>';
-							if (coin) {
-								msg += cheats.translate('LIB_COIN_NAME_19') + `: ${coin}<br>`;
+							if (coin18) {
+								msg += cheats.translate('LIB_COIN_NAME_18') + `: ${coin18}<br>`;
+							}
+							if (coin19) {
+								msg += cheats.translate('LIB_COIN_NAME_19') + `: ${coin19}<br>`;
 							}
 							if (gold) {
 								msg += cheats.translate('LIB_PSEUDO_COIN') + `: ${gold}<br>`;
