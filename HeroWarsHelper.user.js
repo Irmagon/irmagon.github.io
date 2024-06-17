@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.266
+// @version			2.267
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -400,7 +400,8 @@ const i18nLangData = {
 		ACTIVITY_RECEIVED: 'Activity received',
 		NO_PURCHASABLE_HERO_SOULS: 'No purchasable Hero Souls',
 		PURCHASED_HERO_SOULS: 'Purchased {countHeroSouls} Hero Souls',
-		NOT_ENOUGH_EMERALDS_540: 'Not enough emeralds, you need 540 you have {currentStarMoney}',
+		NOT_ENOUGH_EMERALDS_540: 'Not enough emeralds, you need {imgEmerald}540 you have {imgEmerald}{currentStarMoney}',
+		BUY_OUTLAND_BTN: 'Buy {count} chests {imgEmerald}{countEmerald}',
 		CHESTS_NOT_AVAILABLE: 'Chests not available',
 		OUTLAND_CHESTS_RECEIVED: 'Outland chests received',
 		RAID_NOT_AVAILABLE: 'The raid is not available or there are no spheres',
@@ -742,7 +743,8 @@ const i18nLangData = {
 		ACTIVITY_RECEIVED: 'Получено активности',
 		NO_PURCHASABLE_HERO_SOULS: 'Нет доступных для покупки душ героев',
 		PURCHASED_HERO_SOULS: 'Куплено {countHeroSouls} душ героев',
-		NOT_ENOUGH_EMERALDS_540: 'Недостаточно изюма, нужно 540 у Вас {currentStarMoney}',
+		NOT_ENOUGH_EMERALDS_540: 'Недостаточно изюма, нужно {imgEmerald}540 у Вас {imgEmerald}{currentStarMoney}',
+		BUY_OUTLAND_BTN: 'Купить {count} сундуков {imgEmerald}{countEmerald}',
 		CHESTS_NOT_AVAILABLE: 'Сундуки не доступны',
 		OUTLAND_CHESTS_RECEIVED: 'Получено сундуков Запределья',
 		RAID_NOT_AVAILABLE: 'Рейд не доступен или сфер нет',
@@ -1250,9 +1252,7 @@ const buttons = {
 				},
 				{
 					msg: I18N('BUY_OUTLAND'),
-					result: function () {
-						confShow(I18N('BUY_OUTLAND_TITLE') + '?', bossOpenChestPay);
-					},
+					result: bossOpenChestPay,
 					title: I18N('BUY_OUTLAND_TITLE'),
 				},
 				{
@@ -1375,12 +1375,6 @@ let lastBossBattle = {}
  * Данные для расчете последнего боя с боссом
  */
 let lastBossBattleInfo = null;
-/**
- * Ability to cancel the battle in Asgard
- *
- * Возможность отменить бой в Астгарде
- */
-let isCancalBossBattle = true;
 /**
  * Information about the last battle
  *
@@ -7319,18 +7313,43 @@ async function buyHeroFragments() {
 
 /** Открыть платные сундуки в Запределье за 90 */
 async function bossOpenChestPay() {
-	const info = await Send('{"calls":[{"name":"userGetInfo","args":{},"ident":"userGetInfo"},{"name":"bossGetAll","args":{},"ident":"bossGetAll"}]}')
-		.then(e => e.results.map(n => n.result.response));
+	const info = await Send(
+		'{"calls":[{"name":"userGetInfo","args":{},"ident":"userGetInfo"},{"name":"bossGetAll","args":{},"ident":"bossGetAll"}]}'
+	).then((e) => e.results.map((n) => n.result.response));
 
 	const user = info[0];
 	const boses = info[1];
 
+	const imgEmerald =
+		"<img style='position: relative;top: 3px;' src='data:image/png;base64,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'>";
 	const currentStarMoney = user.starMoney;
 	if (currentStarMoney < 540) {
-		setProgress(I18N('NOT_ENOUGH_EMERALDS_540', { currentStarMoney }), true);
+		setProgress(I18N('NOT_ENOUGH_EMERALDS_540', { currentStarMoney, imgEmerald }), true);
 		return;
 	}
+	//
+	const buttons = [{ result: false, isClose: true }];
 
+	if (currentStarMoney >= 540) {
+		buttons.push({ 
+			msg: I18N('BUY_OUTLAND_BTN', { count: 9, countEmerald: 540, imgEmerald }),
+			result: [90, 90, 0] 
+		});
+	}
+ 
+	if (currentStarMoney >= 1740) {
+		buttons.push({
+			msg: I18N('BUY_OUTLAND_BTN', { count: 18, countEmerald: 1740, imgEmerald }),
+			result: [90, 90, 0, 200, 200, 0]
+		});
+	}
+ 
+	const answer = await popup.confirm(`<div style="margin-bottom: 15px;">${I18N('BUY_OUTLAND')}</div>`, buttons);
+ 
+	if (!answer) {
+		return;
+	}
+ 
 	const calls = [];
 
 	let n = 0;
@@ -7340,15 +7359,15 @@ async function bossOpenChestPay() {
 		if (boss.chestNum != 2) {
 			continue;
 		}
-		for (const starmoney of [90, 90, 0]) {
+		for (const starmoney of answer) {
 			calls.push({
-				name: "bossOpenChest",
+				name: 'bossOpenChest',
 				args: {
 					bossId,
 					amount,
-					starmoney
+					starmoney,
 				},
-				ident: "bossOpenChest_" + (++n)
+				ident: 'bossOpenChest_' + ++n,
 			});
 		}
 	}
@@ -7665,12 +7684,18 @@ function rewardsAndMailFarm() {
 						args: { questIds },
 						ident: 'body',
 					});
-					const newQuests = await Send({ calls }).then((e) => e.results[0].result.newQuests);
-					if (newQuests) {
-						questsIds = newQuests.filter((e) => e.state == 2).map((e) => e.id);
-					} else {
+					const results = await Send({ calls }).then((e) => e.results.map((e) => e.result));
 						questsIds = [];
+					for (const result of results) {
+						const newQuests = result.newQuests;
+						if (newQuests) {
+							for (let quest of newQuests) {
+								if (quest.state == 2) {
+									questsIds.push(quest.id);
+								}
+							}
 					}
+				}
 				}
  
 				setProgress(I18N('COLLECT_REWARDS_AND_MAIL', { countQuests, countMail }), true);
