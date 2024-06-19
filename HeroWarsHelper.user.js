@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.267
+// @version			2.270
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -2002,7 +2002,7 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.result = result.result;
 					}
 
-					let timer = getTimer(result.battleTime) + addBattleTimer;
+					let timer = result.battleTimer + addBattleTimer;
 					const period = Math.ceil((Date.now() - lastDungeonBattleStart) / 1000);
 					console.log(timer, period);
 					if (period < timer) {
@@ -2039,7 +2039,7 @@ async function checkChangeSend(sourceData, tempData) {
 				missionBattle.result = call.args.result;
 				const result = await Calc(missionBattle);
  
-				let timer = getTimer(result.battleTime) + addBattleTimer;
+				let timer = result.battleTimer + addBattleTimer;
 				const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 				if (period < timer) {
 					timer = timer - period;
@@ -2088,11 +2088,18 @@ async function checkChangeSend(sourceData, tempData) {
 				(call.name == 'pet_chestOpen' ||
 				call.name == 'titanUseSummonCircle') &&
 				call.args.amount > 1) {
+				const startAmount = call.args.amount;
 				call.args.amount = 1;
 				const result = await popup.confirm(I18N('MSG_SPECIFY_QUANT'), [
 					{ msg: I18N('BTN_OPEN'), isInput: true, default: call.args.amount},
 					]);
 				if (result) {
+					const item = call.name == 'pet_chestOpen' ? { id: 90, type: 'consumable' } : { id: 13, type: 'coin' };
+					cheats.updateInventory({
+						[item.type]: {
+							[item.id]: -(result - startAmount),
+						},
+					});
 					call.args.amount = result;
 					changeRequest = true;
 				}
@@ -2108,16 +2115,15 @@ async function checkChangeSend(sourceData, tempData) {
 				call.args.free &&
 				!changeRequest) {
 				artifactChestOpenCallName = call.name;
+				const startAmount = call.args.amount;
 				let result = await popup.confirm(I18N('MSG_SPECIFY_QUANT'), [
 					{ msg: I18N('BTN_OPEN'), isInput: true, default: call.args.amount },
 				]);
 				if (result) {
+					const openChests = result;
 					let sphere = result < 10 ? 1 : 10;
-
 					call.args.amount = sphere;
-					result -= sphere;
-
-					for (let count = result; count > 0; count -= sphere) {
+					for (let count = openChests - sphere; count > 0; count -= sphere) {
 						if (count < 10) sphere = 1;
 						const ident = artifactChestOpenCallName + "_" + count;
 						testData.calls.push({
@@ -2134,6 +2140,12 @@ async function checkChangeSend(sourceData, tempData) {
 						requestHistory[this.uniqid].calls[call.name].push(ident);
 					}
 
+					const consumableId = call.name == 'artifactChestOpen' ? 45 : 55;
+					cheats.updateInventory({
+						consumable: {
+							[consumableId]: -(openChests - startAmount),
+						},
+					});
 					artifactChestOpen = true;
 					changeRequest = true;
 				}
@@ -2808,53 +2820,57 @@ function sendAnswerInfo(answerInfo) {
  * Возвращает тип боя по типу пресета
  */
 function getBattleType(strBattleType) {
-	if (strBattleType.includes("invasion")) {
-		return "get_invasion";
-	}
-	if (strBattleType.includes("boss")) {
-		return "get_boss";
+	if (!strBattleType) {
+		return null;
 	}
 	switch (strBattleType) {
-		case "invasion":
-			return "get_invasion";
-		case "titan_pvp_manual":
-			return "get_titanPvpManual";
-		case "titan_pvp":
-			return "get_titanPvp";
-		case "titan_clan_pvp":
-		case "clan_pvp_titan":
-		case "clan_global_pvp_titan":
-		case "brawl_titan":
-		case "challenge_titan":
-			return "get_titanClanPvp";
-		case "clan_raid": // Asgard Boss // Босс асгарда
-		case "adventure": // Adventures // Приключения
-		case "clan_global_pvp":
-		case "clan_pvp":
-			return "get_clanPvp";
-		case "dungeon_titan":
-		case "titan_tower":
-			return "get_titan";
-		case "tower":
-		case "clan_dungeon":
-			return "get_tower";
-		case "pve":
-			return "get_pve";
-		case "pvp_manual":
-			return "get_pvpManual";
-		case "grand":
-		case "arena":
-		case "pvp":
-		case "challenge":
-			return "get_pvp";
-		case "core":
-			return "get_core";
-		case "boss_10":
-		case "boss_11":
-		case "boss_12":
-			return "get_boss";
-		default:
-			return "get_clanPvp";
+		case 'titan_pvp':
+			return 'get_titanPvp';
+		case 'titan_pvp_manual':
+		case 'titan_clan_pvp':
+		case 'clan_pvp_titan':
+		case 'clan_global_pvp_titan':
+		case 'brawl_titan':
+		case 'challenge_titan':
+		case 'titan_mission':
+			return 'get_titanPvpManual';
+		case 'clan_raid': // Asgard Boss // Босс асгарда
+		case 'adventure': // Adventures // Приключения
+		case 'clan_global_pvp':
+		case 'clan_pvp':
+			return 'get_clanPvp';
+		case 'dungeon_titan':
+		case 'titan_tower':
+			return 'get_titan';
+		case 'tower':
+			return 'get_tower';
+		case 'clan_dungeon':
+		case 'pve':
+		case 'mission':
+			return 'get_pve';
+		case 'mission_boss':
+			return 'get_missionBoss';
+		case 'challenge':
+		case 'pvp_manual':
+			return 'get_pvpManual';
+		case 'grand':
+		case 'arena':
+		case 'pvp':
+			return 'get_pvp';
+		case 'core':
+			return 'get_core';
+		default: {
+			if (strBattleType.includes('invasion')) {
+				return 'get_invasion';
+	}
+			if (strBattleType.includes('boss')) {
+				return 'get_boss';
+}
+			if (strBattleType.includes('titan_arena')) {
+				return 'get_titanPvpManual';
+			}
+			return 'get_clanPvp';
+		}
 	}
 }
 /**
@@ -5689,44 +5705,45 @@ function hackGame() {
 	 * Список соответствия используемых классов их названиям
 	 */
 	ObjectsList = [
-		{name:"BattlePresets", prop:"game.battle.controller.thread.BattlePresets"},
-		{name:"DataStorage", prop:"game.data.storage.DataStorage"},
-		{name:"BattleConfigStorage", prop:"game.data.storage.battle.BattleConfigStorage"},
-		{name:"BattleInstantPlay", prop:"game.battle.controller.instant.BattleInstantPlay"},
-		{name:"MultiBattleResult", prop:"game.battle.controller.MultiBattleResult"},
+		{ name: 'BattlePresets', prop: 'game.battle.controller.thread.BattlePresets' },
+		{ name: 'DataStorage', prop: 'game.data.storage.DataStorage' },
+		{ name: 'BattleConfigStorage', prop: 'game.data.storage.battle.BattleConfigStorage' },
+		{ name: 'BattleInstantPlay', prop: 'game.battle.controller.instant.BattleInstantPlay' },
+		{ name: 'MultiBattleInstantReplay', prop: 'game.battle.controller.instant.MultiBattleInstantReplay' },
+		{ name: 'MultiBattleResult', prop: 'game.battle.controller.MultiBattleResult' },
 
-		{name:"PlayerMissionData", prop:"game.model.user.mission.PlayerMissionData"},
-		{name:"PlayerMissionBattle", prop:"game.model.user.mission.PlayerMissionBattle"},
-		{name:"GameModel", prop:"game.model.GameModel"},
-		{name:"CommandManager", prop:"game.command.CommandManager"},
-		{name:"MissionCommandList", prop:"game.command.rpc.mission.MissionCommandList"},
-		{name:"RPCCommandBase", prop:"game.command.rpc.RPCCommandBase"},
-		{name:"PlayerTowerData", prop:"game.model.user.tower.PlayerTowerData"},
-		{name:"TowerCommandList", prop:"game.command.tower.TowerCommandList"},
-		{name:"PlayerHeroTeamResolver", prop:"game.model.user.hero.PlayerHeroTeamResolver"},
-		{name:"BattlePausePopup", prop:"game.view.popup.battle.BattlePausePopup"},
-		{name:"BattlePopup", prop:"game.view.popup.battle.BattlePopup"},
-		{name:"DisplayObjectContainer", prop:"starling.display.DisplayObjectContainer"},
-		{name:"GuiClipContainer", prop:"engine.core.clipgui.GuiClipContainer"},
-		{name:"BattlePausePopupClip", prop:"game.view.popup.battle.BattlePausePopupClip"},
-		{name:"ClipLabel", prop:"game.view.gui.components.ClipLabel"},
-		{name:"ClipLabelBase", prop:"game.view.gui.components.ClipLabelBase"},
-		{name:"Translate", prop:"com.progrestar.common.lang.Translate"},
-		{name:"ClipButtonLabeledCentered", prop:"game.view.gui.components.ClipButtonLabeledCentered"},
-		{name:"BattlePausePopupMediator", prop:"game.mediator.gui.popup.battle.BattlePausePopupMediator"},
-		{name:"SettingToggleButton", prop:"game.mechanics.settings.popup.view.SettingToggleButton"},
-		{name:"PlayerDungeonData", prop:"game.mechanics.dungeon.model.PlayerDungeonData"},
-		{name:"NextDayUpdatedManager", prop:"game.model.user.NextDayUpdatedManager"},
-		{name:"BattleController", prop:"game.battle.controller.BattleController"},
-		{name:"BattleSettingsModel", prop:"game.battle.controller.BattleSettingsModel"},
-		{name:"BooleanProperty", prop:"engine.core.utils.property.BooleanProperty"},
-		{name:"RuleStorage", prop:"game.data.storage.rule.RuleStorage"},
-		{name:"BattleConfig", prop:"battle.BattleConfig"},
-		{name:"BattleGuiMediator", prop:"game.battle.gui.BattleGuiMediator"},
-		{name:"BooleanPropertyWriteable", prop:"engine.core.utils.property.BooleanPropertyWriteable"},
-		{ name: "BattleLogEncoder", prop: "battle.log.BattleLogEncoder" },
-		{ name: "BattleLogReader", prop: "battle.log.BattleLogReader" },
-		{ name: "PlayerSubscriptionInfoValueObject", prop: "game.model.user.subscription.PlayerSubscriptionInfoValueObject" },
+		{ name: 'PlayerMissionData', prop: 'game.model.user.mission.PlayerMissionData' },
+		{ name: 'PlayerMissionBattle', prop: 'game.model.user.mission.PlayerMissionBattle' },
+		{ name: 'GameModel', prop: 'game.model.GameModel' },
+		{ name: 'CommandManager', prop: 'game.command.CommandManager' },
+		{ name: 'MissionCommandList', prop: 'game.command.rpc.mission.MissionCommandList' },
+		{ name: 'RPCCommandBase', prop: 'game.command.rpc.RPCCommandBase' },
+		{ name: 'PlayerTowerData', prop: 'game.model.user.tower.PlayerTowerData' },
+		{ name: 'TowerCommandList', prop: 'game.command.tower.TowerCommandList' },
+		{ name: 'PlayerHeroTeamResolver', prop: 'game.model.user.hero.PlayerHeroTeamResolver' },
+		{ name: 'BattlePausePopup', prop: 'game.view.popup.battle.BattlePausePopup' },
+		{ name: 'BattlePopup', prop: 'game.view.popup.battle.BattlePopup' },
+		{ name: 'DisplayObjectContainer', prop: 'starling.display.DisplayObjectContainer' },
+		{ name: 'GuiClipContainer', prop: 'engine.core.clipgui.GuiClipContainer' },
+		{ name: 'BattlePausePopupClip', prop: 'game.view.popup.battle.BattlePausePopupClip' },
+		{ name: 'ClipLabel', prop: 'game.view.gui.components.ClipLabel' },
+		{ name: 'ClipLabelBase', prop: 'game.view.gui.components.ClipLabelBase' },
+		{ name: 'Translate', prop: 'com.progrestar.common.lang.Translate' },
+		{ name: 'ClipButtonLabeledCentered', prop: 'game.view.gui.components.ClipButtonLabeledCentered' },
+		{ name: 'BattlePausePopupMediator', prop: 'game.mediator.gui.popup.battle.BattlePausePopupMediator' },
+		{ name: 'SettingToggleButton', prop: 'game.mechanics.settings.popup.view.SettingToggleButton' },
+		{ name: 'PlayerDungeonData', prop: 'game.mechanics.dungeon.model.PlayerDungeonData' },
+		{ name: 'NextDayUpdatedManager', prop: 'game.model.user.NextDayUpdatedManager' },
+		{ name: 'BattleController', prop: 'game.battle.controller.BattleController' },
+		{ name: 'BattleSettingsModel', prop: 'game.battle.controller.BattleSettingsModel' },
+		{ name: 'BooleanProperty', prop: 'engine.core.utils.property.BooleanProperty' },
+		{ name: 'RuleStorage', prop: 'game.data.storage.rule.RuleStorage' },
+		{ name: 'BattleConfig', prop: 'battle.BattleConfig' },
+		{ name: 'BattleGuiMediator', prop: 'game.battle.gui.BattleGuiMediator' },
+		{ name: 'BooleanPropertyWriteable', prop: 'engine.core.utils.property.BooleanPropertyWriteable' },
+		{ name: 'BattleLogEncoder', prop: 'battle.log.BattleLogEncoder' },
+		{ name: 'BattleLogReader', prop: 'battle.log.BattleLogReader' },
+		{ name: 'PlayerSubscriptionInfoValueObject', prop: 'game.model.user.subscription.PlayerSubscriptionInfoValueObject' },
 	];
 
 	/**
@@ -5808,20 +5825,36 @@ function hackGame() {
 	this.BattleCalc = function (battleData, battleConfig, callback) {
 		// battleConfig = battleConfig || getBattleType(battleData.type)
 		if (!Game.BattlePresets) throw Error('Use connectGame');
-		battlePresets = new Game.BattlePresets(!!battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+		battlePresets = new Game.BattlePresets(battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+		let battleInstantPlay;
+		if (battleData.progress?.length > 1) {
+			battleInstantPlay = new Game.MultiBattleInstantReplay(battleData, battlePresets);
+		} else {
 		battleInstantPlay = new Game.BattleInstantPlay(battleData, battlePresets);
+		}
 		battleInstantPlay[getProtoFn(Game.BattleInstantPlay, 9)].add((battleInstant) => {
-			const battleResult = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
+			const MBR_2 = getProtoFn(Game.MultiBattleResult, 2);
+			const battleResults = battleInstant[getF(Game.BattleInstantPlay, 'get_result')]();
 			const battleData = battleInstant[getF(Game.BattleInstantPlay, 'get_rawBattleInfo')]();
-			const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult[getProtoFn(Game.MultiBattleResult, 2)][0]));
+			const battleLogs = [];
 			const timeLimit = battlePresets[getF(Game.BattlePresets, 'get_timeLimit')]();
-			const battleTime = Math.max(...battleLog.map((e) => (e.time < timeLimit && e.time !== 168.8 ? e.time : 0)));
+			let battleTime = 0;
+			let battleTimer = 0;
+			for (const battleResult of battleResults[MBR_2]) {
+				const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult));
+				battleLogs.push(battleLog);
+				const maxTime = Math.max(...battleLog.map((e) => (e.time < timeLimit && e.time !== 168.8 ? e.time : 0)));
+				battleTimer += getTimer(maxTime)
+				battleTime += maxTime;
+			}
 			callback({
+				battleLogs,
 				battleTime,
+				battleTimer,
 				battleData,
-				progress: battleResult[getF(Game.MultiBattleResult, 'get_progress')](),
-				result: battleResult[getF(Game.MultiBattleResult, 'get_result')]()
-			})
+				progress: battleResults[getF(Game.MultiBattleResult, 'get_progress')](),
+				result: battleResults[getF(Game.MultiBattleResult, 'get_result')](),
+		});
 		});
 		battleInstantPlay.start();
 	}
@@ -6183,6 +6216,13 @@ function hackGame() {
 				oldFunc.call(this);
 			};
 		},
+		ClanQuestsFastFarm: function () {
+			const VipRuleValueObject = selfGame['game.data.storage.rule.VipRuleValueObject'];
+			const getClanQuestsFastFarm = getF(VipRuleValueObject, 'get_clanQuestsFastFarm', 1);
+			VipRuleValueObject.prototype[getClanQuestsFastFarm] = function () {
+				return 0;
+	};
+		},
 	};
  
 	/**
@@ -6229,8 +6269,15 @@ function hackGame() {
 		const P_24 = getProtoFn(selfGame["game.model.user.Player"], 24);
 		const Player = Game.GameModel[GM_INST]()[GM_0];
 		Player[P_24] = new selfGame["game.model.user.inventory.PlayerInventory"]
-		Player[P_24].init(await Send('{"calls":[{"name":"inventoryGet","args":{},"ident":"inventoryGet"}]}').then(e => e.results[0].result.response))
+		Player[P_24].init(await Send({calls:[{name:"inventoryGet",args:{},ident:"body"}]}).then(e => e.results[0].result.response))
 	}
+	this.updateInventory = function (reward) {
+		const GM_INST = getFnP(Game.GameModel, 'get_instance');
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const P_24 = getProtoFn(selfGame['game.model.user.Player'], 24);
+		const Player = Game.GameModel[GM_INST]()[GM_0];
+		Player[P_24].init(reward);
+	};
  
 	/**
 	 * Change the play screen on windowName
@@ -10354,6 +10401,13 @@ class executeBrawls {
 	constructor(resolve, reject) {
 		this.resolve = resolve;
 		this.reject = reject;
+ 
+		const allHeroIds = Object.keys(lib.getData('hero'));
+		this.callTeamGetMaxUpgrade.args.units = {
+			hero: allHeroIds.filter((id) => +id < 1000),
+			titan: allHeroIds.filter((id) => +id >= 4000 && +id < 4100),
+			pet: allHeroIds.filter((id) => +id >= 6000 && +id < 6100),
+		};
 	}
 
 	async start(args, isAuto) {
@@ -10418,11 +10472,13 @@ class executeBrawls {
 
 			// Автоматический подбор пачки
 			if (this.isAuto) {
-				if (this.mandatoryId !== 11) {
+				if (this.mandatoryId < 4000) {
 					this.end(I18N('BRAWL_AUTO_PACK_NOT_CUR_HERO'));
 					return;
 				}
+				if (this.mandatoryId >= 4000 && this.mandatoryId < 4100) {
 				this.args = await this.updatePack(enemie.heroes);
+			}
 			}
  
 			const result = await this.battle(enemie.userId);
@@ -10435,6 +10491,373 @@ class executeBrawls {
 
 	async updatePack(enemieHeroes) {
 		const packs = [
+			[4033, 4040, 4041, 4042, 4043],
+			[4032, 4040, 4041, 4042, 4043],
+			[4031, 4040, 4041, 4042, 4043],
+			[4030, 4040, 4041, 4042, 4043],
+			[4032, 4033, 4040, 4042, 4043],
+			[4030, 4033, 4041, 4042, 4043],
+			[4031, 4033, 4040, 4042, 4043],
+			[4032, 4033, 4040, 4041, 4043],
+			[4023, 4040, 4041, 4042, 4043],
+			[4030, 4033, 4040, 4042, 4043],
+			[4031, 4033, 4040, 4041, 4043],
+			[4022, 4040, 4041, 4042, 4043],
+			[4030, 4033, 4040, 4041, 4043],
+			[4021, 4040, 4041, 4042, 4043],
+			[4020, 4040, 4041, 4042, 4043],
+			[4023, 4033, 4040, 4042, 4043],
+			[4030, 4032, 4033, 4042, 4043],
+			[4023, 4033, 4040, 4041, 4043],
+			[4031, 4032, 4033, 4040, 4043],
+			[4030, 4032, 4033, 4041, 4043],
+			[4030, 4031, 4033, 4042, 4043],
+			[4013, 4040, 4041, 4042, 4043],
+			[4030, 4032, 4033, 4040, 4043],
+			[4030, 4031, 4033, 4041, 4043],
+			[4012, 4040, 4041, 4042, 4043],
+			[4030, 4031, 4033, 4040, 4043],
+			[4011, 4040, 4041, 4042, 4043],
+			[4010, 4040, 4041, 4042, 4043],
+			[4023, 4032, 4033, 4042, 4043],
+			[4022, 4032, 4033, 4042, 4043],
+			[4023, 4032, 4033, 4041, 4043],
+			[4021, 4032, 4033, 4042, 4043],
+			[4022, 4032, 4033, 4041, 4043],
+			[4023, 4030, 4033, 4042, 4043],
+			[4023, 4032, 4033, 4040, 4043],
+			[4013, 4033, 4040, 4042, 4043],
+			[4020, 4032, 4033, 4042, 4043],
+			[4021, 4032, 4033, 4041, 4043],
+			[4022, 4030, 4033, 4042, 4043],
+			[4022, 4032, 4033, 4040, 4043],
+			[4023, 4030, 4033, 4041, 4043],
+			[4023, 4031, 4033, 4040, 4043],
+			[4013, 4033, 4040, 4041, 4043],
+			[4020, 4031, 4033, 4042, 4043],
+			[4020, 4032, 4033, 4041, 4043],
+			[4021, 4030, 4033, 4042, 4043],
+			[4021, 4032, 4033, 4040, 4043],
+			[4022, 4030, 4033, 4041, 4043],
+			[4022, 4031, 4033, 4040, 4043],
+			[4023, 4030, 4033, 4040, 4043],
+			[4030, 4031, 4032, 4033, 4043],
+			[4003, 4040, 4041, 4042, 4043],
+			[4020, 4030, 4033, 4042, 4043],
+			[4020, 4031, 4033, 4041, 4043],
+			[4020, 4032, 4033, 4040, 4043],
+			[4021, 4030, 4033, 4041, 4043],
+			[4021, 4031, 4033, 4040, 4043],
+			[4022, 4030, 4033, 4040, 4043],
+			[4030, 4031, 4032, 4033, 4042],
+			[4002, 4040, 4041, 4042, 4043],
+			[4020, 4030, 4033, 4041, 4043],
+			[4020, 4031, 4033, 4040, 4043],
+			[4021, 4030, 4033, 4040, 4043],
+			[4030, 4031, 4032, 4033, 4041],
+			[4001, 4040, 4041, 4042, 4043],
+			[4030, 4031, 4032, 4033, 4040],
+			[4000, 4040, 4041, 4042, 4043],
+			[4013, 4032, 4033, 4042, 4043],
+			[4012, 4032, 4033, 4042, 4043],
+			[4013, 4032, 4033, 4041, 4043],
+			[4023, 4031, 4032, 4033, 4043],
+			[4011, 4032, 4033, 4042, 4043],
+			[4012, 4032, 4033, 4041, 4043],
+			[4013, 4030, 4033, 4042, 4043],
+			[4013, 4032, 4033, 4040, 4043],
+			[4023, 4030, 4032, 4033, 4043],
+			[4003, 4033, 4040, 4042, 4043],
+			[4013, 4023, 4040, 4042, 4043],
+			[4010, 4032, 4033, 4042, 4043],
+			[4011, 4032, 4033, 4041, 4043],
+			[4012, 4030, 4033, 4042, 4043],
+			[4012, 4032, 4033, 4040, 4043],
+			[4013, 4030, 4033, 4041, 4043],
+			[4013, 4031, 4033, 4040, 4043],
+			[4023, 4030, 4031, 4033, 4043],
+			[4003, 4033, 4040, 4041, 4043],
+			[4013, 4023, 4040, 4041, 4043],
+			[4010, 4031, 4033, 4042, 4043],
+			[4010, 4032, 4033, 4041, 4043],
+			[4011, 4030, 4033, 4042, 4043],
+			[4011, 4032, 4033, 4040, 4043],
+			[4012, 4030, 4033, 4041, 4043],
+			[4012, 4031, 4033, 4040, 4043],
+			[4013, 4030, 4033, 4040, 4043],
+			[4010, 4030, 4033, 4042, 4043],
+			[4010, 4031, 4033, 4041, 4043],
+			[4010, 4032, 4033, 4040, 4043],
+			[4011, 4030, 4033, 4041, 4043],
+			[4011, 4031, 4033, 4040, 4043],
+			[4012, 4030, 4033, 4040, 4043],
+			[4010, 4030, 4033, 4041, 4043],
+			[4010, 4031, 4033, 4040, 4043],
+			[4011, 4030, 4033, 4040, 4043],
+			[4003, 4032, 4033, 4042, 4043],
+			[4002, 4032, 4033, 4042, 4043],
+			[4003, 4032, 4033, 4041, 4043],
+			[4013, 4031, 4032, 4033, 4043],
+			[4001, 4032, 4033, 4042, 4043],
+			[4002, 4032, 4033, 4041, 4043],
+			[4003, 4030, 4033, 4042, 4043],
+			[4003, 4032, 4033, 4040, 4043],
+			[4013, 4030, 4032, 4033, 4043],
+			[4003, 4023, 4040, 4042, 4043],
+			[4000, 4032, 4033, 4042, 4043],
+			[4001, 4032, 4033, 4041, 4043],
+			[4002, 4030, 4033, 4042, 4043],
+			[4002, 4032, 4033, 4040, 4043],
+			[4003, 4030, 4033, 4041, 4043],
+			[4003, 4031, 4033, 4040, 4043],
+			[4020, 4022, 4023, 4042, 4043],
+			[4013, 4030, 4031, 4033, 4043],
+			[4003, 4023, 4040, 4041, 4043],
+			[4000, 4031, 4033, 4042, 4043],
+			[4000, 4032, 4033, 4041, 4043],
+			[4001, 4030, 4033, 4042, 4043],
+			[4001, 4032, 4033, 4040, 4043],
+			[4002, 4030, 4033, 4041, 4043],
+			[4002, 4031, 4033, 4040, 4043],
+			[4003, 4030, 4033, 4040, 4043],
+			[4021, 4022, 4023, 4040, 4043],
+			[4020, 4022, 4023, 4041, 4043],
+			[4020, 4021, 4023, 4042, 4043],
+			[4023, 4030, 4031, 4032, 4033],
+			[4000, 4030, 4033, 4042, 4043],
+			[4000, 4031, 4033, 4041, 4043],
+			[4000, 4032, 4033, 4040, 4043],
+			[4001, 4030, 4033, 4041, 4043],
+			[4001, 4031, 4033, 4040, 4043],
+			[4002, 4030, 4033, 4040, 4043],
+			[4020, 4022, 4023, 4040, 4043],
+			[4020, 4021, 4023, 4041, 4043],
+			[4022, 4030, 4031, 4032, 4033],
+			[4000, 4030, 4033, 4041, 4043],
+			[4000, 4031, 4033, 4040, 4043],
+			[4001, 4030, 4033, 4040, 4043],
+			[4020, 4021, 4023, 4040, 4043],
+			[4021, 4030, 4031, 4032, 4033],
+			[4020, 4030, 4031, 4032, 4033],
+			[4003, 4031, 4032, 4033, 4043],
+			[4020, 4022, 4023, 4033, 4043],
+			[4003, 4030, 4032, 4033, 4043],
+			[4003, 4013, 4040, 4042, 4043],
+			[4020, 4021, 4023, 4033, 4043],
+			[4003, 4030, 4031, 4033, 4043],
+			[4003, 4013, 4040, 4041, 4043],
+			[4013, 4030, 4031, 4032, 4033],
+			[4012, 4030, 4031, 4032, 4033],
+			[4011, 4030, 4031, 4032, 4033],
+			[4010, 4030, 4031, 4032, 4033],
+			[4013, 4023, 4031, 4032, 4033],
+			[4013, 4023, 4030, 4032, 4033],
+			[4020, 4022, 4023, 4032, 4033],
+			[4013, 4023, 4030, 4031, 4033],
+			[4021, 4022, 4023, 4030, 4033],
+			[4020, 4022, 4023, 4031, 4033],
+			[4020, 4021, 4023, 4032, 4033],
+			[4020, 4021, 4022, 4023, 4043],
+			[4003, 4030, 4031, 4032, 4033],
+			[4020, 4022, 4023, 4030, 4033],
+			[4020, 4021, 4023, 4031, 4033],
+			[4020, 4021, 4022, 4023, 4042],
+			[4002, 4030, 4031, 4032, 4033],
+			[4020, 4021, 4023, 4030, 4033],
+			[4020, 4021, 4022, 4023, 4041],
+			[4001, 4030, 4031, 4032, 4033],
+			[4020, 4021, 4022, 4023, 4040],
+			[4000, 4030, 4031, 4032, 4033],
+			[4003, 4023, 4031, 4032, 4033],
+			[4013, 4020, 4022, 4023, 4043],
+			[4003, 4023, 4030, 4032, 4033],
+			[4010, 4012, 4013, 4042, 4043],
+			[4013, 4020, 4021, 4023, 4043],
+			[4003, 4023, 4030, 4031, 4033],
+			[4011, 4012, 4013, 4040, 4043],
+			[4010, 4012, 4013, 4041, 4043],
+			[4010, 4011, 4013, 4042, 4043],
+			[4020, 4021, 4022, 4023, 4033],
+			[4010, 4012, 4013, 4040, 4043],
+			[4010, 4011, 4013, 4041, 4043],
+			[4020, 4021, 4022, 4023, 4032],
+			[4010, 4011, 4013, 4040, 4043],
+			[4020, 4021, 4022, 4023, 4031],
+			[4020, 4021, 4022, 4023, 4030],
+			[4003, 4013, 4031, 4032, 4033],
+			[4010, 4012, 4013, 4033, 4043],
+			[4003, 4020, 4022, 4023, 4043],
+			[4013, 4020, 4022, 4023, 4033],
+			[4003, 4013, 4030, 4032, 4033],
+			[4010, 4011, 4013, 4033, 4043],
+			[4003, 4020, 4021, 4023, 4043],
+			[4013, 4020, 4021, 4023, 4033],
+			[4003, 4013, 4030, 4031, 4033],
+			[4010, 4012, 4013, 4023, 4043],
+			[4003, 4020, 4022, 4023, 4033],
+			[4010, 4012, 4013, 4032, 4033],
+			[4010, 4011, 4013, 4023, 4043],
+			[4003, 4020, 4021, 4023, 4033],
+			[4011, 4012, 4013, 4030, 4033],
+			[4010, 4012, 4013, 4031, 4033],
+			[4010, 4011, 4013, 4032, 4033],
+			[4013, 4020, 4021, 4022, 4023],
+			[4010, 4012, 4013, 4030, 4033],
+			[4010, 4011, 4013, 4031, 4033],
+			[4012, 4020, 4021, 4022, 4023],
+			[4010, 4011, 4013, 4030, 4033],
+			[4011, 4020, 4021, 4022, 4023],
+			[4010, 4020, 4021, 4022, 4023],
+			[4010, 4012, 4013, 4023, 4033],
+			[4000, 4002, 4003, 4042, 4043],
+			[4010, 4011, 4013, 4023, 4033],
+			[4001, 4002, 4003, 4040, 4043],
+			[4000, 4002, 4003, 4041, 4043],
+			[4000, 4001, 4003, 4042, 4043],
+			[4010, 4011, 4012, 4013, 4043],
+			[4003, 4020, 4021, 4022, 4023],
+			[4000, 4002, 4003, 4040, 4043],
+			[4000, 4001, 4003, 4041, 4043],
+			[4010, 4011, 4012, 4013, 4042],
+			[4002, 4020, 4021, 4022, 4023],
+			[4000, 4001, 4003, 4040, 4043],
+			[4010, 4011, 4012, 4013, 4041],
+			[4001, 4020, 4021, 4022, 4023],
+			[4010, 4011, 4012, 4013, 4040],
+			[4000, 4020, 4021, 4022, 4023],
+			[4001, 4002, 4003, 4033, 4043],
+			[4000, 4002, 4003, 4033, 4043],
+			[4003, 4010, 4012, 4013, 4043],
+			[4003, 4013, 4020, 4022, 4023],
+			[4000, 4001, 4003, 4033, 4043],
+			[4003, 4010, 4011, 4013, 4043],
+			[4003, 4013, 4020, 4021, 4023],
+			[4010, 4011, 4012, 4013, 4033],
+			[4010, 4011, 4012, 4013, 4032],
+			[4010, 4011, 4012, 4013, 4031],
+			[4010, 4011, 4012, 4013, 4030],
+			[4001, 4002, 4003, 4023, 4043],
+			[4000, 4002, 4003, 4023, 4043],
+			[4003, 4010, 4012, 4013, 4033],
+			[4000, 4002, 4003, 4032, 4033],
+			[4000, 4001, 4003, 4023, 4043],
+			[4003, 4010, 4011, 4013, 4033],
+			[4001, 4002, 4003, 4030, 4033],
+			[4000, 4002, 4003, 4031, 4033],
+			[4000, 4001, 4003, 4032, 4033],
+			[4010, 4011, 4012, 4013, 4023],
+			[4000, 4002, 4003, 4030, 4033],
+			[4000, 4001, 4003, 4031, 4033],
+			[4010, 4011, 4012, 4013, 4022],
+			[4000, 4001, 4003, 4030, 4033],
+			[4010, 4011, 4012, 4013, 4021],
+			[4010, 4011, 4012, 4013, 4020],
+			[4001, 4002, 4003, 4013, 4043],
+			[4001, 4002, 4003, 4023, 4033],
+			[4000, 4002, 4003, 4013, 4043],
+			[4000, 4002, 4003, 4023, 4033],
+			[4003, 4010, 4012, 4013, 4023],
+			[4000, 4001, 4003, 4013, 4043],
+			[4000, 4001, 4003, 4023, 4033],
+			[4003, 4010, 4011, 4013, 4023],
+			[4001, 4002, 4003, 4013, 4033],
+			[4000, 4002, 4003, 4013, 4033],
+			[4000, 4001, 4003, 4013, 4033],
+			[4000, 4001, 4002, 4003, 4043],
+			[4003, 4010, 4011, 4012, 4013],
+			[4000, 4001, 4002, 4003, 4042],
+			[4002, 4010, 4011, 4012, 4013],
+			[4000, 4001, 4002, 4003, 4041],
+			[4001, 4010, 4011, 4012, 4013],
+			[4000, 4001, 4002, 4003, 4040],
+			[4000, 4010, 4011, 4012, 4013],
+			[4001, 4002, 4003, 4013, 4023],
+			[4000, 4002, 4003, 4013, 4023],
+			[4000, 4001, 4003, 4013, 4023],
+			[4000, 4001, 4002, 4003, 4033],
+			[4000, 4001, 4002, 4003, 4032],
+			[4000, 4001, 4002, 4003, 4031],
+			[4000, 4001, 4002, 4003, 4030],
+			[4000, 4001, 4002, 4003, 4023],
+			[4000, 4001, 4002, 4003, 4022],
+			[4000, 4001, 4002, 4003, 4021],
+			[4000, 4001, 4002, 4003, 4020],
+			[4000, 4001, 4002, 4003, 4013],
+			[4000, 4001, 4002, 4003, 4012],
+			[4000, 4001, 4002, 4003, 4011],
+			[4000, 4001, 4002, 4003, 4010],
+		].filter((p) => p.includes(this.mandatoryId));
+ 
+		const bestPack = {
+			pack: packs[0],
+			winRate: 0,
+			countBattle: 0,
+			id: 0,
+		};
+ 
+		for (const id in packs) {
+			const pack = packs[id];
+			const attackers = this.maxUpgrade.filter((e) => pack.includes(e.id)).reduce((obj, e) => ({ ...obj, [e.id]: e }), {});
+			const battle = {
+				attackers,
+				defenders: [enemieHeroes],
+				type: 'brawl_titan',
+			};
+			const isRandom = this.isRandomBattle(battle);
+			const stat = {
+				count: 0,
+				win: 0,
+				winRate: 0,
+			};
+			for (let i = 1; i <= 20; i++) {
+				battle.seed = Math.floor(Date.now() / 1000) + Math.random() * 1000;
+				const result = await Calc(battle);
+				stat.win += result.result.win;
+				stat.count += 1;
+				stat.winRate = stat.win / stat.count;
+				if (!isRandom || (i >= 2 && stat.winRate < 0.65) || (i >= 10 && stat.winRate == 1)) {
+					break;
+				}
+			}
+ 
+			if (!isRandom && stat.win) {
+				return {
+					favor: {},
+					heroes: pack,
+				};
+			}
+			if (stat.winRate > 0.85) {
+				return {
+					favor: {},
+					heroes: pack,
+				};
+			}
+			if (stat.winRate > bestPack.winRate) {
+				bestPack.countBattle = stat.count;
+				bestPack.winRate = stat.winRate;
+				bestPack.pack = pack;
+				bestPack.id = id;
+			}
+		}
+ 
+		//console.log(bestPack.id, bestPack.pack, bestPack.winRate, bestPack.countBattle);
+		return {
+			favor: {},
+			heroes: bestPack.pack,
+		};
+	}
+ 
+	isRandomPack(pack) {
+		const ids = Object.keys(pack);
+		return ids.includes('4023') || ids.includes('4021');
+	}
+ 
+	isRandomBattle(battle) {
+		return this.isRandomPack(battle.attackers) || this.isRandomPack(battle.defenders[0]);
+	}
+ 
+	async updateHeroesPack(enemieHeroes) {
+			const packs=[
 				{id:3,args:{heroes:[9,40,56,12,11],pet:6008,favor:{9:6005,11:6e3,12:6003,40:6004,56:6001}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},11:{id:"11",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{290:130,291:130,292:130,293:130,6002:130},power:189775,star:6,runes:[43750,43750,43750,43750,43750],skins:{11:60,36:60,86:60,170:60,247:60},currentSkin:86,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[4,8,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3032,hp:309512,intelligence:2777,physicalAttack:52570.32,strength:17624,armor:42178,armorPenetration:9957.6,magicResist:37632,skin:86,favorPetId:6e3,favorPower:11064},12:{id:12,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{346:130,347:130,348:130,349:130,6017:130},power:190108,star:6,runes:[43750,43750,43750,43750,43750],skins:{12:60,37:60,87:60,157:60,207:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[8,10,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17241,hp:359857,intelligence:3432,physicalAttack:17632,strength:2887,armor:25126,lifesteal:80,magicPenetration:19650,magicPower:60919.6,magicResist:29092.6,skin:0,favorPetId:6003,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6007:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:334687,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:65641,magicResist:13990,skin:0,favorPetId:6001,favorPower:11064},6008:{id:6008,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6036:130,6037:130},power:181943,type:"pet",perks:[5],name:null,armorPenetration:47911,intelligence:11064,strength:12360}}},{id:4,args:{heroes:[63,48,54,1,11],pet:6006,favor:{1:6004,11:6001,48:6005,54:6e3,63:6003}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6022:130,8268:1,8269:1},power:198058,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:419649,intelligence:3644,physicalAttack:11481.6,strength:17049,armor:12720,dodge:17232.28,magicPenetration:22780,magicPower:55816,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},11:{id:"11",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{290:130,291:130,292:130,293:130,6007:130},power:189526,star:6,runes:[43750,43750,43750,43750,43750],skins:{11:60,36:60,86:60,170:60,247:60},currentSkin:86,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,8,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3032,hp:409088,intelligence:2777,physicalAttack:45600,strength:17624,armor:52135.6,magicResist:37632,skin:86,favorPetId:6001,favorPower:11064},48:{id:48,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{240:130,241:130,242:130,243:130,6027:130},power:190584,star:6,runes:[43750,43750,43750,43750,43750],skins:{103:60,165:60,217:60,296:60,326:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[5,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17308,hp:397737,intelligence:2888,physicalAttack:40298.32,physicalCritChance:12280,strength:3169,armor:12185,armorPenetration:10180,magicPower:9957.6,magicResist:24816,skin:0,favorPetId:6005,favorPower:11064},54:{id:54,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{320:130,321:130,322:130,323:130,6002:130},power:190760,star:6,runes:[43750,43750,43750,43750,43750],skins:{224:60,225:60,263:60,282:60,319:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[10,2,16],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3179,hp:324868,intelligence:2844,physicalAttack:44980.32,strength:18258,armor:29660,armorPenetration:59258.6,magicPower:320,magicResist:7684,skin:0,favorPetId:6e3,favorPower:11064},63:{id:63,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{442:130,443:130,444:130,445:130,6017:130,8272:1,8273:1},power:191031,star:6,runes:[43750,43750,43750,43750,43750],skins:{341:60,350:60,351:60,352:1},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[6,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17931,hp:488832,intelligence:2737,physicalAttack:44256,strength:2877,armor:800,armorPenetration:22520,magicPower:9957.6,magicResist:18483.6,physicalCritChance:9545,modifiedSkillTier:3,skin:0,favorPetId:6003,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:2,args:{heroes:[23,56,43,12,11],pet:6006,favor:{11:6e3,12:6003,23:6005,43:6008,56:6001}},attackers:{11:{id:"11",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{290:130,291:130,292:130,293:130,6002:130},power:189775,star:6,runes:[43750,43750,43750,43750,43750],skins:{11:60,36:60,86:60,170:60,247:60},currentSkin:86,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[4,8,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3032,hp:309512,intelligence:2777,physicalAttack:52570.32,strength:17624,armor:42178,armorPenetration:9957.6,magicResist:37632,skin:86,favorPetId:6e3,favorPower:11064},12:{id:12,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{346:130,347:130,348:130,349:130,6017:130},power:190108,star:6,runes:[43750,43750,43750,43750,43750],skins:{12:60,37:60,87:60,157:60,207:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[8,10,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17241,hp:359857,intelligence:3432,physicalAttack:17632,strength:2887,armor:25126,lifesteal:80,magicPenetration:19650,magicPower:60919.6,magicResist:29092.6,skin:0,favorPetId:6003,favorPower:11064},23:{id:23,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{280:130,281:130,282:130,283:130,6027:130},power:195291,star:6,runes:[43750,43750,43750,43750,43750],skins:{23:60,59:60,152:60,190:60,228:60,336:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[8,7,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2655,hp:445846,intelligence:18302,physicalAttack:7020.32,strength:2920,armor:28620,magicPower:87413.6,magicResist:37016,skin:0,favorPetId:6005,favorPower:11064},43:{id:43,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{215:130,216:130,217:130,218:130,6038:130},power:189593,star:6,runes:[43750,43750,43750,43750,43750],skins:{98:60,130:60,169:60,201:60,304:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6008,type:"hero",perks:[7,9,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2447,hp:265217,intelligence:18758,physicalAttack:50,strength:2842,armor:18637.6,magicPenetration:52439,magicPower:75465.6,magicResist:22695,skin:0,favorPetId:6008,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6007:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:334687,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:65641,magicResist:13990,skin:0,favorPetId:6001,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:5,args:{heroes:[57,63,40,16,11],pet:6003,favor:{11:6007,16:6e3,40:6004,57:6003,63:6009}},attackers:{11:{id:"11",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{290:130,291:130,292:130,293:130,6035:130},power:189526,star:6,runes:[43750,43750,43750,43750,43750],skins:{11:60,36:60,86:60,170:60,247:60},currentSkin:86,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,8,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3032,hp:309512,intelligence:2777,physicalAttack:45600,strength:17624,armor:52135.6,magicPower:9957.6,magicResist:37632,skin:86,favorPetId:6007,favorPower:11064},16:{id:16,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{301:130,302:130,303:130,350:130,6002:130},power:191091,star:6,runes:[43750,43750,43750,43750,43750],skins:{16:60,58:60,177:60,192:60,258:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[6,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17007,hp:286172,intelligence:3196,physicalAttack:37367.32,strength:3207,armor:16985,armorPenetration:43317.6,dodge:14027,magicResist:6866,skin:0,favorPetId:6e3,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},57:{id:57,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{386:130,387:130,388:130,389:130,6017:130},power:189978,star:6,runes:[43750,43750,43750,43750,43750],skins:{269:60,288:60,316:60,328:60,342:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[5,8,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3249,hp:263278,intelligence:2854,physicalAttack:47083,strength:18671,armor:44106,magicPower:9957.6,magicResist:41589.6,skin:0,favorPetId:6003,favorPower:11064},63:{id:63,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{442:130,443:130,444:130,445:130,6041:130,8272:1,8273:1},power:193520,star:6,runes:[43750,43750,43750,43750,43750],skins:{341:60,350:60,351:60,352:1},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6009,type:"hero",perks:[6,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17931,hp:488832,intelligence:2737,physicalAttack:54213.6,strength:2877,armor:800,armorPenetration:32477.6,magicResist:8526,physicalCritChance:9545,modifiedSkillTier:3,skin:0,favorPetId:6009,favorPower:11064},6003:{id:6003,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6015:130,6016:130},power:181943,type:"pet",perks:[8],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}}
 		];
  
@@ -10497,7 +10920,7 @@ class executeBrawls {
 		const maxHero = Object.values(maxUpgrade.hero);
 		const maxTitan = Object.values(maxUpgrade.titan);
 		const maxPet = Object.values(maxUpgrade.pet);
-		this.maxUpgrade = [...maxHero, ...maxPet];
+		this.maxUpgrade = [...maxHero, ...maxPet, ...maxTitan];
  
 		this.info = data.results[4].result.response;
 		this.mandatoryId = lib.data.brawl.promoHero[this.info.id].promoHero;
