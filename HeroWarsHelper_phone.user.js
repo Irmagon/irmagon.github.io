@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.270
+// @version			2.271
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -428,7 +428,7 @@ const i18nLangData = {
 		LOTS_BOUGHT: '{countBuy} lots bought for gold',
 		BUY_FOR_GOLD: 'Buy for gold',
 		BUY_FOR_GOLD_TITLE: 'Buy items for gold in the Town Shop and in the Pet Soul Stone Shop',
-		REWARDS_AND_MAIL: 'Rewars and Mail',
+		REWARDS_AND_MAIL: 'Rewards and Mail',
 		REWARDS_AND_MAIL_TITLE: 'Collects rewards and mail',
 		COLLECT_REWARDS_AND_MAIL: 'Collected {countQuests} rewards and {countMail} letters',
 		TIMER_ALREADY: 'Timer already started {time}',
@@ -898,13 +898,13 @@ const checkboxes = {
 		label: I18N('SKIP_FIGHTS'),
 		cbox: null,
 		title: I18N('SKIP_FIGHTS_TITLE'),
-		default: true
+		default: true,
 	},
 	sendExpedition: {
 		label: I18N('AUTO_EXPEDITION'),
 		cbox: null,
 		title: I18N('AUTO_EXPEDITION_TITLE'),
-		default: true
+		default: true,
 	},
 	cancelBattle: {
 		label: I18N('CANCEL_FIGHT'),
@@ -916,19 +916,19 @@ const checkboxes = {
 		label: I18N('BATTLE_RECALCULATION'),
 		cbox: null,
 		title: I18N('BATTLE_RECALCULATION_TITLE'),
-		default: true
+		default: true,
 	},
 	countControl: {
 		label: I18N('QUANTITY_CONTROL'),
 		cbox: null,
 		title: I18N('QUANTITY_CONTROL_TITLE'),
-		default: true
+		default: true,
 	},
 	repeatMission: {
 		label: I18N('REPEAT_CAMPAIGN'),
 		cbox: null,
 		title: I18N('REPEAT_CAMPAIGN_TITLE'),
-		default: false
+		default: false,
 	},
 	noOfferDonat: {
 		label: I18N('DISABLE_DONAT'),
@@ -942,7 +942,7 @@ const checkboxes = {
 		default: (() => {
 			$result = false;
 			try {
-				$result = JSON.parse(localStorage[GM_info.script.name + ':noOfferDonat'])
+				$result = JSON.parse(localStorage[GM_info.script.name + ':noOfferDonat']);
 			} catch(e) {
 				$result = false;
 			}
@@ -953,7 +953,7 @@ const checkboxes = {
 		label: I18N('DAILY_QUESTS'),
 		cbox: null,
 		title: I18N('DAILY_QUESTS_TITLE'),
-		default: false
+		default: false,
 	},
 	// Потасовки
 	autoBrawls: {
@@ -963,7 +963,7 @@ const checkboxes = {
 		default: (() => {
 			$result = false;
 			try {
-				$result = JSON.parse(localStorage[GM_info.script.name + ':autoBrawls'])
+				$result = JSON.parse(localStorage[GM_info.script.name + ':autoBrawls']);
 			} catch (e) {
 				$result = false;
 			}
@@ -982,25 +982,25 @@ const checkboxes = {
 		label: I18N('SHOW_ERRORS'),
 		cbox: null,
 		title: I18N('SHOW_ERRORS_TITLE'),
-		default: true
+		default: true,
 	},
 	buyForGold: {
 		label: I18N('BUY_FOR_GOLD'),
 		cbox: null,
 		title: I18N('BUY_FOR_GOLD_TITLE'),
-		default: false
+		default: false,
 	},
 	hideServers: {
 		label: I18N('HIDE_SERVERS'),
 		cbox: null,
 		title: I18N('HIDE_SERVERS_TITLE'),
-		default: true
+		default: true,
 	},
 	fastSeason: {
 		label: I18N('FAST_SEASON'),
 		cbox: null,
 		title: I18N('FAST_SEASON_TITLE'),
-		default: false
+		default: false,
 	},
 };
 /**
@@ -1133,7 +1133,7 @@ const buttons = {
                 {
                     msg: I18N('TITAN_ARENA'),
                     title: I18N('TITAN_ARENA_TITLE'),
-                    result: testTitanArena
+                    result: testTitanArena,
                 },
                 {
                     msg: I18N('ADVENTURE'),
@@ -6195,9 +6195,10 @@ function hackGame() {
 			};
 		},
 		BuyTitanArtifact: function () {
+			const BIP_4 = getProtoFn(selfGame['game.view.popup.shop.buy.BuyItemPopup'], 4);
 			const BuyItemPopup = selfGame['game.view.popup.shop.buy.BuyItemPopup'];
-			const oldFunc = BuyItemPopup.prototype.$;
-			BuyItemPopup.prototype.$ = function () {
+			const oldFunc = BuyItemPopup.prototype[BIP_4];
+			BuyItemPopup.prototype[BIP_4] = function () {
 				if (isChecked('countControl')) {
 					const BuyTitanArtifactItemPopup = selfGame['game.view.popup.shop.buy.BuyTitanArtifactItemPopup'];
 					const BTAP_0 = getProtoFn(BuyTitanArtifactItemPopup, 0);
@@ -6378,8 +6379,9 @@ function hackGame() {
 		const GameInst = getFnP(selfGame['Game'], 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
 		const P_59 = getProtoFn(selfGame["game.model.user.Player"], 59);
+		const PSAD_31 = getProtoFn(selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData'], 31);
 		const Player = Game.GameModel[GameInst]()[GM_0];
-		Player[P_59].$({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
+		Player[P_59][PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
  
 		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
 		const navigator = getF(selfGame['Game'], "get_navigator");
