@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.271
+// @version			2.273
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -2737,6 +2737,17 @@ async function checkChangeResponse(response) {
 						});
 				}
 			}
+			if (call.ident == callsIdent['clanDomination_mapState']) {
+				const townPositions = call.result.response.townPositions;
+				const userPositions = call.result.response.userPositions;
+				for (let pos in townPositions) {
+					let townPos = townPositions[pos];
+					if (townPos.status) {
+						userPositions[townPos.userId] = townPos.position;
+					}
+				}
+				isChange = true;
+		}
 		}
  
 		if (mainReward && artifactChestOpen) {
@@ -2837,6 +2848,7 @@ function getBattleType(strBattleType) {
 		case 'clan_raid': // Asgard Boss // Босс асгарда
 		case 'adventure': // Adventures // Приключения
 		case 'clan_global_pvp':
+		case 'epic_brawl':
 		case 'clan_pvp':
 			return 'get_clanPvp';
 		case 'dungeon_titan':
@@ -2856,6 +2868,7 @@ function getBattleType(strBattleType) {
 		case 'grand':
 		case 'arena':
 		case 'pvp':
+		case 'clan_domination':
 			return 'get_pvp';
 		case 'core':
 			return 'get_core';
@@ -3416,7 +3429,7 @@ const popup = new (function () {
 
 		const buttonText = document.createElement('div');
 		buttonText.classList.add('PopUp_text', 'PopUp_buttonText');
-		buttonText.innerText = option.msg;
+		buttonText.innerHTML = option.msg;
 		button.append(buttonText);
 
 		return { button, contButton, inputField };
@@ -5744,6 +5757,7 @@ function hackGame() {
 		{ name: 'BattleLogEncoder', prop: 'battle.log.BattleLogEncoder' },
 		{ name: 'BattleLogReader', prop: 'battle.log.BattleLogReader' },
 		{ name: 'PlayerSubscriptionInfoValueObject', prop: 'game.model.user.subscription.PlayerSubscriptionInfoValueObject' },
+		{ name: 'AdventureMapCamera', prop: 'game.mechanics.adventure.popup.map.AdventureMapCamera' },
 	];
 
 	/**
@@ -6223,6 +6237,15 @@ function hackGame() {
 			VipRuleValueObject.prototype[getClanQuestsFastFarm] = function () {
 				return 0;
 	};
+		},
+		adventureCamera: function () {
+			const AMC_40 = getProtoFn(Game.AdventureMapCamera, 40);
+			const AMC_5 = getProtoFn(Game.AdventureMapCamera, 5);
+			const oldFunc = Game.AdventureMapCamera.prototype[AMC_40];
+			Game.AdventureMapCamera.prototype[AMC_40] = function (a) {
+				this[AMC_5] = 0.4;
+				oldFunc.bind(this)(a);
+			};
 		},
 	};
  
