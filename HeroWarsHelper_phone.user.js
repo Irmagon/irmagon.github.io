@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.273
+// @version			2.274
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1487,6 +1487,7 @@ let brawlsPack = null;
  * Автопотасовка запущена
  */
 let isBrawlsAutoStart = false;
+let clanDominationGetInfo = null;
 /**
  * Copies the text to the clipboard
  *
@@ -1742,7 +1743,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				"result": true
 			});
 			if (typeof this.onReadySuccess == 'function') {
-				setTimeout(this.onReadySuccess, 500);
+				setTimeout(this.onReadySuccess, 200);
 			}
 			return oldReady.apply(this, arguments);
 		}
@@ -2737,6 +2738,39 @@ async function checkChangeResponse(response) {
 							await popup.confirm(msg, [{ msg: I18N('BTN_OK'), result: 0 }]);
 						});
 				}
+			}
+			if (call.ident == callsIdent['clanDomination_getInfo']) {
+				clanDominationGetInfo = call.result.response;
+			}
+			if (call.ident == callsIdent['clanDomination_stats'] && !callsIdent['clanDomination_mapState']) {
+				this.onReadySuccess = async function () {
+					const result = await Send({
+						calls: [
+							{
+								name: 'clanDomination_mapState',
+								args: {},
+								ident: 'clanDomination_mapState',
+							},
+						],
+					}).then((e) => e.results[0].result.response);
+					let townPositions = result.townPositions;
+					let positions = {};
+					for (let pos in townPositions) {
+						let townPosition = townPositions[pos];
+						positions[townPosition.position] = townPosition;
+					}
+					Object.assign(clanDominationGetInfo, {
+						townPositions: positions,
+					});
+					let userPositions = result.userPositions;
+					for (let pos in clanDominationGetInfo.townPositions) {
+						let townPosition = clanDominationGetInfo.townPositions[pos];
+						if (townPosition.status) {
+							userPositions[townPosition.userId] = +pos;
+						}
+					}
+					cheats.updateMap(result);
+				};
 			}
 			if (call.ident == callsIdent['clanDomination_mapState']) {
 				const townPositions = call.result.response.townPositions;
@@ -6303,6 +6337,15 @@ function hackGame() {
 		const P_24 = getProtoFn(selfGame['game.model.user.Player'], 24);
 		const Player = Game.GameModel[GM_INST]()[GM_0];
 		Player[P_24].init(reward);
+	};
+ 
+	this.updateMap = function (data) {
+		const PCDD_21 = getProtoFn(selfGame['game.mechanics.clanDomination.model.PlayerClanDominationData'], 21);
+		const P_60 = getProtoFn(selfGame['game.model.user.Player'], 60);
+		const GM_0 = getProtoFn(Game.GameModel, 0);
+		const getInstance = getFnP(selfGame['Game'], 'get_instance');
+		const PlayerClanDominationData = Game.GameModel[getInstance]()[GM_0];
+		PlayerClanDominationData[P_60][PCDD_21].update(data);
 	};
  
 	/**
