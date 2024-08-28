@@ -3,7 +3,7 @@
 // @name:en			HWH_Phone
 // @name:ru			HWH_Phone
 // @namespace		HeroWarsHelper
-// @version			2.280
+// @version			2.281
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -573,7 +573,8 @@ const i18nLangData = {
 		SECRET_WEALTH: 'Тайное богатство',
 		SECRET_WEALTH_TITLE: 'Купить что-то в магазине "Тайное богатство"',
 		/* Разное */
-		BOTTOM_URLS: '<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank">tg</a> <a href="https://vk.com/invite/YNPxKGX" target="_blank">vk</a>',
+		BOTTOM_URLS:
+			'<a href="https://t.me/+q6gAGCRpwyFkNTYy" target="_blank" title="Telegram"><svg width="20" height="20" style="margin:2px" viewBox="0 0 1e3 1e3" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="a" x1="50%" x2="50%" y2="99.258%"><stop stop-color="#2AABEE" offset="0"/><stop stop-color="#229ED9" offset="1"/></linearGradient></defs><g fill-rule="evenodd"><circle cx="500" cy="500" r="500" fill="url(#a)"/><path d="m226.33 494.72c145.76-63.505 242.96-105.37 291.59-125.6 138.86-57.755 167.71-67.787 186.51-68.119 4.1362-0.072862 13.384 0.95221 19.375 5.8132 5.0584 4.1045 6.4501 9.6491 7.1161 13.541 0.666 3.8915 1.4953 12.756 0.83608 19.683-7.5246 79.062-40.084 270.92-56.648 359.47-7.0089 37.469-20.81 50.032-34.17 51.262-29.036 2.6719-51.085-19.189-79.207-37.624-44.007-28.847-68.867-46.804-111.58-74.953-49.366-32.531-17.364-50.411 10.769-79.631 7.3626-7.6471 135.3-124.01 137.77-134.57 0.30968-1.3202 0.59708-6.2414-2.3265-8.8399s-7.2385-1.7099-10.352-1.0032c-4.4137 1.0017-74.715 47.468-210.9 139.4-19.955 13.702-38.029 20.379-54.223 20.029-17.853-0.3857-52.194-10.094-77.723-18.393-31.313-10.178-56.199-15.56-54.032-32.846 1.1287-9.0037 13.528-18.212 37.197-27.624z" fill="#fff"/></g></svg></a><a href="https://vk.com/invite/YNPxKGX" target="_blank" title="Вконтакте"><svg width="20" height="20" style="margin:2px" viewBox="0 0 101 100" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#a)"><path d="M0.5 48C0.5 25.3726 0.5 14.0589 7.52944 7.02944C14.5589 0 25.8726 0 48.5 0H52.5C75.1274 0 86.4411 0 93.4706 7.02944C100.5 14.0589 100.5 25.3726 100.5 48V52C100.5 74.6274 100.5 85.9411 93.4706 92.9706C86.4411 100 75.1274 100 52.5 100H48.5C25.8726 100 14.5589 100 7.52944 92.9706C0.5 85.9411 0.5 74.6274 0.5 52V48Z" fill="#07f"/><path d="m53.708 72.042c-22.792 0-35.792-15.625-36.333-41.625h11.417c0.375 19.083 8.7915 27.167 15.458 28.833v-28.833h10.75v16.458c6.5833-0.7083 13.499-8.2082 15.832-16.458h10.75c-1.7917 10.167-9.2917 17.667-14.625 20.75 5.3333 2.5 13.875 9.0417 17.125 20.875h-11.834c-2.5417-7.9167-8.8745-14.042-17.25-14.875v14.875h-1.2919z" fill="#fff"/></g><defs><clipPath id="a"><rect transform="translate(.5)" width="100" height="100" fill="#fff"/></clipPath></defs></svg></a>',
 		GIFTS_SENT: 'Подарки отправлены!',
 		DO_YOU_WANT: 'Вы действительно хотите это сделать?',
 		BTN_RUN: 'Запускай',
@@ -986,7 +987,7 @@ const checkboxes = {
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
 		default: false,
-		hide: true,
+		hide: false,
 	},
 	showErrors: {
 		label: I18N('SHOW_ERRORS'),
@@ -1299,13 +1300,11 @@ const buttons = {
 				{
 					msg: I18N('CHANGE_MAP'),
 					result: async function () {
-						const maps = [];
-						for (let num = 1; num < 5; num++) {
-							maps.push({
-								msg: I18N('MAP_NUM', { num }),
-								result: num,
-							});
-						}
+						const maps = Object.values(lib.data.seasonAdventure.list).map(i => (
+							{
+								msg: I18N('MAP_NUM', { num: i.id }),
+								result: i.id
+							}));
  
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [...maps, { result: false, isClose: true }]);
 						if (result) {
@@ -1928,14 +1927,18 @@ async function checkChangeSend(sourceData, tempData) {
 				if (resultPopup) {
 					if (resultPopup == 2) {
 						setProgress(I18N('LETS_FIX'), false);
-						await new Promise((e) => setTimeout(e, 500));
+						await new Promise((e) => setTimeout(e, 1));
 						const cloneBattle = structuredClone(lastBossBattle);
 						const endTime = cloneBattle.endTime;
 						console.log('fixBossBattleStart');
-						const step = 9 / 150;
+						const step = 9 / 300;
 						let index = 0;
 						let count = 0;
-						for (let timer = 1; timer < 10; timer += step) {
+						for (let timer = 1.3; timer < 10.3; timer += step) {
+							await new Promise((e) => setTimeout(() => {
+									setProgress('Исправляем: ' + Math.floor(count / 300 * 100) + '%', false);
+									e();
+								}, 1));
 							if (endTime < Date.now()) {
 								break;
 							}
@@ -2872,30 +2875,16 @@ async function checkChangeResponse(response) {
  * Запрос ответа на вопрос
  */
 async function getAnswer(question) {
-	const now = Date.now();
-	const body = JSON.stringify({ ...question, now });
-	const signature = window['\x73\x69\x67\x6e'](now);
-	return new Promise(resolve => {
-		fetch('https://zingery.ru/heroes/getAnswer.php', {
-			method: 'POST',
-			headers: {
-				'X-Request-Signature': signature,
-				'X-Script-Name': GM_info.script.name,
-				'X-Script-Version': GM_info.script.version,
-				'X-Script-Author': GM_info.script.author,
-			},
-			body,
-		}).then(
-			response => response.json()
-		).then(
-			data => {
+	// c29tZSBzdHJhbmdlIHN5bWJvbHM=
+	const quizAPI = new ZingerYWebsiteAPI('getAnswer.php', arguments, { question });
+		return new Promise((resolve, reject) => {
+			quizAPI.request().then((data) => {
 				if (data.result) {
 					resolve(data.result);
 				} else {
 					resolve(false);
 				}
-			}
-		).catch((error) => {
+			}).catch((error) => {
 			console.error(error);
 			resolve(false);
 		});
@@ -2908,19 +2897,14 @@ async function getAnswer(question) {
  * Отправка вопроса и ответа в базу данных
  */
 function sendAnswerInfo(answerInfo) {
-	fetch('https://zingery.ru/heroes/setAnswer.php', {
-		method: 'POST',
-		body: JSON.stringify(answerInfo)
-	}).then(
-		response => response.json()
-	).then(
-		data => {
+	// c29tZSBub25zZW5zZQ==
+	const quizAPI = new ZingerYWebsiteAPI('setAnswer.php', arguments, { answerInfo });
+	quizAPI.request().then((data) => {
 			if (data.result) {
 				console.log(I18N('SENT_QUESTION'));
 			}
+	});
 		}
-	)
-}
 
 /**
  * Returns the battle type by preset type
@@ -4333,6 +4317,70 @@ async function openOrMigrateDatabase(userId) {
 	await db.set(userId, storage.values);
 }
 
+class ZingerYWebsiteAPI {
+/**
+	 * Class for interaction with the API of the zingery.ru website
+	 * Intended only for use with the HeroWarsHelper script:
+	 * https://greasyfork.org/ru/scripts/450693-herowarshelper
+	 * Copyright ZingerY
+	 */
+	url = 'https://zingery.ru/heroes/';
+	// YWJzb2x1dGVseSB1c2VsZXNzIGxpbmU=
+	constructor(urn, env, data = {}) {
+		this.urn = urn;
+		this.fd = {
+			now: Date.now(),
+			fp: this.constructor.toString().replaceAll(/\s/g, ''),
+			env: env.callee.toString().replaceAll(/\s/g, ''),
+			info: (({ name, version, author }) => [name, version, author])(GM_info.script),
+			...data,
+		};
+	}
+ 
+	sign() {
+		return md5([...this.fd.info, ~(this.fd.now % 1e3), this.fd.fp].join('_'));
+	}
+ 
+	encode(data) {
+		return btoa(encodeURIComponent(JSON.stringify(data)));
+	}
+ 
+	decode(data) {
+		return JSON.parse(decodeURIComponent(atob(data)));
+	}
+ 
+	headers() {
+		return {
+			'X-Request-Signature': this.sign(),
+			'X-Script-Name': GM_info.script.name,
+			'X-Script-Version': GM_info.script.version,
+			'X-Script-Author': GM_info.script.author,
+			'X-Script-ZingerY': 42,
+		};
+	}
+ 
+	async request() {
+		try {
+			const response = await fetch(this.url + this.urn, {
+				method: 'POST',
+				headers: this.headers(),
+				body: this.encode(this.fd),
+			});
+			const text = await response.text();
+			return this.decode(text);
+		} catch (e) {
+			console.error(e);
+			return [];
+		}
+	}
+	/**
+	 * Класс для взаимодействия с API сайта zingery.ru
+	 * Предназначен только для использования со скриптом HeroWarsHelper:
+	 * https://greasyfork.org/ru/scripts/450693-herowarshelper
+	 * Copyright ZingerY
+	 */
+}
+ 
 /**
  * Sending expeditions
  *
@@ -6588,6 +6636,7 @@ function hackGame() {
  * Автосбор подарков
  */
 function getAutoGifts() {
+	// c3ltYm9scyB0aGF0IG1lYW4gbm90aGluZw==
 	let valName = 'giftSendIds_' + userInfo.id;
 
 	if (!localStorage['clearGift' + userInfo.id]) {
@@ -6599,43 +6648,29 @@ function getAutoGifts() {
 		localStorage[valName] = '';
 	}
 
-	const now = Date.now();
-	const body = JSON.stringify({ now });
-	const signature = window['\x73\x69\x67\x6e'](now);
+	const giftsAPI = new ZingerYWebsiteAPI('getGifts.php', arguments);
 	/**
 	 * Submit a request to receive gift codes
 	 *
 	 * Отправка запроса для получения кодов подарков
 	 */
-	fetch('https://zingery.ru/heroes/getGifts.php', {
-			method: 'POST',
-			headers: {
-				'X-Request-Signature': signature,
-				'X-Script-Name': GM_info.script.name,
-				'X-Script-Version': GM_info.script.version,
-				'X-Script-Author': GM_info.script.author,
-			},
-			body
-	}).then(
-		response => response.json()
-	).then(
-		data => {
+	giftsAPI.request().then((data) => {
 			let freebieCheckCalls = {
-				calls: []
-			}
+			calls: [],
+		};
 			data.forEach((giftId, n) => {
 				if (localStorage[valName].includes(giftId)) return;
 				freebieCheckCalls.calls.push({
-					name: "registration",
+				name: 'registration',
 					args: {
 						user: { referrer: {} },
-						giftId
+					giftId,
 					},
 					context: {
 						actionTs: Math.floor(performance.now()),
-						cookie: window?.NXAppInfo?.session_id || null
+					cookie: window?.NXAppInfo?.session_id || null,
 					},
-					ident: giftId
+				ident: giftId,
 				});
 			});
 
@@ -6643,7 +6678,7 @@ function getAutoGifts() {
 				return;
 			}
 
-			send(JSON.stringify(freebieCheckCalls), e => {
+		send(JSON.stringify(freebieCheckCalls), (e) => {
 				let countGetGifts = 0;
 				const gifts = [];
 				for (check of e.results) {
@@ -6656,9 +6691,8 @@ function getAutoGifts() {
 				localStorage[valName] = [...saveGifts, ...gifts].slice(-50).join(';');
 				console.log(`${I18N('GIFTS')}: ${countGetGifts}`);
 			});
+	});
 		}
-	)
-}
 
 /**
  * To fill the kills in the Forge of Souls
@@ -7224,7 +7258,10 @@ async function justInfo() {
 			titansArenaButton.title = I18N('TITAN_ARENA_TITLE');
 		}
 
-		setProgress('<img src="https://zingery.ru/heroes/portal.png" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
+		const imgPortal =
+			'data:image/gif;base64,R0lGODlhLwAvAHAAACH5BAEAAP8ALAAAAAAvAC8AhwAAABkQWgjF3krO3ghSjAhSzinF3u+tGWvO3s5rGSmE5gha7+/OWghSrWvmnClShCmUlAiE5u+MGe/W3mvvWmspUmvvGSnOWinOnCnOGWsZjErvnAiUlErvWmsIUkrvGQjOWgjOnAjOGUoZjM6MGe/OIWvv5q1KGSnv5mulGe/vWs7v3ozv3kqEGYxKGWuEWmtSKUrv3mNaCEpKUs7OWiml5ggxWmMpEAgZpRlaCO/35q1rGRkxKWtarSkZrRljKSkZhAjv3msIGRk6CEparQhjWq3v3kql3ozOGe/vnM6tGYytWu9rGWuEGYzO3kqE3gil5s6MWq3vnGvFnM7vWoxrGc5KGYyMWs6tWq2MGYzOnO+tWmvFWkqlWoxrWgAZhEqEWq2tWoytnIyt3krFnGul3mulWmulnEIpUkqlGUqlnK3OnK2MWs7OnClSrSmUte+tnGvFGYytGYzvWs5rWowpGa3O3u/OnErFWoyMnGuE3muEnEqEnIyMGYzOWs7OGe9r3u9rWq3vWq1rWq1r3invWimlWu+t3q0pWq2t3u8pWu8p3q0p3invnCnvGe/vGa2tGa3vGa2tnK0pGe9rnK1rnCmlGe8pGe8pnK0pnGsZrSkp3msp3s7vGYzvnM7vnIzvGc6tnM5r3oxr3gilWs6t3owpWs4pWs4p3owp3s5rnIxrnAilGc4pGc4pnIwpnAgp3kop3s7O3u9KGe+MWoxKWoyM3kIIUgiUte+MnErFGc5KWowIGe9K3u9KWq3OWq1KWq1K3gjvWimEWu+M3q0IWq2M3u8IWu8I3q0I3gjvnAjvGa3OGa2MnK0IGe9KnK1KnCmEGe8IGe8InK0InEoZrSkI3msI3s6MnM5K3oxK3giEWs6M3owIWs4IWs4I3owI3s5KnIxKnAiEGc4IGc4InIwInAgI3koI3kJaCAgQKUIpEGtKUkJSKUIIECla7ylazmtahGta70pa70pahGtazkpazmtrWiExUkprUiljWikQKRkQCAAQCAAACAAAAAj/AP8JHEiwoMGDCBMqXMiwocODJlBIRBHDxMOLBmMEkSjAgICPE2Mw/OUH4z8TGz+agBIBCsuWUAQE0WLwzkAkKZZcnAilhk+fA1bUiEC0ZZABJOD8IyHhwJYDkpakafJQ4kooR5yw0LFihQ4WJhAMKCoARRYSTJgkUOInBZK2DiX2rGHEiI67eFcYATtAAVEoKEiQSFBFDs4UKbg0lGgAigIEeCNzrWvCxIChEcoy3dGiSoITTRQvnCLRrxOveI2McbKahevKJmooiKkFy4Gzg5tMMaMwitwIj/PqGPCugL0CT47ANhEjQg3Atg9IT5CiS4uEUcRIBH4EtREETuB9/xn/BUcBBbBXGGgpoPaBEid23EuXgvdBJhtQGFCwwA7eMgs0gEMDBJD3hR7KbRVbSwP8UcIWJNwjIRLXGZRAAhLVsIACR9y1whMNfNGAHgiUcUSBX8ADWwwKzCYADTSUcMA9ebwQmkFYMMFGhgu80x1XTxSAwxNdGWGCAiG6YQBzly3QkhYxlsDGP1cg4YBBaC0h1zsLPGHXCkfA00AZeu11hALl1VBZXwW0RAaMDGDxTxNdTGEQExJoiUINXCpwmhFOKJCcVmCdOR56MezXJhRvwFlCC2lcWVAUEjBxRobw9HhEXUYekWBlsoVoQEWyFbAAFPRIQQMDJcDQhRhYSv+QZ1kGcAnPYya4BhZYlb1TQ4iI+tVmBPpIQQWrMORxkKwSsEFrDaa+8xgCy1mmgLSHxtDXAhtGMIOxDKjgAkLM7iAAYD4VJ+0RAyAgVl++ikfAESxy62QB365awrjLyprAcxEY4FOmXEp7LbctjlfAAE1yGwEBYBirAgP8GtTUARIMM1QBPrVYQAHF9dgiml/Mexl/3DbAwxnHMqBExQVdLAEMjRXQgHOyydaibPCgqEDH3JrawDosUDExCTATZJuMJ0AAxRNXtLFFPD+P/DB58AC9wH4N4BMxDRPvkPRAbLx3AAlVMLBFCXeQgIaIKJKHQ9X8+forAetMsaoKB7j/MAhCL5j9VFNPJYBGiCGW18CtsvWIs5j7gLEGqyV81gxC6ZBQQgkSMEUCLQckMMLHNhcAD3B+8TdyA0PPACWrB8SH0BItyHAAAwdE4YILTSUww8cELwAyt7D4JSberkd5wA4neIFQE020sMPmJZBwAi0SJMBOA6WTXgAsDYDPOj7r3KNFy5WfkEBCKbTQBQzTM+By5wm4YAPr+LM+IIE27LPOFWswmgqqZ4UEXCEhLUjBGWbgAs3JD2OfWcc68GEDArCOAASwAfnWUYUwtIEKSVCBCiSgPuclpAlImMI9YNDAzeFuMEwQ2w3W4Q530PAGLthBFNqwghCKMAoF3MEB/xNihvr8Ix4sdCCrJja47CVAMFjAwid6eJcQWi8BO4jHQl6AGFjdwwUnOMF75CfCMpoxCTpAoxoZMBgs3qMh7ZODQFYYxgSMsQThCpcK0BiZJNxBCZ7zwhsbYqO3wCoe7AjjCaxAggNUcY94mcDa3qMECWSBHYN0CBfj0IQliEFCMFjkIulAAisUkBZYyB4USxAFCZnkH1xsgltSYCMYyACMpizghS7kOTZIKJMmeYEZzCCH6iCmBS1IRzpkcEsXVMGZMMgHJvfwyoLsYQ9nmMIUuDAFPIAhH8pUZjLbcY89rKKaC9nDFeLxy3vkYwbJTMcL0InOeOSjBVShJz2pqQvPfvrznwANKEMCAgA7';
+ 
+		setProgress('<img src="' + imgPortal + '" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
 		resolve();
 	});
 }
