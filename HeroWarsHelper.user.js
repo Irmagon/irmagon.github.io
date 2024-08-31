@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.281
+// @version			2.284
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -224,7 +224,8 @@ const i18nLangData = {
 		SECRET_WEALTH: 'Secret Wealth',
 		SECRET_WEALTH_TITLE: 'Buy something in the store "Secret Wealth"',
 		/* Misc */
-		BOTTOM_URLS: '<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank">tg</a>',
+		BOTTOM_URLS:
+			'<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank" title="Telegram"><svg width="20" height="20" style="margin:2px" viewBox="0 0 1e3 1e3" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="a" x1="50%" x2="50%" y2="99.258%"><stop stop-color="#2AABEE" offset="0"/><stop stop-color="#229ED9" offset="1"/></linearGradient></defs><g fill-rule="evenodd"><circle cx="500" cy="500" r="500" fill="url(#a)"/><path d="m226.33 494.72c145.76-63.505 242.96-105.37 291.59-125.6 138.86-57.755 167.71-67.787 186.51-68.119 4.1362-0.072862 13.384 0.95221 19.375 5.8132 5.0584 4.1045 6.4501 9.6491 7.1161 13.541 0.666 3.8915 1.4953 12.756 0.83608 19.683-7.5246 79.062-40.084 270.92-56.648 359.47-7.0089 37.469-20.81 50.032-34.17 51.262-29.036 2.6719-51.085-19.189-79.207-37.624-44.007-28.847-68.867-46.804-111.58-74.953-49.366-32.531-17.364-50.411 10.769-79.631 7.3626-7.6471 135.3-124.01 137.77-134.57 0.30968-1.3202 0.59708-6.2414-2.3265-8.8399s-7.2385-1.7099-10.352-1.0032c-4.4137 1.0017-74.715 47.468-210.9 139.4-19.955 13.702-38.029 20.379-54.223 20.029-17.853-0.3857-52.194-10.094-77.723-18.393-31.313-10.178-56.199-15.56-54.032-32.846 1.1287-9.0037 13.528-18.212 37.197-27.624z" fill="#fff"/></g></svg></a>',
 		GIFTS_SENT: 'Gifts sent!',
 		DO_YOU_WANT: 'Do you really want to do this?',
 		BTN_RUN: 'Run',
@@ -499,7 +500,7 @@ const i18nLangData = {
 		BTN_TRY_FIX_IT: 'Fix it (test)',
 		DAMAGE_FIXED: 'Damage fixed from {lastDamage} to {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Failed to fix damage: {lastDamage}',
-		LETS_FIX: "Let's fix...",
+		LETS_FIX: "Let's fix",
 		DEFEAT_TURN_TIMER: 'Defeat! Turn on the timer to complete the mission?',
 	},
 	ru: {
@@ -849,7 +850,7 @@ const i18nLangData = {
 		BTN_TRY_FIX_IT: 'Исправить (тест)',
 		DAMAGE_FIXED: 'Урон исправлен с {lastDamage} до {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Не удалось исправить урон: {lastDamage}',
-		LETS_FIX: 'Исправляем...',
+		LETS_FIX: 'Исправляем',
 		DEFEAT_TURN_TIMER: 'Поражение! Включить таймер для завершения миссии?',
 	},
 };
@@ -1926,7 +1927,7 @@ async function checkChangeSend(sourceData, tempData) {
 				if (resultPopup) {
 					if (resultPopup == 2) {
 						setProgress(I18N('LETS_FIX'), false);
-						await new Promise((e) => setTimeout(e, 1));
+						await new Promise((e) => setTimeout(e, 0));
 						const cloneBattle = structuredClone(lastBossBattle);
 						const endTime = cloneBattle.endTime;
 						console.log('fixBossBattleStart');
@@ -1934,13 +1935,13 @@ async function checkChangeSend(sourceData, tempData) {
 						let index = 0;
 						let count = 0;
 						for (let timer = 1.3; timer < 10.3; timer += step) {
-							await new Promise((e) => setTimeout(() => {
-									setProgress('Исправляем: ' + Math.floor(count / 300 * 100) + '%', false);
-									e();
-								}, 1));
 							if (endTime < Date.now()) {
 								break;
 							}
+							await new Promise((e) => setTimeout(() => {
+									setProgress(I18N('LETS_FIX') + ' ' + Math.floor((count / 300) * 100) + '%', false);
+									e();
+								}, 0));
 							try {
 								resultBattle = await Calc(cloneBattle);
 							} catch (e) {
@@ -2806,6 +2807,7 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['clanDomination_getInfo']) {
 				clanDominationGetInfo = call.result.response;
 			}
+			/*
 			if (call.ident == callsIdent['chatGetAll'] && call.args.chatType == 'clanDomination' && !callsIdent['clanDomination_mapState']) {
 				this.onReadySuccess = async function () {
 					const result = await Send({
@@ -2847,6 +2849,7 @@ async function checkChangeResponse(response) {
 				}
 				isChange = true;
 		}
+			*/
 		}
  
 		if (mainReward && artifactChestOpen) {
@@ -7538,34 +7541,55 @@ async function buyHeroFragments() {
 
 /** Открыть платные сундуки в Запределье за 90 */
 async function bossOpenChestPay() {
-	const info = await Send(
-		'{"calls":[{"name":"userGetInfo","args":{},"ident":"userGetInfo"},{"name":"bossGetAll","args":{},"ident":"bossGetAll"}]}'
-	).then((e) => e.results.map((n) => n.result.response));
+	const callsNames = ['userGetInfo', 'bossGetAll', 'specialOffer_getAll', 'getTime'];
+	const info = await Send({ calls: callsNames.map((name) => ({ name, args: {}, ident: name })) }).then((e) =>
+		e.results.map((n) => n.result.response)
+	);
 
 	const user = info[0];
 	const boses = info[1];
+	const offers = info[2];
+	const time = info[3];
+ 
+	const discountOffer = offers.find((e) => e.offerType == 'costReplaceOutlandChest');
 
+	let discount = 1;
+	if (discountOffer && discountOffer.endTime > time) {
+		discount = 1 - discountOffer.offerData.outlandChest.discountPercent / 100;
+	}
+ 
+	cost9chests = 540 * discount;
+	cost18chests = 1740 * discount;
+	costFirstChest = 90 * discount;
+	costSecondChest = 200 * discount;
+ 
+	const currentStarMoney = user.starMoney;
+	if (currentStarMoney < cost9chests) {
+		setProgress('Недостаточно изюма, нужно ' + cost9chests + ' у Вас ' + currentStarMoney, true);
+		return;
+	}
+ 
 	const imgEmerald =
 		"<img style='position: relative;top: 3px;' src='data:image/png;base64,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'>";
-	const currentStarMoney = user.starMoney;
-	if (currentStarMoney < 540) {
+ 
+	if (currentStarMoney < cost9chests) {
 		setProgress(I18N('NOT_ENOUGH_EMERALDS_540', { currentStarMoney, imgEmerald }), true);
 		return;
 	}
-	//
+ 
 	const buttons = [{ result: false, isClose: true }];
 
-	if (currentStarMoney >= 540) {
+	if (currentStarMoney >= cost9chests) {
 		buttons.push({ 
-			msg: I18N('BUY_OUTLAND_BTN', { count: 9, countEmerald: 540, imgEmerald }),
-			result: [90, 90, 0] 
+			msg: I18N('BUY_OUTLAND_BTN', { count: 9, countEmerald: cost9chests, imgEmerald }),
+			result: [costFirstChest, costFirstChest, 0],
 		});
 	}
  
-	if (currentStarMoney >= 1740) {
+	if (currentStarMoney >= cost18chests) {
 		buttons.push({
-			msg: I18N('BUY_OUTLAND_BTN', { count: 18, countEmerald: 1740, imgEmerald }),
-			result: [90, 90, 0, 200, 200, 0]
+			msg: I18N('BUY_OUTLAND_BTN', { count: 18, countEmerald: cost18chests, imgEmerald }),
+			result: [costFirstChest, costFirstChest, 0, costSecondChest, costSecondChest, 0],
 		});
 	}
  
@@ -7575,42 +7599,48 @@ async function bossOpenChestPay() {
 		return;
 	}
  
-	const calls = [];
-
+	const callBoss = [];
 	let n = 0;
-	const amount = 1;
 	for (let boss of boses) {
 		const bossId = boss.id;
 		if (boss.chestNum != 2) {
 			continue;
 		}
+		const calls = [];
 		for (const starmoney of answer) {
 			calls.push({
 				name: 'bossOpenChest',
 				args: {
+					amount: 1,
 					bossId,
-					amount,
 					starmoney,
 				},
 				ident: 'bossOpenChest_' + ++n,
 			});
 		}
+		callBoss.push(calls);
 	}
 
-	if (!calls.length) {
+	if (!callBoss.length) {
 		setProgress(I18N('CHESTS_NOT_AVAILABLE'), true);
 		return;
 	}
 
-	const result = await Send(JSON.stringify({ calls }));
+	let count = 0;
+	let errors = 0;
+	for (const calls of callBoss) {
+		const result = await Send({ calls });
 	console.log(result);
 	if (result?.results) {
-		setProgress(`${I18N('OUTLAND_CHESTS_RECEIVED')}: ` + result.results.length, true);
+			count += result.results.length;
 	} else {
-		setProgress(I18N('CHESTS_NOT_AVAILABLE'), true);
+			errors++;
 	}
 }
 
+	setProgress(`${I18N('OUTLAND_CHESTS_RECEIVED')}: ${count}`, true);
+}
+ 
 async function autoRaidAdventure() {
 	const calls = [
 		{
@@ -8729,7 +8759,7 @@ function executeRaidNodes(resolve, reject) {
 function testBossBattle() {
 	return new Promise((resolve, reject) => {
 		const bossBattle = new executeBossBattle(resolve, reject);
-		bossBattle.start(lastBossBattleInfo);
+		bossBattle.start(lastBossBattle);
 	});
 }
 
