@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.284
+// @version			2.285
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -2408,6 +2408,7 @@ async function checkChangeResponse(response) {
 			 */
 			if (call.ident == callsIdent['userGetInfo']) {
 				let user = call.result.response;
+				document.title = user.name;
 				userInfo = Object.assign({}, user);
 				delete userInfo.refillable;
 				if (!questsInfo['userGetInfo']) {
@@ -7839,6 +7840,7 @@ function rewardsAndMailFarm() {
 			const questGetAll = data.results[0].result.response.filter((e) => e.state == 2);
 			const questBattlePass = lib.getData('quest').battlePass;
 			const questChainBPass = lib.getData('battlePass').questChain;
+			const listBattlePass = lib.getData('battlePass').list;
 
 			const questAllFarmCall = {
 				calls: [],
@@ -7854,6 +7856,12 @@ function rewardsAndMailFarm() {
 					if (chain.requirement?.battlePassTicket) {
 						continue;
 					}
+					const battlePass = listBattlePass[chain.battlePass];
+					const startTime = battlePass.startCondition.time.value * 1e3
+					const endTime = new Date(startTime + battlePass.duration * 1e3); 
+					if (startTime > Date.now() || endTime < Date.now()) {
+						continue;
+				}
 				}
 				if (quest.id >= 2e7) {
 					questIds.push(quest.id);
