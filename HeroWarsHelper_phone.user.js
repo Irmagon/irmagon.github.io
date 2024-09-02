@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.285
+// @version			2.286
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -23,15 +23,16 @@
  *
  * Стартуем скрипт
  */
-console.log('%cStart ' + GM_info.script.name + ', v' + GM_info.script.version, 'color: red');
+console.log('%cStart ' + GM_info.script.name + ', v' + GM_info.script.version + ' by ' + GM_info.script.author, 'color: red');
 /**
  * Script info
  *
  * Информация о скрипте
  */
-const scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl, source) =>
-	({name, version, author, homepage, lastModified, updateUrl, source}))
-	(GM_info.script, GM_info.scriptUpdateURL, arguments.callee.toString());
+this.scriptInfo = (({name, version, author, homepage, lastModified}, updateUrl) =>
+	({name, version, author, homepage, lastModified, updateUrl}))
+	(GM_info.script, GM_info.scriptUpdateURL);
+this.GM_info = GM_info;
 /**
  * Information for completing daily quests
  *
