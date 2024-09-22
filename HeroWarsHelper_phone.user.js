@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.286
+// @version			2.287
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1931,7 +1931,7 @@ async function checkChangeSend(sourceData, tempData) {
 						setProgress(I18N('LETS_FIX'), false);
 						await new Promise((e) => setTimeout(e, 0));
 						const cloneBattle = structuredClone(lastBossBattle);
-						const endTime = cloneBattle.endTime;
+						const endTime = cloneBattle.endTime - 1e4;
 						console.log('fixBossBattleStart');
 						const step = 9 / 300;
 						let index = 0;
