@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.287
+// @version			2.288
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -226,7 +226,7 @@ const i18nLangData = {
 		SECRET_WEALTH_TITLE: 'Buy something in the store "Secret Wealth"',
 		/* Misc */
 		BOTTOM_URLS:
-			'<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank" title="Telegram"><svg width="20" height="20" style="margin:2px" viewBox="0 0 1e3 1e3" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="a" x1="50%" x2="50%" y2="99.258%"><stop stop-color="#2AABEE" offset="0"/><stop stop-color="#229ED9" offset="1"/></linearGradient></defs><g fill-rule="evenodd"><circle cx="500" cy="500" r="500" fill="url(#a)"/><path d="m226.33 494.72c145.76-63.505 242.96-105.37 291.59-125.6 138.86-57.755 167.71-67.787 186.51-68.119 4.1362-0.072862 13.384 0.95221 19.375 5.8132 5.0584 4.1045 6.4501 9.6491 7.1161 13.541 0.666 3.8915 1.4953 12.756 0.83608 19.683-7.5246 79.062-40.084 270.92-56.648 359.47-7.0089 37.469-20.81 50.032-34.17 51.262-29.036 2.6719-51.085-19.189-79.207-37.624-44.007-28.847-68.867-46.804-111.58-74.953-49.366-32.531-17.364-50.411 10.769-79.631 7.3626-7.6471 135.3-124.01 137.77-134.57 0.30968-1.3202 0.59708-6.2414-2.3265-8.8399s-7.2385-1.7099-10.352-1.0032c-4.4137 1.0017-74.715 47.468-210.9 139.4-19.955 13.702-38.029 20.379-54.223 20.029-17.853-0.3857-52.194-10.094-77.723-18.393-31.313-10.178-56.199-15.56-54.032-32.846 1.1287-9.0037 13.528-18.212 37.197-27.624z" fill="#fff"/></g></svg></a>',
+			'<a href="https://t.me/+0oMwICyV1aQ1MDAy" target="_blank" title="Telegram"><svg width="20" height="20" style="margin:2px" viewBox="0 0 1e3 1e3" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="a" x1="50%" x2="50%" y2="99.258%"><stop stop-color="#2AABEE" offset="0"/><stop stop-color="#229ED9" offset="1"/></linearGradient></defs><g fill-rule="evenodd"><circle cx="500" cy="500" r="500" fill="url(#a)"/><path d="m226.33 494.72c145.76-63.505 242.96-105.37 291.59-125.6 138.86-57.755 167.71-67.787 186.51-68.119 4.1362-0.072862 13.384 0.95221 19.375 5.8132 5.0584 4.1045 6.4501 9.6491 7.1161 13.541 0.666 3.8915 1.4953 12.756 0.83608 19.683-7.5246 79.062-40.084 270.92-56.648 359.47-7.0089 37.469-20.81 50.032-34.17 51.262-29.036 2.6719-51.085-19.189-79.207-37.624-44.007-28.847-68.867-46.804-111.58-74.953-49.366-32.531-17.364-50.411 10.769-79.631 7.3626-7.6471 135.3-124.01 137.77-134.57 0.30968-1.3202 0.59708-6.2414-2.3265-8.8399s-7.2385-1.7099-10.352-1.0032c-4.4137 1.0017-74.715 47.468-210.9 139.4-19.955 13.702-38.029 20.379-54.223 20.029-17.853-0.3857-52.194-10.094-77.723-18.393-31.313-10.178-56.199-15.56-54.032-32.846 1.1287-9.0037 13.528-18.212 37.197-27.624z" fill="#fff"/></g></svg></a><a href="https://www.patreon.com/HeroWarsUserScripts" target="_blank" title="Patreon"><svg width="20" height="20" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg"><g fill="#FFF" stroke="None"><path d="m1033 324.45c-0.19-137.9-107.59-250.92-233.6-291.7-156.48-50.64-362.86-43.3-512.28 27.2-181.1 85.46-237.99 272.66-240.11 459.36-1.74 153.5 13.58 557.79 241.62 560.67 169.44 2.15 194.67-216.18 273.07-321.33 55.78-74.81 127.6-95.94 216.01-117.82 151.95-37.61 255.51-157.53 255.29-316.38z"/></g></svg></a>',
 		GIFTS_SENT: 'Gifts sent!',
 		DO_YOU_WANT: 'Do you really want to do this?',
 		BTN_RUN: 'Run',
@@ -502,7 +502,14 @@ const i18nLangData = {
 		DAMAGE_FIXED: 'Damage fixed from {lastDamage} to {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Failed to fix damage: {lastDamage}',
 		LETS_FIX: "Let's fix",
+		COUNT_FIXED: 'For {count} attempts',
 		DEFEAT_TURN_TIMER: 'Defeat! Turn on the timer to complete the mission?',
+		SEASON_REWARD: 'Season Awards',
+		SEASON_REWARD_TITLE: 'Collects available free rewards from all current seasons',
+		SEASON_REWARD_COLLECTED: 'Collected {count} season rewards',
+		SELL_HERO_SOULS: 'Sell ​​souls',
+		SELL_HERO_SOULS_TITLE: 'Exchanges all absolute star hero souls for gold',
+		GOLD_RECEIVED: 'Gold received: {gold}',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -852,7 +859,14 @@ const i18nLangData = {
 		DAMAGE_FIXED: 'Урон исправлен с {lastDamage} до {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Не удалось исправить урон: {lastDamage}',
 		LETS_FIX: 'Исправляем',
+		COUNT_FIXED: 'За {count} попыток',
 		DEFEAT_TURN_TIMER: 'Поражение! Включить таймер для завершения миссии?',
+		SEASON_REWARD: 'Награды сезонов',
+		SEASON_REWARD_TITLE: 'Собирает доступные бесплатные награды со всех текущих сезонов',
+		SEASON_REWARD_COLLECTED: 'Собрано {count} наград сезонов',
+		SELL_HERO_SOULS: 'Продать души',
+		SELL_HERO_SOULS_TITLE: 'Обменивает все души героев с абсолютной звездой на золото',
+		GOLD_RECEIVED: 'Получено золота: {gold}',
 	},
 };
 
@@ -1300,12 +1314,23 @@ const buttons = {
 					title: I18N('SKINS_UPGRADE_TITLE'),
 				},
 				{
+					msg: I18N('SEASON_REWARD'),
+					result: farmBattlePass,
+					title: I18N('SEASON_REWARD_TITLE'),
+				},
+				{
+					msg: I18N('SELL_HERO_SOULS'),
+					result: sellHeroSoulsForGold,
+					title: I18N('SELL_HERO_SOULS_TITLE'),
+				},
+				{
 					msg: I18N('CHANGE_MAP'),
 					result: async function () {
-						const maps = Object.values(lib.data.seasonAdventure.list).map(i => (
-							{
+						const maps = Object.values(lib.data.seasonAdventure.list)
+							.filter((e) => e.map.cells.length > 2)
+							.map((i) => ({
 								msg: I18N('MAP_NUM', { num: i.id }),
-								result: i.id
+								result: i.id,
 							}));
  
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [...maps, { result: false, isClose: true }]);
@@ -1525,6 +1550,9 @@ this.getRequestHistory = function() {
 const random = function (min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min);
 }
+const randf = function (min, max) {
+	return Math.random() * (max - min + 1) + min;
+};
 /**
  * Clearing the request history
  *
@@ -1933,24 +1961,34 @@ async function checkChangeSend(sourceData, tempData) {
 						const cloneBattle = structuredClone(lastBossBattle);
 						const endTime = cloneBattle.endTime - 1e4;
 						console.log('fixBossBattleStart');
-						const step = 9 / 300;
-						let index = 0;
-						let count = 0;
-						for (let timer = 1.3; timer < 10.3; timer += step) {
-							if (endTime < Date.now()) {
+						const COUNT = 300;
+						let maxCount = 0;
+						let duration = 0;
+						let avgTime = 0;
+						for (let count = 1; count <= COUNT; count++) {
+							maxCount = count;
+							const start = Date.now();
+							const timer = randf(1.3, 10.3);
+							if ((endTime + avgTime) < start) {
 								break;
 							}
-							await new Promise((e) => setTimeout(() => {
-									setProgress(I18N('LETS_FIX') + ' ' + Math.floor((count / 300) * 100) + '%', false);
+							await new Promise((e) =>
+								setTimeout(() => {
+									const maxDmg = maxDamage.toLocaleString();
+									const avg = avgTime.toFixed(2);
+									const msg = `${I18N('LETS_FIX')} ${maxCount}/${COUNT}<br/>${maxDmg}<br/>${avg}ms`;
+									setProgress(msg, false);
 									e();
-								}, 0));
+								}, 0)
+							);
 							try {
 								resultBattle = await Calc(cloneBattle);
 							} catch (e) {
 								continue;
 							}
-							count++;
  
+							duration += Date.now() - start;
+							avgTime = duration / count; 
 							const extraDmg = resultBattle.progress[0].defenders.heroes[1].extra;
 							const bossDamage = extraDmg.damageTaken + extraDmg.damageTakenNextLevel;
 							console.log(count + '\t' + timer.toFixed(2) + '\t' + bossDamage.toLocaleString());
@@ -1959,7 +1997,7 @@ async function checkChangeSend(sourceData, tempData) {
 								call.args.result = resultBattle.result;
 								call.args.progress = resultBattle.progress;
 							}
-							cloneBattle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, timer] } }];
+							cloneBattle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, timer] } }];
 						}
 						let msgResult = I18N('DAMAGE_NO_FIXED', { 
 							lastDamage: lastDamage.toLocaleString() 
@@ -1971,7 +2009,14 @@ async function checkChangeSend(sourceData, tempData) {
 							});
 						}
 						console.log(lastDamage, '>' ,maxDamage);
-						setProgress(msgResult, false, hideProgress);
+						setProgress(
+							msgResult + '<br/>' +
+								I18N('COUNT_FIXED', {
+									count: maxCount,
+								}),
+							false,
+							hideProgress
+						);
 					} else {
 					fixBattle(call.args.progress[0].attackers.heroes);
 					fixBattle(call.args.progress[0].defenders.heroes);
@@ -6286,9 +6331,9 @@ function hackGame() {
 		 * Кнопка ускорения без Покровительства Валькирий
 		 */
 		battleFastKey: function () {
-			const BGM_43 = getProtoFn(Game.BattleGuiMediator, 43);
-			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_43];
-			Game.BattleGuiMediator.prototype[BGM_43] = function () {
+			const BGM_44 = getProtoFn(Game.BattleGuiMediator, 44);
+			const oldBattleFastKey = Game.BattleGuiMediator.prototype[BGM_44];
+			Game.BattleGuiMediator.prototype[BGM_44] = function () {
 				let flag = true;
 				//console.log(flag)
 				if (!flag) {
@@ -8496,6 +8541,98 @@ function hintQuest(quest) {
 	}
  
 	return resultText;
+}
+ 
+async function farmBattlePass() {
+	const battlePasses = await Send({
+		calls: [
+			{ name: 'battlePass_getInfo', args: {}, ident: 'getInfo' },
+			{ name: 'battlePass_getSpecial', args: {}, ident: 'getSpecial' },
+		],
+	}).then((e) => [e.results[0].result.response.battlePass, ...Object.values(e.results[1].result.response)]);
+ 
+	const calls = [];
+	let first = true;
+	for (const battlePass of battlePasses) {
+		const id = battlePass.id;
+		const bPassExp = battlePass.exp;
+		const bPassRewardsLvls = Object.keys(battlePass.rewards);
+		const bPassLevels = Object.values(lib.data.battlePass.level).filter((e) => e.battlePass === id);
+ 
+		for (let lvl of bPassLevels) {
+			if (bPassExp < lvl.experience) {
+				continue;
+			}
+ 
+			if (bPassRewardsLvls.includes(lvl.level.toString())) {
+				continue;
+			}
+ 
+			const reward = lvl.freeReward;
+			/** Исключения на сбор наград */
+			const isFarmReward = !(
+				(
+					(reward?.buff ? true : false) || // ускорение набора энергии
+					(reward?.fragmentHero ? true : false) || // душы героев
+					(reward?.bundleHeroReward ? true : false) // герои
+				)
+			);
+ 
+			if (isFarmReward) {
+				const args = {
+					level: lvl.level,
+					free: true,
+				};
+ 
+				if (!first) {
+					args.id = id;
+				}
+				calls.push({
+					name: 'battlePass_farmReward',
+					args,
+					ident: 'battlePass_farmReward_' + lvl.level + '_' + id,
+				});
+			}
+		}
+		first = false;
+	}
+ 
+	const results = await Send(JSON.stringify({ calls })).then((e) => e.results);
+	setProgress(I18N('SEASON_REWARD_COLLECTED', {count: results.length}), true);
+}
+ 
+async function sellHeroSoulsForGold() {
+	let { fragmentHero, heroes } = await Send({
+		calls: [
+			{ name: 'inventoryGet', args: {}, ident: 'inventoryGet' },
+			{ name: 'heroGetAll', args: {}, ident: 'heroGetAll' },
+		],
+	})
+		.then((e) => e.results.map((r) => r.result.response))
+		.then((e) => ({ fragmentHero: e[0].fragmentHero, heroes: e[1] }));
+ 
+	const calls = [];
+	for (let i in fragmentHero) {
+		if (heroes[i] && heroes[i].star == 6) {
+			calls.push({
+				name: 'inventorySell',
+				args: {
+					type: 'hero',
+					libId: i,
+					amount: fragmentHero[i],
+					fragment: true,
+				},
+				ident: 'inventorySell_' + i,
+			});
+		}
+	}
+	if (!calls.length) {
+		console.log(0);
+		return 0;
+	}
+	const rewards = await Send({ calls }).then((e) => e.results.map((r) => r.result?.response?.gold || 0));
+	const gold = rewards.reduce((e, a) => e + a, 0);
+	setProgress(I18N('GOLD_RECEIVED', { gold }), true);
 }
  
 /**
