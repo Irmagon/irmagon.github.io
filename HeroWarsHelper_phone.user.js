@@ -6464,7 +6464,12 @@ function hackGame() {
 	this.activateHacks = function () {
 		if (!selfGame) throw Error('Use connectGame');
 		for (let func in replaceFunction) {
-			replaceFunction[func]();
+			try {
+				replaceFunction[func]();
+			} catch (error) {
+				console.error(error);
+			}
+
 		}
 	}
 
