@@ -6469,9 +6469,9 @@ function hackGame() {
 			} catch (error) {
 				console.error(error);
 			}
-
 		}
 	}
+
 
 	/**
 	 * Returns the game object
