@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.289
+// @version			2.291
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -510,6 +510,7 @@ const i18nLangData = {
 		SELL_HERO_SOULS: 'Sell ​​souls',
 		SELL_HERO_SOULS_TITLE: 'Exchanges all absolute star hero souls for gold',
 		GOLD_RECEIVED: 'Gold received: {gold}',
+		OPEN_ALL_EQUIP_BOXES: 'Open all Equipment Fragment Box?',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -867,6 +868,7 @@ const i18nLangData = {
 		SELL_HERO_SOULS: 'Продать души',
 		SELL_HERO_SOULS_TITLE: 'Обменивает все души героев с абсолютной звездой на золото',
 		GOLD_RECEIVED: 'Получено золота: {gold}',
+		OPEN_ALL_EQUIP_BOXES: 'Открыть все ящики фрагментов экипировки?',
 	},
 };
 
@@ -2278,6 +2280,9 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.amount = result;
 					changeRequest = true;
 				}
+				if (isChecked('countControl') && call.args.libId >= 362 && call.args.libId <= 389) {
+						this.massOpen = call.args.libId;
+			}
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -2640,12 +2645,46 @@ async function checkChangeResponse(response) {
 						newCount += n.consumable[lastRussianDollId]
 					}
 				}
-				if (newCount && await popup.confirm(`${I18N('BTN_OPEN')} ${newCount} ${I18N('OPEN_DOLLS')}?`, [
+				if (
+					newCount &&
+					(await popup.confirm(`${I18N('BTN_OPEN')} ${newCount} ${I18N('OPEN_DOLLS')}?`, [
 						{ msg: I18N('BTN_OPEN'), result: true},
-						{ msg: I18N('BTN_NO'), result: false},
-					])) {
+						{ msg: I18N('BTN_NO'), result: false, isClose: true },
+					]))
+				) {
 					const recursionResult = await openRussianDolls(lastRussianDollId, newCount);
 					lootBox = [...lootBox, ...recursionResult];
+				}
+ 
+				if (this.massOpen) {
+					if (
+						await popup.confirm(I18N('OPEN_ALL_EQUIP_BOXES'), [
+							{ msg: I18N('BTN_OPEN'), result: true },
+							{ msg: I18N('BTN_NO'), result: false, isClose: true },
+						])
+					) {
+						const consumable = await Send({ calls: [{ name: 'inventoryGet', args: {}, ident: 'inventoryGet' }] }).then((e) =>
+							Object.entries(e.results[0].result.response.consumable)
+						);
+						const calls = [];
+						const deleteItems = {};
+						for (const [libId, amount] of consumable) {
+							if (libId != this.massOpen && libId >= 362 && libId <= 389) {
+								calls.push({
+									name: 'consumableUseLootBox',
+									args: { libId, amount },
+									ident: 'consumableUseLootBox_' + libId,
+								});
+								deleteItems[libId] = -amount;
+							}
+						}
+						const result = await Send({ calls }).then((e) => e.results.map((r) => r.result.response).flat());
+						lootBox = [...lootBox, ...result];
+						this.onReadySuccess = () => {
+							cheats.updateInventory({ consumable: deleteItems });
+							cheats.refreshInventory();
+						};
+					}
 				}
  
 				/** Объединение результата лутбоксов */
@@ -5903,7 +5942,7 @@ function executeTitanArena(resolve, reject) {
 }
 
 function hackGame() {
-	self = this;
+	const self = this;
 	selfGame = null;
 	bindId = 1e9;
 	this.libGame = null;
@@ -6171,6 +6210,7 @@ function hackGame() {
 				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]));
 			};
 		},
+		/*
 		tower: function() {
 			let PTD_67 = getProtoFn(Game.PlayerTowerData, 67);
 			let oldSkipTower = Game.PlayerTowerData.prototype[PTD_67];
@@ -6207,6 +6247,7 @@ function hackGame() {
 				Game.GameModel[GM_2]()[GM_P2][CM_29][TCL_5](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PTD_78]));
 			};
 		},
+		*/
 		// skipSelectHero: function() {
 		// 	if (!HOST) throw Error('Use connectGame');
 		// 	Game.PlayerHeroTeamResolver.prototype[getProtoFn(Game.PlayerHeroTeamResolver, 3)] = () => false;
@@ -6353,8 +6394,8 @@ function hackGame() {
 		},
 		fastSeason: function () {
 			const GameNavigator = selfGame['game.screen.navigator.GameNavigator'];
-			const oldFuncName = getProtoFn(GameNavigator, 16);
-			const newFuncName = getProtoFn(GameNavigator, 14);
+			const oldFuncName = getProtoFn(GameNavigator, 18);
+			const newFuncName = getProtoFn(GameNavigator, 16);
 			const oldFastSeason = GameNavigator.prototype[oldFuncName];
 			const newFastSeason = GameNavigator.prototype[newFuncName];
 			GameNavigator.prototype[oldFuncName] = function (a, b) {
@@ -6472,7 +6513,6 @@ function hackGame() {
 		}
 	}
 
-
 	/**
 	 * Returns the game object
 	 *
@@ -6541,7 +6581,7 @@ function hackGame() {
 		let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
 		let Game = selfGame['Game'];
 		let navigator = getF(Game, "get_navigator")
-		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 18)
+		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 20)
 		let instance = getFnP(Game, 'get_instance');
 		Game[instance]()[navigator]()[navigate](window, event);
 	}
@@ -6620,12 +6660,12 @@ function hackGame() {
 	this.changeIslandMap = (mapId = 2) => {
 		const GameInst = getFnP(selfGame['Game'], 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
-		const P_59 = getProtoFn(selfGame["game.model.user.Player"], 59);
+		const P_59 = getProtoFn(selfGame["game.model.user.Player"], 60);
 		const PSAD_31 = getProtoFn(selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData'], 31);
 		const Player = Game.GameModel[GameInst]()[GM_0];
 		Player[P_59][PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
  
-		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 15)
+		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 17)
 		const navigator = getF(selfGame['Game'], "get_navigator");
 		selfGame['Game'][GameInst]()[navigator]()[GN_15](new selfGame["game.mediator.gui.popup.PopupStashEventParams"]);
 	}
