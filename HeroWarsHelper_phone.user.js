@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace		HeroWarsHelper
-// @version			2.291
+    // @version			2.292
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -498,13 +498,14 @@ const i18nLangData = {
 		BRAWL_DAILY_TASK_COMPLETED: 'Daily task completed, continue attacking?',
 		CALC_STAT: 'Calculate statistics',
 		ELEMENT_TOURNAMENT_REWARD: 'Unclaimed bonus for Elemental Tournament',
-		BTN_TRY_FIX_IT: 'Fix it (test)',
+    		BTN_TRY_FIX_IT: 'Fix it',
+    		BTN_TRY_FIX_IT_TITLE: 'Enable auto attack combat correction',
 		DAMAGE_FIXED: 'Damage fixed from {lastDamage} to {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Failed to fix damage: {lastDamage}',
 		LETS_FIX: "Let's fix",
 		COUNT_FIXED: 'For {count} attempts',
 		DEFEAT_TURN_TIMER: 'Defeat! Turn on the timer to complete the mission?',
-		SEASON_REWARD: 'Season Awards',
+    		SEASON_REWARD: 'Season Rewards',
 		SEASON_REWARD_TITLE: 'Collects available free rewards from all current seasons',
 		SEASON_REWARD_COLLECTED: 'Collected {count} season rewards',
 		SELL_HERO_SOULS: 'Sell ​​souls',
@@ -856,7 +857,8 @@ const i18nLangData = {
 		BRAWL_DAILY_TASK_COMPLETED: 'Ежедневное задание выполнено, продолжить атаку?',
 		CALC_STAT: 'Посчитать статистику',
 		ELEMENT_TOURNAMENT_REWARD: 'Несобранная награда за Турнир Стихий',
-		BTN_TRY_FIX_IT: 'Исправить (тест)',
+    		BTN_TRY_FIX_IT: 'Исправить',
+    		BTN_TRY_FIX_IT_TITLE: 'Включить исправление боев при автоатаке',
 		DAMAGE_FIXED: 'Урон исправлен с {lastDamage} до {maxDamage}!',
 		DAMAGE_NO_FIXED: 'Не удалось исправить урон: {lastDamage}',
 		LETS_FIX: 'Исправляем',
@@ -1005,6 +1007,13 @@ const checkboxes = {
 		cbox: null,
 		title: I18N('AUTO_QUIZ_TITLE'),
 		default: false,
+    		hide: true,
+    	},
+    	tryFixIt: {
+    		label: I18N('BTN_TRY_FIX_IT'),
+    		cbox: null,
+    		title: I18N('BTN_TRY_FIX_IT_TITLE'),
+    		default: true,
 		hide: false,
 	},
 	showErrors: {
@@ -9048,6 +9057,7 @@ function executeAutoBattle(resolve, reject) {
 	let countError = 0;
 	let findCoeff = 0;
 	let dataNotEeceived = 0; 
+    	let stopAutoBattle = false;
 		const svgJustice = '<svg width="20" height="20" viewBox="0 0 124 125" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m54 0h-1c-7.25 6.05-17.17 6.97-25.78 10.22-8.6 3.25-23.68 1.07-23.22 12.78s-0.47 24.08 1 35 2.36 18.36 7 28c4.43-8.31-3.26-18.88-3-30 0.26-11.11-2.26-25.29-1-37 11.88-4.16 26.27-0.42 36.77-9.23s20.53 6.05 29.23-0.77c-6.65-2.98-14.08-4.96-20-9z"/></g><g><path d="m108 5c-11.05 2.96-27.82 2.2-35.08 11.92s-14.91 14.71-22.67 23.33c-7.77 8.62-14.61 15.22-22.25 23.75 7.05 11.93 14.33 2.58 20.75-4.25 6.42-6.82 12.98-13.03 19.5-19.5s12.34-13.58 19.75-18.25c2.92 7.29-8.32 12.65-13.25 18.75-4.93 6.11-12.19 11.48-17.5 17.5s-12.31 11.38-17.25 17.75c10.34 14.49 17.06-3.04 26.77-10.23s15.98-16.89 26.48-24.52c10.5-7.64 12.09-24.46 14.75-36.25z"/></g><g><path d="m60 25c-11.52-6.74-24.53 8.28-38 6 0.84 9.61-1.96 20.2 2 29 5.53-4.04-4.15-23.2 4.33-26.67 8.48-3.48 18.14-1.1 24.67-8.33 2.73 0.3 4.81 2.98 7 0z"/></g><g><path d="m100 75c3.84-11.28 5.62-25.85 3-38-4.2 5.12-3.5 13.58-4 20s-3.52 13.18 1 18z"/></g><g><path d="m55 94c15.66-5.61 33.71-20.85 29-39-3.07 8.05-4.3 16.83-10.75 23.25s-14.76 8.35-18.25 15.75z"/></g><g><path d="m0 94v7c6.05 3.66 9.48 13.3 18 11-3.54-11.78 8.07-17.05 14-25 6.66 1.52 13.43 16.26 19 5-11.12-9.62-20.84-21.33-32-31-9.35 6.63 4.76 11.99 6 19-7.88 5.84-13.24 17.59-25 14z"/></g><g><path d="m82 125h26v-19h16v-1c-11.21-8.32-18.38-21.74-30-29-8.59 10.26-19.05 19.27-27 30h15v19z"/></g><g><path d="m68 110c-7.68-1.45-15.22 4.83-21.92-1.08s-11.94-5.72-18.08-11.92c-3.03 8.84 10.66 9.88 16.92 16.08s17.09 3.47 23.08-3.08z"/></g></svg>';
 		const svgBoss = '<svg width="20" height="20" viewBox="0 0 40 41" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m21 12c-2.19-3.23 5.54-10.95-0.97-10.97-6.52-0.02 1.07 7.75-1.03 10.97-2.81 0.28-5.49-0.2-8-1-0.68 3.53 0.55 6.06 4 4 0.65 7.03 1.11 10.95 1.67 18.33 0.57 7.38 6.13 7.2 6.55-0.11 0.42-7.3 1.35-11.22 1.78-18.22 3.53 1.9 4.73-0.42 4-4-2.61 0.73-5.14 1.35-8 1m-1 17c-1.59-3.6-1.71-10.47 0-14 1.59 3.6 1.71 10.47 0 14z"/></g><g><path d="m6 19c-1.24-4.15 2.69-8.87 1-12-3.67 4.93-6.52 10.57-6 17 5.64-0.15 8.82 4.98 13 8 1.3-6.54-0.67-12.84-8-13z"/></g><g><path d="m33 7c0.38 5.57 2.86 14.79-7 15v10c4.13-2.88 7.55-7.97 13-8 0.48-6.46-2.29-12.06-6-17z"/></g></svg>';
 		const svgAttempt = '<svg width="20" height="20" viewBox="0 0 645 645" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m442 26c-8.8 5.43-6.6 21.6-12.01 30.99-2.5 11.49-5.75 22.74-8.99 34.01-40.61-17.87-92.26-15.55-133.32-0.32-72.48 27.31-121.88 100.19-142.68 171.32 10.95-4.49 19.28-14.97 29.3-21.7 50.76-37.03 121.21-79.04 183.47-44.07 16.68 5.8 2.57 21.22-0.84 31.7-4.14 12.19-11.44 23.41-13.93 36.07 56.01-17.98 110.53-41.23 166-61-20.49-59.54-46.13-117.58-67-177z"/></g><g><path d="m563 547c23.89-16.34 36.1-45.65 47.68-71.32 23.57-62.18 7.55-133.48-28.38-186.98-15.1-22.67-31.75-47.63-54.3-63.7 1.15 14.03 6.71 26.8 8.22 40.78 12.08 61.99 15.82 148.76-48.15 183.29-10.46-0.54-15.99-16.1-24.32-22.82-8.2-7.58-14.24-19.47-23.75-24.25-4.88 59.04-11.18 117.71-15 177 62.9 5.42 126.11 9.6 189 15-4.84-9.83-17.31-15.4-24.77-24.23-9.02-7.06-17.8-15.13-26.23-22.77z"/></g><g><path d="m276 412c-10.69-15.84-30.13-25.9-43.77-40.23-15.39-12.46-30.17-25.94-45.48-38.52-15.82-11.86-29.44-28.88-46.75-37.25-19.07 24.63-39.96 48.68-60.25 72.75-18.71 24.89-42.41 47.33-58.75 73.25 22.4-2.87 44.99-13.6 66.67-13.67 0.06 22.8 10.69 42.82 20.41 62.59 49.09 93.66 166.6 114.55 261.92 96.08-6.07-9.2-22.11-9.75-31.92-16.08-59.45-26.79-138.88-75.54-127.08-151.92 21.66-2.39 43.42-4.37 65-7z"/></g></svg>';
@@ -9192,6 +9202,11 @@ function executeAutoBattle(resolve, reject) {
 			endAutoBattle(`${I18N('RETRY_LIMIT_EXCEEDED')}: ${countMaxBattle}`)
 			return;
 		}
+    		if (stopAutoBattle) {
+    			setProgress(I18N('STOPPED'), true);
+    			endAutoBattle('STOPPED');
+    			return;
+    		}
 		send({calls: [{
 			name: nameFuncStartBattle,
 			args: battleArg,
@@ -9247,12 +9262,22 @@ function executeAutoBattle(resolve, reject) {
 	 *
 	 * Обработка результатов боя
 	 */
-	function resultBattle(e) {
+    	async function resultBattle(e) {
 		const isWin = e.result.win;
 		if (isWin) {
 			endBattle(e, false);
 			return;
+    		} else if (isChecked('tryFixIt')) {
+    			const cloneBattle = structuredClone(e.battleData);
+    			const bFix = new WinFixBattle(cloneBattle);
+    			const endTime = Date.now() + 6e4;
+    			const result = await bFix.start(endTime, Infinity);
+    			console.log(result);
+    			if (result.value) {
+    				endBattle(result, false);
+    				return;
 		}
+    		}
 		const countMaxBattle = getInput('countAutoBattle');
 		if (findCoeff) {
 			const coeff = calcCoeff(e, 'defenders');
@@ -9265,7 +9290,10 @@ function executeAutoBattle(resolve, reject) {
 			if (nameFuncStartBattle == 'invasion_bossStart') {
 				const bossLvl = lastBattleInfo.typeId >= 130 ? lastBattleInfo.typeId : '';
 				const justice = lastBattleInfo?.effects?.attackers?.percentInOutDamageMod_any_99_100_300_99_1000 || 0;
-				setProgress(`${svgBoss} ${bossLvl} ${svgJustice} ${justice} <br>${svgAttempt} ${countBattle}/${countMaxBattle}`);
+    				setProgress(`${svgBoss} ${bossLvl} ${svgJustice} ${justice} <br>${svgAttempt} ${countBattle}/${countMaxBattle}`, false, () => {
+    					stopAutoBattle = true;
+    				});
+    				await new Promise((resolve) => setTimeout(resolve, 5000));
 			} else {
 			setProgress(`${countBattle}/${countMaxBattle}`);
 		}
@@ -9367,6 +9395,168 @@ function executeAutoBattle(resolve, reject) {
 	}
 }
 
+    class FixBattle {
+    	constructor(battle, isTimeout = true) {
+    		this.battle = structuredClone(battle);
+    		this.isTimeout = isTimeout;
+    	}
+     
+    	timeout(callback, timeout) {
+    		if (this.isTimeout) {
+    			this.worker.postMessage(timeout);
+    			this.worker.onmessage = callback;
+    		} else {
+    			callback();
+    		}
+    	}
+     
+    	randTimer() {
+    		const min = 1.3;
+    		const max = 10.3;
+    		return Math.random() * (max - min + 1) + min;
+    	}
+     
+    	setAvgTime(startTime) {
+    		this.fixTime += Date.now() - startTime;
+    		this.avgTime = this.fixTime / this.count;
+    	}
+     
+    	init() {
+    		this.fixTime = 0;
+    		this.lastTimer = 0;
+    		this.index = 0;
+    		this.lastBossDamage = 0;
+    		this.bestResult = {
+    			count: 0,
+    			timer: 0,
+    			value: 0,
+    			result: null,
+    			progress: null,
+    		};
+    		this.lastBattleResult = {
+    			win: false,
+    		};
+    		this.worker = new Worker(
+    			URL.createObjectURL(
+    				new Blob([
+    					`self.onmessage = function(e) {
+    							const timeout = e.data;
+    							setTimeout(() => {
+    								self.postMessage(1);
+    							}, timeout);
+    						};`,
+    				])
+    			)
+    		);
+    	}
+     
+    	async start(endTime = Date.now() + 6e4, maxCount = 100) {
+    		this.endTime = endTime;
+    		this.maxCount = maxCount;
+    		this.init();
+    		return await new Promise((resolve) => {
+    			this.resolve = resolve;
+    			this.count = 0;
+    			this.loop();
+    		});
+    	}
+     
+    	endFix() {
+    		this.bestResult.maxCount = this.count;
+    		this.worker.terminate();
+    		this.resolve(this.bestResult);
+    	}
+     
+    	async loop() {
+    		const start = Date.now();
+    		if (this.isEndLoop()) {
+    			this.endFix();
+    			return;
+    		}
+    		this.count++;
+    		try {
+    			this.lastResult = await Calc(this.battle);
+    		} catch (e) {
+    			this.updateProgressTimer(this.index++);
+    			this.timeout(this.loop.bind(this), 0);
+    			return;
+    		}
+    		const { progress, result } = this.lastResult;
+    		this.lastBattleResult = result;
+    		this.lastBattleProgress = progress;
+    		this.setAvgTime(start);
+    		this.checkResult();
+    		this.showResult();
+    		this.updateProgressTimer();
+    		this.timeout(this.loop.bind(this), 0);
+    	}
+     
+    	isEndLoop() {
+    		return this.count >= this.maxCount || this.endTime < Date.now();
+    	}
+     
+    	updateProgressTimer(index = 0) {
+    		this.lastTimer = this.randTimer();
+    		this.battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, this.lastTimer] } }];
+    	}
+     
+    	showResult() {
+    		console.log(
+    			this.count,
+    			this.avgTime.toFixed(2),
+    			(this.endTime - Date.now()) / 1000,
+    			this.lastTimer.toFixed(2),
+    			this.lastBossDamage.toLocaleString(),
+    			this.bestResult.value.toLocaleString()
+    		);
+    	}
+     
+    	checkResult() {
+    		const { damageTaken, damageTakenNextLevel } = this.lastBattleProgress[0].defenders.heroes[1].extra;
+    		this.lastBossDamage = damageTaken + damageTakenNextLevel;
+    		if (this.lastBossDamage > this.bestResult.value) {
+    			this.bestResult = {
+    				count: this.count,
+    				timer: this.lastTimer,
+    				value: this.lastBossDamage,
+    				result: structuredClone(this.lastBattleResult),
+    				progress: structuredClone(this.lastBattleProgress),
+    			};
+    		}
+    	}
+    }
+     
+    class WinFixBattle extends FixBattle {
+    	checkResult() {
+    		if (this.lastBattleResult.win) {
+    			this.bestResult = {
+    				count: this.count,
+    				timer: this.lastTimer,
+    				value: this.lastBattleResult.stars,
+    				result: structuredClone(this.lastBattleResult),
+    				progress: structuredClone(this.lastBattleProgress),
+    				battleTimer: this.lastResult.battleTimer,
+    			};
+    		}
+    	}
+     
+    	isEndLoop() {
+    		return super.isEndLoop() || this.lastBattleResult.win;
+    	}
+     
+    	showResult() {
+    		console.log(this.count, this.avgTime.toFixed(2), (this.endTime - Date.now()) / 1000, this.lastResult.battleTime, this.lastTimer);
+    		const endTime = ((this.endTime - Date.now()) / 1000).toFixed(2);
+    		const avgTime = this.avgTime.toFixed(2);
+    		const msg = `${this.count}/${this.maxCount}<br/>${endTime}s<br/>${avgTime}ms`;
+    		setProgress(msg, false, this.stopFix.bind(this));
+    	}
+     
+    	stopFix() {
+    		this.endTime = 0;
+    	}
+    }
+     
 function testDailyQuests() {
 	return new Promise((resolve, reject) => {
 		const quests = new dailyQuests(resolve, reject);
