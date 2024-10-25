@@ -1090,10 +1090,10 @@ function getInput(inputName) {
 	return inputs[inputName]?.input?.value;
 }
 
-/** 
+/**
  * Control FPS
- * 
- * Контроль FPS 
+ *
+ * Контроль FPS
  */
 let nextAnimationFrame = Date.now();
 const oldRequestAnimationFrame = this.requestAnimationFrame;
@@ -1242,7 +1242,7 @@ const buttons = {
                     result: function () {
                         confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE_OF_SOULS')}?`, bossRatingEventSouls);
                     },
-                    title: I18N('FURNACE_TITLE'),
+                    title: I18N('ARCHDEMON_TITLE'),
                 },
 				/*
                 				{
@@ -1342,7 +1342,7 @@ const buttons = {
 								msg: I18N('MAP_NUM', { num: i.id }),
 								result: i.id,
 							}));
- 
+
 						const result = await popup.confirm(I18N('SELECT_ISLAND_MAP'), [...maps, { result: false, isClose: true }]);
 						if (result) {
 							cheats.changeIslandMap(result);
@@ -1406,7 +1406,7 @@ let isSendsMission = false;
 let lastMissionStart = {}
 /**
  * Start time of the last battle in the company
- * 
+ *
  * Время начала последнего боя в кампании
  */
 let lastMissionBattleStart = 0;
@@ -1609,7 +1609,7 @@ function confShow(message, yesCallback, noCallback) {
 /**
  * Override/proxy the method for creating a WS package send
  *
- * Переопределяем/проксируем метод создания отправки WS пакета 
+ * Переопределяем/проксируем метод создания отправки WS пакета
  */
 WebSocket.prototype.send = function (data) {
 	if (!this.isSetOnMessage) {
@@ -1797,7 +1797,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 		} catch(e) {
 			debugger;
 		}
-		
+
 	}
 };
 /**
@@ -1996,9 +1996,9 @@ async function checkChangeSend(sourceData, tempData) {
 							} catch (e) {
 								continue;
 							}
- 
+
 							duration += Date.now() - start;
-							avgTime = duration / count; 
+							avgTime = duration / count;
 							const extraDmg = resultBattle.progress[0].defenders.heroes[1].extra;
 							const bossDamage = extraDmg.damageTaken + extraDmg.damageTakenNextLevel;
 							console.log(count + '\t' + timer.toFixed(2) + '\t' + bossDamage.toLocaleString());
@@ -2009,8 +2009,8 @@ async function checkChangeSend(sourceData, tempData) {
 							}
 							cloneBattle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, timer] } }];
 						}
-						let msgResult = I18N('DAMAGE_NO_FIXED', { 
-							lastDamage: lastDamage.toLocaleString() 
+						let msgResult = I18N('DAMAGE_NO_FIXED', {
+							lastDamage: lastDamage.toLocaleString()
 						});
 						if (maxDamage > lastDamage) {
 							msgResult = I18N('DAMAGE_FIXED', {
@@ -2057,7 +2057,7 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'towerStartBattle') {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
- 
+
 				if (call.name == 'invasion_bossStart') {
 					const timePassed = Date.now() - lastBossBattleStart;
 					if (timePassed < invasionTimer) {
@@ -2153,12 +2153,12 @@ async function checkChangeSend(sourceData, tempData) {
 						{ msg: I18N('BTN_YES'), result: true },
 					]);
 				}
- 
+
 				if (call.args.result.win || startTimer) {
 				missionBattle.progress = call.args.progress;
 				missionBattle.result = call.args.result;
 				const result = await Calc(missionBattle);
- 
+
 				let timer = result.battleTimer + addBattleTimer;
 				const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 				if (period < timer) {
@@ -2202,7 +2202,7 @@ async function checkChangeSend(sourceData, tempData) {
 				lastMissionStart = call.args;
 				lastMissionBattleStart = Date.now();
 			}
-			
+
 			/**
 			 * Specify the quantity for Titan Orbs and Pet Eggs
 			 * Указать количество для сфер титанов и яиц петов
@@ -2432,14 +2432,14 @@ async function checkChangeResponse(response) {
 					} else {
 						showText = I18N('ANSWER_NOT_KNOWN');
 					}
- 
+
 					try {
 						const hint = hintQuest(quest);
 						if (hint) {
 							showText += I18N('HINT') + hint;
 						}
 					} catch(e) {}
- 
+
 					setProgress(showText, true);
 				}
 			}
@@ -2592,7 +2592,7 @@ async function checkChangeResponse(response) {
 			} else {
 				correctShowOpenArtifact = 0;
 			}
-			
+
 			/**
 			 * Sum the result of opening Pet Eggs
 			 * Суммирование результата открытия яиц питомцев
@@ -2694,7 +2694,7 @@ async function checkChangeResponse(response) {
 						};
 					}
 				}
- 
+
 				/** Объединение результата лутбоксов */
 				const allLootBox = {};
 				lootBox.forEach(e => {
@@ -2894,7 +2894,7 @@ async function checkChangeResponse(response) {
 							if (starmoney) {
 								msg += cheats.translate('LIB_PSEUDO_STARMONEY') + `: ${starmoney}<br>`;
 							}
- 
+
 							await popup.confirm(msg, [{ msg: I18N('BTN_OK'), result: 0 }]);
 						});
 				}
@@ -2946,7 +2946,7 @@ async function checkChangeResponse(response) {
 		}
 			*/
 		}
- 
+
 		if (mainReward && artifactChestOpen) {
 			console.log(allReward);
 			mainReward[artifactChestOpenCallName == 'artifactChestOpen' ? 'chestReward' : 'reward'] = [allReward];
@@ -3302,7 +3302,7 @@ function getTimer(time, div) {
 	return Math.max(Math.ceil(time / speedDiv + 1.5), 4);
 }
 
-/** 
+/**
  * Calculates HASH MD5 from string
  *
  * Расчитывает HASH MD5 из строки
@@ -3349,7 +3349,7 @@ const popup = new (function () {
 			}
 		});
 	}
- 
+
 	const addStyle = () => {
 		let style = document.createElement('style');
 		style.innerText = `
@@ -3725,7 +3725,7 @@ const popup = new (function () {
 		});
 	}
 });
- 
+
 /**
  * Script control panel
  *
@@ -4167,7 +4167,7 @@ const scriptMenu = new (function () {
 		return showDetails;
 	}
 });
- 
+
 /**
  * Пример использования
 scriptMenu.init();
@@ -4432,19 +4432,19 @@ class ZingerYWebsiteAPI {
 			...data,
 		};
 	}
- 
+
 	sign() {
 		return md5([...this.fd.info, ~(this.fd.now % 1e3), this.fd.fp].join('_'));
 	}
- 
+
 	encode(data) {
 		return btoa(encodeURIComponent(JSON.stringify(data)));
 	}
- 
+
 	decode(data) {
 		return JSON.parse(decodeURIComponent(atob(data)));
 	}
- 
+
 	headers() {
 		return {
 			'X-Request-Signature': this.sign(),
@@ -4454,7 +4454,7 @@ class ZingerYWebsiteAPI {
 			'X-Script-ZingerY': 42,
 		};
 	}
- 
+
 	async request() {
 		try {
 			const response = await fetch(this.url + this.urn, {
@@ -4476,7 +4476,7 @@ class ZingerYWebsiteAPI {
 	 * Copyright ZingerY
 	 */
 }
- 
+
 /**
  * Sending expeditions
  *
@@ -6465,7 +6465,7 @@ function hackGame() {
 						const BIPM_5 = getProtoFn(BuyItemPopupMediator, 5);
 						const BIPM_7 = getProtoFn(BuyItemPopupMediator, 7);
 						const BIPM_9 = getProtoFn(BuyItemPopupMediator, 9);
- 
+
 						let need = Math.min(this[BTAP_0][BTAM_1](), this[BTAP_0][BIPM_7]);
 						need = need ? need : 60;
 						this[BTAP_0][BIPM_9] = need;
@@ -6503,7 +6503,7 @@ function hackGame() {
 			};
 		},
 	};
- 
+
 	/**
 	 * Starts replacing recorded functions
 	 *
@@ -6561,7 +6561,7 @@ function hackGame() {
 		const Player = Game.GameModel[GM_INST]()[GM_0];
 		Player[P_24].init(reward);
 	};
- 
+
 	this.updateMap = function (data) {
 		const PCDD_21 = getProtoFn(selfGame['game.mechanics.clanDomination.model.PlayerClanDominationData'], 21);
 		const P_60 = getProtoFn(selfGame['game.model.user.Player'], 60);
@@ -6570,7 +6570,7 @@ function hackGame() {
 		const PlayerClanDominationData = Game.GameModel[getInstance]()[GM_0];
 		PlayerClanDominationData[P_60][PCDD_21].update(data);
 	};
- 
+
 	/**
 	 * Change the play screen on windowName
 	 *
@@ -6634,7 +6634,7 @@ function hackGame() {
 
 	/**
 	 * Returns all stores from game data
-	 * 
+	 *
 	 * Возвращает все магазины из данных игры
 	 */
 	this.getShops = () => {
@@ -6642,14 +6642,14 @@ function hackGame() {
 		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
 		const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
 		const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
- 
+
 		const player = Game.GameModel[instance]().A;
 		return player[P_36][PSD_0][IM_0];
 	}
- 
+
 	/**
 	 * Returns the store from the game data by ID
-	 * 
+	 *
 	 * Возвращает магазин из данных игры по идетификатору
 	 */
 	this.getShop = (id) => {
@@ -6658,10 +6658,10 @@ function hackGame() {
 		const shop = shops[id]?.[PSDE_4];
 		return shop;
 	}
- 
+
 	/**
 	 * Change island map
-	 * 
+	 *
 	 * Сменить карту острова
 	 */
 	this.changeIslandMap = (mapId = 2) => {
@@ -6671,12 +6671,12 @@ function hackGame() {
 		const PSAD_31 = getProtoFn(selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData'], 31);
 		const Player = Game.GameModel[GameInst]()[GM_0];
 		Player[P_59][PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
- 
+
 		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 17)
 		const navigator = getF(selfGame['Game'], "get_navigator");
 		selfGame['Game'][GameInst]()[navigator]()[GN_15](new selfGame["game.mediator.gui.popup.PopupStashEventParams"]);
 	}
- 
+
 	/**
 	 * Game library availability tracker
 	 *
@@ -7284,7 +7284,7 @@ function lettersFilter(letters) {
 			lettersIds.push(~~letter.id);
 			continue;
 		}
-		/** 
+		/**
 		 * Если до окончания годности письма менее 24 часов,
 		 * то оно собирается не смотря на исключения
 		 */
@@ -7362,7 +7362,7 @@ async function justInfo() {
 
 		const imgPortal =
 			'data:image/gif;base64,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';
- 
+
 		setProgress('<img src="' + imgPortal + '" style="height: 25px;position: relative;top: 5px;"> ' + `${portalSphere.amount} </br> ${I18N('GUILD_WAR')}: ${clanWarMyTries}`, true);
 		resolve();
 	});
@@ -7450,7 +7450,7 @@ async function farmStamina(lootBoxId = 148) {
 	} else {
 		maxFarmEnergy = 0;
 	}
- 
+
 	let collectEnergy = 0;
 	for (let count = lootBox; count > 0; count--) {
 		const result = await Send('{"calls":[{"name":"consumableUseLootBox","args":{"libId":148,"amount":1},"ident":"body"}]}')
@@ -7651,55 +7651,55 @@ async function bossOpenChestPay() {
 	const boses = info[1];
 	const offers = info[2];
 	const time = info[3];
- 
+
 	const discountOffer = offers.find((e) => e.offerType == 'costReplaceOutlandChest');
 
 	let discount = 1;
 	if (discountOffer && discountOffer.endTime > time) {
 		discount = 1 - discountOffer.offerData.outlandChest.discountPercent / 100;
 	}
- 
+
 	cost9chests = 540 * discount;
 	cost18chests = 1740 * discount;
 	costFirstChest = 90 * discount;
 	costSecondChest = 200 * discount;
- 
+
 	const currentStarMoney = user.starMoney;
 	if (currentStarMoney < cost9chests) {
 		setProgress('Недостаточно изюма, нужно ' + cost9chests + ' у Вас ' + currentStarMoney, true);
 		return;
 	}
- 
+
 	const imgEmerald =
 		"<img style='position: relative;top: 3px;' src='data:image/png;base64,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'>";
- 
+
 	if (currentStarMoney < cost9chests) {
 		setProgress(I18N('NOT_ENOUGH_EMERALDS_540', { currentStarMoney, imgEmerald }), true);
 		return;
 	}
- 
+
 	const buttons = [{ result: false, isClose: true }];
 
 	if (currentStarMoney >= cost9chests) {
-		buttons.push({ 
+		buttons.push({
 			msg: I18N('BUY_OUTLAND_BTN', { count: 9, countEmerald: cost9chests, imgEmerald }),
 			result: [costFirstChest, costFirstChest, 0],
 		});
 	}
- 
+
 	if (currentStarMoney >= cost18chests) {
 		buttons.push({
 			msg: I18N('BUY_OUTLAND_BTN', { count: 18, countEmerald: cost18chests, imgEmerald }),
 			result: [costFirstChest, costFirstChest, 0, costSecondChest, costSecondChest, 0],
 		});
 	}
- 
+
 	const answer = await popup.confirm(`<div style="margin-bottom: 15px;">${I18N('BUY_OUTLAND')}</div>`, buttons);
- 
+
 	if (!answer) {
 		return;
 	}
- 
+
 	const callBoss = [];
 	let n = 0;
 	for (let boss of boses) {
@@ -7741,7 +7741,7 @@ async function bossOpenChestPay() {
 
 	setProgress(`${I18N('OUTLAND_CHESTS_RECEIVED')}: ${count}`, true);
 }
- 
+
 async function autoRaidAdventure() {
 	const calls = [
 		{
@@ -7958,7 +7958,7 @@ function rewardsAndMailFarm() {
 					}
 					const battlePass = listBattlePass[chain.battlePass];
 					const startTime = battlePass.startCondition.time.value * 1e3
-					const endTime = new Date(startTime + battlePass.duration * 1e3); 
+					const endTime = new Date(startTime + battlePass.duration * 1e3);
 					if (startTime > Date.now() || endTime < Date.now()) {
 						continue;
 				}
@@ -7983,7 +7983,7 @@ function rewardsAndMailFarm() {
 				ident: 'quest_questsFarm',
 			});
 			}
- 
+
 			let letters = data?.results[1]?.result?.response?.letters;
 			letterIds = lettersFilter(letters);
 
@@ -8023,7 +8023,7 @@ function rewardsAndMailFarm() {
 						}
 					}
 				}
- 
+
 				while (questsIds.length) {
 					const questIds = [];
 					const calls = [];
@@ -8060,7 +8060,7 @@ function rewardsAndMailFarm() {
 					}
 				}
 				}
- 
+
 				setProgress(I18N('COLLECT_REWARDS_AND_MAIL', { countQuests, countMail }), true);
 				resolve();
 			});
@@ -8084,7 +8084,7 @@ class epicBrawl {
 		const worker = new Worker(URL.createObjectURL(new Blob([`
 				self.onmessage = function(e) {
 					const timeDiff = e.data;
- 
+
 					if (timeDiff > 0) {
 						setTimeout(() => {
 							self.postMessage(1);
@@ -8099,23 +8099,23 @@ class epicBrawl {
 		};
 		return true;
 	}
- 
+
 	timeDiff(date1, date2) {
 		const date1Obj = new Date(date1);
 		const date2Obj = new Date(date2);
- 
+
 		const timeDiff = Math.abs(date2Obj - date1Obj);
- 
+
 		const totalSeconds = timeDiff / 1000;
 		const minutes = Math.floor(totalSeconds / 60);
 		const seconds = Math.floor(totalSeconds % 60);
- 
+
 		const formattedMinutes = String(minutes).padStart(2, '0');
 		const formattedSeconds = String(seconds).padStart(2, '0');
- 
+
 		return `${formattedMinutes}:${formattedSeconds}`;
 	}
- 
+
 	check() {
 		console.log(new Date(this.time))
 		if (Date.now() > this.time) {
@@ -8150,7 +8150,7 @@ class epicBrawl {
 			setProgress(I18N('NO_HEROES_PACK'), false, hideProgress);
 			return;
 		}
- 
+
 		const args = {
 			heroes: teamInfo[0].epic_brawl.filter(e => e < 1000),
 			pet: teamInfo[0].epic_brawl.filter(e => e > 6000).pop(),
@@ -8352,7 +8352,7 @@ async function rewardBossRatingEventSouls() {
 }
 /**
  * Spin the Seer
- * 
+ *
  * Покрутить провидца
  */
 async function rollAscension() {
@@ -8374,7 +8374,7 @@ async function rollAscension() {
 
 /**
  * Collect gifts for the New Year
- * 
+ *
  * Собрать подарки на новый год
  */
 function getGiftNewYear() {
@@ -8437,13 +8437,13 @@ async function updateArtifacts() {
 			ident: `heroArtifactLevelUp_${i}`
 		});
 	}
- 
+
 	if (!calls.length) {
 		console.log(I18N('NOT_ENOUGH_RESOURECES'));
 		setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
 		return;
 	}
- 
+
 	await Send(JSON.stringify({ calls })).then(e => {
 		if ('error' in e) {
 			console.log(I18N('NOT_ENOUGH_RESOURECES'));
@@ -8454,12 +8454,12 @@ async function updateArtifacts() {
 		}
 	});
 }
- 
+
 window.sign = a => {
 	const i = this['\x78\x79\x7a'];
 	return md5([i['\x6e\x61\x6d\x65'], i['\x76\x65\x72\x73\x69\x6f\x6e'], i['\x61\x75\x74\x68\x6f\x72'], ~(a % 1e3)]['\x6a\x6f\x69\x6e']('\x5f'))
 }
- 
+
 async function updateSkins() {
 	const count = +await popup.confirm(I18N('SET_NUMBER_LEVELS'), [
 		{ msg: I18N('BTN_GO'), isInput: true, default: 10 },
@@ -8468,7 +8468,7 @@ async function updateSkins() {
 	if (!count) {
 		return;
 	}
- 
+
 	const quest = new questRun;
 	await quest.autoInit();
 	const heroes = Object.values(quest.questInfo['heroGetAll']);
@@ -8498,13 +8498,13 @@ async function updateSkins() {
 			ident: `heroSkinUpgrade_${i}`
 		})
 	}
- 
+
 	if (!calls.length) {
 		console.log(I18N('NOT_ENOUGH_RESOURECES'));
 		setProgress(I18N('NOT_ENOUGH_RESOURECES'), false);
 		return;
 	}
- 
+
 	await Send(JSON.stringify({ calls })).then(e => {
 		if ('error' in e) {
 			console.log(I18N('NOT_ENOUGH_RESOURECES'));
@@ -8515,7 +8515,7 @@ async function updateSkins() {
 		}
 	});
 }
- 
+
 function getQuestionInfo(img, nameOnly = false) {
 	const libHeroes = Object.values(lib.data.hero);
 	const parts = img.split(':');
@@ -8555,7 +8555,7 @@ function getQuestionInfo(img, nameOnly = false) {
 			};
 	}
 }
- 
+
 function hintQuest(quest) {
 	const result = {};
 	if (quest?.questionIcon) {
@@ -8574,15 +8574,15 @@ function hintQuest(quest) {
 			result.info = info;
 		}
 	}
- 
+
 	if (quest.answers[0]?.answerIcon) {
 		result.answer = quest.answers.filter(e => quest.question.includes(getQuestionInfo(e.answerIcon, true)))
 	}
- 
+
 	if ((!result?.answer || !result.answer.length) && !result.info?.name) {
 		return false;
 	}
- 
+
 	let resultText = '';
 	if (result?.info) {
 		resultText += I18N('PICTURE') + result.info.name;
@@ -8591,10 +8591,10 @@ function hintQuest(quest) {
 	if (result?.answer && result.answer.length) {
 		resultText += I18N('ANSWER') + result.answer[0].id + (!result.answer[0].answerIcon ? ' - ' + result.answer[0].answerText : '');
 	}
- 
+
 	return resultText;
 }
- 
+
 async function farmBattlePass() {
 	const battlePasses = await Send({
 		calls: [
@@ -8602,7 +8602,7 @@ async function farmBattlePass() {
 			{ name: 'battlePass_getSpecial', args: {}, ident: 'getSpecial' },
 		],
 	}).then((e) => [e.results[0].result.response.battlePass, ...Object.values(e.results[1].result.response)]);
- 
+
 	const calls = [];
 	let first = true;
 	for (const battlePass of battlePasses) {
@@ -8610,16 +8610,16 @@ async function farmBattlePass() {
 		const bPassExp = battlePass.exp;
 		const bPassRewardsLvls = Object.keys(battlePass.rewards);
 		const bPassLevels = Object.values(lib.data.battlePass.level).filter((e) => e.battlePass === id);
- 
+
 		for (let lvl of bPassLevels) {
 			if (bPassExp < lvl.experience) {
 				continue;
 			}
- 
+
 			if (bPassRewardsLvls.includes(lvl.level.toString())) {
 				continue;
 			}
- 
+
 			const reward = lvl.freeReward;
 			/** Исключения на сбор наград */
 			const isFarmReward = !(
@@ -8629,13 +8629,13 @@ async function farmBattlePass() {
 					(reward?.bundleHeroReward ? true : false) // герои
 				)
 			);
- 
+
 			if (isFarmReward) {
 				const args = {
 					level: lvl.level,
 					free: true,
 				};
- 
+
 				if (!first) {
 					args.id = id;
 				}
@@ -8648,11 +8648,11 @@ async function farmBattlePass() {
 		}
 		first = false;
 	}
- 
+
 	const results = await Send(JSON.stringify({ calls })).then((e) => e.results);
 	setProgress(I18N('SEASON_REWARD_COLLECTED', {count: results.length}), true);
 }
- 
+
 async function sellHeroSoulsForGold() {
 	let { fragmentHero, heroes } = await Send({
 		calls: [
@@ -8662,7 +8662,7 @@ async function sellHeroSoulsForGold() {
 	})
 		.then((e) => e.results.map((r) => r.result.response))
 		.then((e) => ({ fragmentHero: e[0].fragmentHero, heroes: e[1] }));
- 
+
 	const calls = [];
 	for (let i in fragmentHero) {
 		if (heroes[i] && heroes[i].star == 6) {
@@ -8686,7 +8686,7 @@ async function sellHeroSoulsForGold() {
 	const gold = rewards.reduce((e, a) => e + a, 0);
 	setProgress(I18N('GOLD_RECEIVED', { gold }), true);
 }
- 
+
 /**
  * Attack of the minions of Asgard
  *
@@ -8764,7 +8764,7 @@ function executeRaidNodes(resolve, reject) {
 				return;
 			}
 		}
- 
+
 		raidData.nodes = clanRaidInfo.nodes;
 		raidData.attempts = clanRaidInfo.attempts;
 		isCancalBattle = false;
@@ -9054,7 +9054,7 @@ function executeAutoBattle(resolve, reject) {
 	let countBattle = 0;
 	let countError = 0;
 	let findCoeff = 0;
-	let dataNotEeceived = 0; 
+	let dataNotEeceived = 0;
     	let stopAutoBattle = false;
 		const svgJustice = '<svg width="20" height="20" viewBox="0 0 124 125" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m54 0h-1c-7.25 6.05-17.17 6.97-25.78 10.22-8.6 3.25-23.68 1.07-23.22 12.78s-0.47 24.08 1 35 2.36 18.36 7 28c4.43-8.31-3.26-18.88-3-30 0.26-11.11-2.26-25.29-1-37 11.88-4.16 26.27-0.42 36.77-9.23s20.53 6.05 29.23-0.77c-6.65-2.98-14.08-4.96-20-9z"/></g><g><path d="m108 5c-11.05 2.96-27.82 2.2-35.08 11.92s-14.91 14.71-22.67 23.33c-7.77 8.62-14.61 15.22-22.25 23.75 7.05 11.93 14.33 2.58 20.75-4.25 6.42-6.82 12.98-13.03 19.5-19.5s12.34-13.58 19.75-18.25c2.92 7.29-8.32 12.65-13.25 18.75-4.93 6.11-12.19 11.48-17.5 17.5s-12.31 11.38-17.25 17.75c10.34 14.49 17.06-3.04 26.77-10.23s15.98-16.89 26.48-24.52c10.5-7.64 12.09-24.46 14.75-36.25z"/></g><g><path d="m60 25c-11.52-6.74-24.53 8.28-38 6 0.84 9.61-1.96 20.2 2 29 5.53-4.04-4.15-23.2 4.33-26.67 8.48-3.48 18.14-1.1 24.67-8.33 2.73 0.3 4.81 2.98 7 0z"/></g><g><path d="m100 75c3.84-11.28 5.62-25.85 3-38-4.2 5.12-3.5 13.58-4 20s-3.52 13.18 1 18z"/></g><g><path d="m55 94c15.66-5.61 33.71-20.85 29-39-3.07 8.05-4.3 16.83-10.75 23.25s-14.76 8.35-18.25 15.75z"/></g><g><path d="m0 94v7c6.05 3.66 9.48 13.3 18 11-3.54-11.78 8.07-17.05 14-25 6.66 1.52 13.43 16.26 19 5-11.12-9.62-20.84-21.33-32-31-9.35 6.63 4.76 11.99 6 19-7.88 5.84-13.24 17.59-25 14z"/></g><g><path d="m82 125h26v-19h16v-1c-11.21-8.32-18.38-21.74-30-29-8.59 10.26-19.05 19.27-27 30h15v19z"/></g><g><path d="m68 110c-7.68-1.45-15.22 4.83-21.92-1.08s-11.94-5.72-18.08-11.92c-3.03 8.84 10.66 9.88 16.92 16.08s17.09 3.47 23.08-3.08z"/></g></svg>';
 		const svgBoss = '<svg width="20" height="20" viewBox="0 0 40 41" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m21 12c-2.19-3.23 5.54-10.95-0.97-10.97-6.52-0.02 1.07 7.75-1.03 10.97-2.81 0.28-5.49-0.2-8-1-0.68 3.53 0.55 6.06 4 4 0.65 7.03 1.11 10.95 1.67 18.33 0.57 7.38 6.13 7.2 6.55-0.11 0.42-7.3 1.35-11.22 1.78-18.22 3.53 1.9 4.73-0.42 4-4-2.61 0.73-5.14 1.35-8 1m-1 17c-1.59-3.6-1.71-10.47 0-14 1.59 3.6 1.71 10.47 0 14z"/></g><g><path d="m6 19c-1.24-4.15 2.69-8.87 1-12-3.67 4.93-6.52 10.57-6 17 5.64-0.15 8.82 4.98 13 8 1.3-6.54-0.67-12.84-8-13z"/></g><g><path d="m33 7c0.38 5.57 2.86 14.79-7 15v10c4.13-2.88 7.55-7.97 13-8 0.48-6.46-2.29-12.06-6-17z"/></g></svg>';
@@ -9349,7 +9349,7 @@ function executeAutoBattle(resolve, reject) {
 				startBattle();
 				return;
 			}
- 
+
 			setProgress(`${I18N('SUCCESS')}!`, 5000)
 			if (nameFuncStartBattle == 'invasion_bossStart' ||
 				nameFuncStartBattle == 'bossAttack') {
@@ -9376,7 +9376,7 @@ function executeAutoBattle(resolve, reject) {
 						location.reload();
 					}
 				}
- 
+
 			}
 			endAutoBattle(`${I18N('SUCCESS')}!`)
 		});
@@ -9398,7 +9398,7 @@ function executeAutoBattle(resolve, reject) {
     		this.battle = structuredClone(battle);
     		this.isTimeout = isTimeout;
     	}
-     
+
     	timeout(callback, timeout) {
     		if (this.isTimeout) {
     			this.worker.postMessage(timeout);
@@ -9407,18 +9407,18 @@ function executeAutoBattle(resolve, reject) {
     			callback();
     		}
     	}
-     
+
     	randTimer() {
     		const min = 1.3;
     		const max = 10.3;
     		return Math.random() * (max - min + 1) + min;
     	}
-     
+
     	setAvgTime(startTime) {
     		this.fixTime += Date.now() - startTime;
     		this.avgTime = this.fixTime / this.count;
     	}
-     
+
     	init() {
     		this.fixTime = 0;
     		this.lastTimer = 0;
@@ -9447,7 +9447,7 @@ function executeAutoBattle(resolve, reject) {
     			)
     		);
     	}
-     
+
     	async start(endTime = Date.now() + 6e4, maxCount = 100) {
     		this.endTime = endTime;
     		this.maxCount = maxCount;
@@ -9458,13 +9458,13 @@ function executeAutoBattle(resolve, reject) {
     			this.loop();
     		});
     	}
-     
+
     	endFix() {
     		this.bestResult.maxCount = this.count;
     		this.worker.terminate();
     		this.resolve(this.bestResult);
     	}
-     
+
     	async loop() {
     		const start = Date.now();
     		if (this.isEndLoop()) {
@@ -9488,16 +9488,16 @@ function executeAutoBattle(resolve, reject) {
     		this.updateProgressTimer();
     		this.timeout(this.loop.bind(this), 0);
     	}
-     
+
     	isEndLoop() {
     		return this.count >= this.maxCount || this.endTime < Date.now();
     	}
-     
+
     	updateProgressTimer(index = 0) {
     		this.lastTimer = this.randTimer();
     		this.battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, this.lastTimer] } }];
     	}
-     
+
     	showResult() {
     		console.log(
     			this.count,
@@ -9508,7 +9508,7 @@ function executeAutoBattle(resolve, reject) {
     			this.bestResult.value.toLocaleString()
     		);
     	}
-     
+
     	checkResult() {
     		const { damageTaken, damageTakenNextLevel } = this.lastBattleProgress[0].defenders.heroes[1].extra;
     		this.lastBossDamage = damageTaken + damageTakenNextLevel;
@@ -9523,7 +9523,7 @@ function executeAutoBattle(resolve, reject) {
     		}
     	}
     }
-     
+
     class WinFixBattle extends FixBattle {
     	checkResult() {
     		if (this.lastBattleResult.win) {
@@ -9537,11 +9537,11 @@ function executeAutoBattle(resolve, reject) {
     			};
     		}
     	}
-     
+
     	isEndLoop() {
     		return super.isEndLoop() || this.lastBattleResult.win;
     	}
-     
+
     	showResult() {
     		console.log(this.count, this.avgTime.toFixed(2), (this.endTime - Date.now()) / 1000, this.lastResult.battleTime, this.lastTimer);
     		const endTime = ((this.endTime - Date.now()) / 1000).toFixed(2);
@@ -9549,12 +9549,12 @@ function executeAutoBattle(resolve, reject) {
     		const msg = `${this.count}/${this.maxCount}<br/>${endTime}s<br/>${avgTime}ms`;
     		setProgress(msg, false, this.stopFix.bind(this));
     	}
-     
+
     	stopFix() {
     		this.endTime = 0;
     	}
     }
-     
+
 function testDailyQuests() {
 	return new Promise((resolve, reject) => {
 		const quests = new dailyQuests(resolve, reject);
@@ -10990,7 +10990,7 @@ class executeBrawls {
 	constructor(resolve, reject) {
 		this.resolve = resolve;
 		this.reject = reject;
- 
+
 		const allHeroIds = Object.keys(lib.getData('hero'));
 		this.callTeamGetMaxUpgrade.args.units = {
 			hero: allHeroIds.filter((id) => +id < 1000),
@@ -11069,7 +11069,7 @@ class executeBrawls {
 					this.args = await this.updateHeroesPack(enemie.heroes);
 			}
 			}
- 
+
 			const result = await this.battle(enemie.userId);
 			this.brawlInfo = {
 				questInfo: result[1].result.response,
@@ -11376,14 +11376,14 @@ class executeBrawls {
 			[4000, 4001, 4002, 4003, 4011],
 			[4000, 4001, 4002, 4003, 4010],
 		].filter((p) => p.includes(this.mandatoryId));
- 
+
 		const bestPack = {
 			pack: packs[0],
 			winRate: 0,
 			countBattle: 0,
 			id: 0,
 		};
- 
+
 		for (const id in packs) {
 			const pack = packs[id];
 			const attackers = this.maxUpgrade.filter((e) => pack.includes(e.id)).reduce((obj, e) => ({ ...obj, [e.id]: e }), {});
@@ -11408,7 +11408,7 @@ class executeBrawls {
 					break;
 				}
 			}
- 
+
 			if (!isRandom && stat.win) {
 				return {
 					favor: {},
@@ -11428,31 +11428,31 @@ class executeBrawls {
 				bestPack.id = id;
 			}
 		}
- 
+
 		//console.log(bestPack.id, bestPack.pack, bestPack.winRate, bestPack.countBattle);
 		return {
 			favor: {},
 			heroes: bestPack.pack,
 		};
 	}
- 
+
 	isRandomPack(pack) {
 		const ids = Object.keys(pack);
 		return ids.includes('4023') || ids.includes('4021');
 	}
- 
+
 	isRandomBattle(battle) {
 		return this.isRandomPack(battle.attackers) || this.isRandomPack(battle.defenders[0]);
 	}
- 
+
 	async updateHeroesPack(enemieHeroes) {
 		const packs = [{id:1,args:{userId:-830021,heroes:[63,13,9,48,1],pet:6006,favor:{1:6004,9:6005,13:6002,48:6e3,63:6009}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6022:130,8268:1,8269:1},power:198058,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:419649,intelligence:3644,physicalAttack:11481.6,strength:17049,armor:12720,dodge:17232.28,magicPenetration:22780,magicPower:55816,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6027:130,8270:1,8271:1},power:195886,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6005,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:7020.32,strength:3068,armor:19995,dodge:14644,magicPower:64780.6,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6005,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6012:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:19060,magicPenetration:58138.6,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6002,favorPower:11064},48:{id:48,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{240:130,241:130,242:130,243:130,6002:130},power:190584,star:6,runes:[43750,43750,43750,43750,43750],skins:{103:60,165:60,217:60,296:60,326:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[5,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17308,hp:397737,intelligence:2888,physicalAttack:40298.32,physicalCritChance:12280,strength:3169,armor:12185,armorPenetration:20137.6,magicResist:24816,skin:0,favorPetId:6e3,favorPower:11064},63:{id:63,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{442:130,443:130,444:130,445:130,6041:130,8272:1,8273:1},power:193520,star:6,runes:[43750,43750,43750,43750,43750],skins:{341:60,350:60,351:60,352:1},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6009,type:"hero",perks:[6,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17931,hp:488832,intelligence:2737,physicalAttack:54213.6,strength:2877,armor:800,armorPenetration:32477.6,magicResist:8526,physicalCritChance:9545,modifiedSkillTier:3,skin:0,favorPetId:6009,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:2,args:{userId:-830049,heroes:[46,13,52,49,4],pet:6006,favor:{4:6001,13:6002,46:6006,49:6004,52:6003}},attackers:{4:{id:4,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{255:130,256:130,257:130,258:130,6007:130},power:189782,star:6,runes:[43750,43750,43750,43750,43750],skins:{4:60,35:60,92:60,161:60,236:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:3065,hp:482631,intelligence:3402,physicalAttack:2800,strength:17488,armor:56262.6,magicPower:51021,magicResist:36971,skin:0,favorPetId:6001,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6012:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:19060,magicPenetration:58138.6,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6002,favorPower:11064},46:{id:46,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{230:130,231:130,232:130,233:130,6032:130},power:189653,star:6,runes:[43750,43750,43750,43750,43750],skins:{101:60,159:60,178:60,262:60,315:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[9,5,1,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2122,hp:637517,intelligence:16208,physicalAttack:50,strength:5151,armor:38507.6,magicPower:74495.6,magicResist:22237,skin:0,favorPetId:6006,favorPower:11064},49:{id:49,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{245:130,246:130,247:130,248:130,6022:130},power:193163,star:6,runes:[43750,43750,43750,43750,43750],skins:{104:60,191:60,252:60,305:60,329:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[10,1,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17935,hp:250405,intelligence:2790,physicalAttack:40413.6,strength:2987,armor:11655,dodge:14844.28,magicResist:3175,physicalCritChance:14135,skin:0,favorPetId:6004,favorPower:11064},52:{id:52,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{310:130,311:130,312:130,313:130,6017:130},power:185075,star:6,runes:[43750,43750,43750,43750,43750],skins:{188:60,213:60,248:60,297:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[5,8,2,13,15,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:18270,hp:226207,intelligence:2620,physicalAttack:44206,strength:3260,armor:13150,armorPenetration:40301,magicPower:9957.6,magicResist:33892.6,skin:0,favorPetId:6003,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:3,args:{userId:8263225,heroes:[29,63,13,48,1],pet:6006,favor:{1:6004,13:6002,29:6006,48:6e3,63:6003}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6022:130,8268:1,8269:1},power:198058,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:419649,intelligence:3644,physicalAttack:11481.6,strength:17049,armor:12720,dodge:17232.28,magicPenetration:22780,magicPower:55816,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6012:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:19060,magicPenetration:58138.6,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6002,favorPower:11064},29:{id:29,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{145:130,146:130,147:130,148:130,6032:130},power:189790,star:6,runes:[43750,43750,43750,43750,43750],skins:{29:60,72:60,88:60,147:60,242:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[9,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2885,hp:491431,intelligence:18331,physicalAttack:106,strength:3020,armor:37716.6,magicPower:76792.6,magicResist:31377,skin:0,favorPetId:6006,favorPower:11064},48:{id:48,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{240:130,241:130,242:130,243:130,6002:130},power:190584,star:6,runes:[43750,43750,43750,43750,43750],skins:{103:60,165:60,217:60,296:60,326:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6e3,type:"hero",perks:[5,2],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:17308,hp:397737,intelligence:2888,physicalAttack:40298.32,physicalCritChance:12280,strength:3169,armor:12185,armorPenetration:20137.6,magicResist:24816,skin:0,favorPetId:6e3,favorPower:11064},63:{id:63,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{442:130,443:130,444:130,445:130,6017:130,8272:1,8273:1},power:191031,star:6,runes:[43750,43750,43750,43750,43750],skins:{341:60,350:60,351:60,352:1},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[6,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17931,hp:488832,intelligence:2737,physicalAttack:44256,strength:2877,armor:800,armorPenetration:22520,magicPower:9957.6,magicResist:18483.6,physicalCritChance:9545,modifiedSkillTier:3,skin:0,favorPetId:6003,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:4,args:{userId:8263247,heroes:[55,13,40,51,1],pet:6006,favor:{1:6007,13:6002,40:6004,51:6006,55:6001}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6035:130,8268:1,8269:1},power:195170,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:419649,intelligence:3644,physicalAttack:1524,strength:17049,armor:22677.6,dodge:14245,magicPenetration:22780,magicPower:65773.6,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6007,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6012:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:19060,magicPenetration:58138.6,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6002,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},51:{id:51,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{305:130,306:130,307:130,308:130,6032:130},power:190005,star:6,runes:[43750,43750,43750,43750,43750],skins:{181:60,219:60,260:60,290:60,334:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,9,1,12],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2526,hp:438205,intelligence:18851,physicalAttack:50,strength:2921,armor:39442.6,magicPower:88978.6,magicResist:22960,skin:0,favorPetId:6006,favorPower:11064},55:{id:55,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{325:130,326:130,327:130,328:130,6007:130},power:190529,star:6,runes:[43750,43750,43750,43750,43750],skins:{239:60,278:60,309:60,327:60,346:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[7,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2631,hp:499591,intelligence:19438,physicalAttack:50,strength:3286,armor:32892.6,armorPenetration:36870,magicPower:60704,magicResist:10010,skin:0,favorPetId:6001,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:5,args:{userId:8263303,heroes:[31,29,13,40,1],pet:6004,favor:{1:6001,13:6007,29:6002,31:6006,40:6004}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6007:130,8268:1,8269:1},power:195170,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:519225,intelligence:3644,physicalAttack:1524,strength:17049,armor:22677.6,dodge:14245,magicPenetration:22780,magicPower:55816,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6001,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6035:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:29017.6,magicPenetration:48181,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6007,favorPower:11064},29:{id:29,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{145:130,146:130,147:130,148:130,6012:130},power:189790,star:6,runes:[43750,43750,43750,43750,43750],skins:{29:60,72:60,88:60,147:60,242:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[9,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2885,hp:491431,intelligence:18331,physicalAttack:106,strength:3020,armor:27759,magicPenetration:9957.6,magicPower:76792.6,magicResist:31377,skin:0,favorPetId:6002,favorPower:11064},31:{id:31,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{155:130,156:130,157:130,158:130,6032:130},power:190305,star:6,runes:[43750,43750,43750,43750,43750],skins:{44:60,94:60,133:60,200:60,295:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[9,5,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2781,dodge:12620,hp:374484,intelligence:18945,physicalAttack:78,strength:2916,armor:28049.6,magicPower:67686.6,magicResist:15252,skin:0,favorPetId:6006,favorPower:11064},40:{id:40,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{200:130,201:130,202:130,203:130,6022:130,8244:1,8245:1},power:192541,star:6,runes:[43750,43750,43750,43750,43750],skins:{53:60,89:60,129:60,168:60,314:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[5,9,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:17540,hp:343191,intelligence:2805,physicalAttack:48430.6,strength:2976,armor:24410,dodge:15732.28,magicResist:17633,modifiedSkillTier:3,skin:0,favorPetId:6004,favorPower:11064},6004:{id:6004,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6020:130,6021:130},power:181943,type:"pet",perks:[5],name:null,armorPenetration:47911,intelligence:11064,strength:12360}}},{id:6,args:{userId:8263317,heroes:[62,13,9,56,61],pet:6003,favor:{9:6004,13:6002,56:6006,61:6001,62:6003}},attackers:{9:{id:9,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{335:130,336:130,337:130,338:130,6022:130,8270:1,8271:1},power:198525,star:6,runes:[43750,43750,43750,43750,43750],skins:{9:60,41:60,163:60,189:60,311:60,338:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[7,2,20],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3068,hp:227134,intelligence:19003,physicalAttack:10007.6,strength:3068,armor:19995,dodge:17631.28,magicPower:54823,magicResist:31597,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6012:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:19060,magicPenetration:58138.6,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6002,favorPower:11064},56:{id:56,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{376:130,377:130,378:130,379:130,6032:130},power:184420,star:6,runes:[43750,43750,43750,43750,43750],skins:{264:60,279:60,294:60,321:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[5,7,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2791,hp:235111,intelligence:18813,physicalAttack:50,strength:2656,armor:22982.6,magicPenetration:48159,magicPower:75598.6,magicResist:13990,skin:0,favorPetId:6006,favorPower:11064},61:{id:61,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{411:130,412:130,413:130,414:130,6007:130},power:184868,star:6,runes:[43750,43750,43750,43750,43750],skins:{302:60,306:60,323:60,340:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6001,type:"hero",perks:[4,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2545,hp:466176,intelligence:3320,physicalAttack:34305,strength:18309,armor:31077.6,magicResist:24101,physicalCritChance:9009,skin:0,favorPetId:6001,favorPower:11064},62:{id:62,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{437:130,438:130,439:130,440:130,6017:130},power:173991,star:6,runes:[43750,43750,43750,43750,43750],skins:{320:60,343:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6003,type:"hero",perks:[8,7,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2530,hp:276010,intelligence:19245,physicalAttack:50,strength:3543,armor:12890,magicPenetration:23658,magicPower:80966.6,magicResist:12447.6,skin:0,favorPetId:6003,favorPower:11064},6003:{id:6003,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6015:130,6016:130},power:181943,type:"pet",perks:[8],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}},{id:7,args:{userId:8263335,heroes:[32,29,13,43,1],pet:6006,favor:{1:6004,13:6008,29:6006,32:6002,43:6007}},attackers:{1:{id:1,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{2:130,3:130,4:130,5:130,6022:130,8268:1,8269:1},power:198058,star:6,runes:[43750,43750,43750,43750,43750],skins:{1:60,54:60,95:60,154:60,250:60,325:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6004,type:"hero",perks:[4,1],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:3093,hp:419649,intelligence:3644,physicalAttack:11481.6,strength:17049,armor:12720,dodge:17232.28,magicPenetration:22780,magicPower:55816,magicResist:1580,modifiedSkillTier:5,skin:0,favorPetId:6004,favorPower:11064},13:{id:"13",xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{452:130,453:130,454:130,455:130,6038:130,8274:1,8275:1},power:194833,star:6,runes:[43750,43750,43750,43750,43750],skins:{13:60,38:60,148:60,199:60,240:60,335:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6008,type:"hero",perks:[7,2,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,9,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,9,10]},agility:2885,hp:344763,intelligence:17625,physicalAttack:50,strength:3020,armor:29017.6,magicPenetration:48181,magicPower:70100.6,magicResist:27227,modifiedSkillTier:4,skin:0,favorPetId:6008,favorPower:11064},29:{id:29,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{145:130,146:130,147:130,148:130,6032:130},power:189790,star:6,runes:[43750,43750,43750,43750,43750],skins:{29:60,72:60,88:60,147:60,242:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6006,type:"hero",perks:[9,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2885,hp:491431,intelligence:18331,physicalAttack:106,strength:3020,armor:37716.6,magicPower:76792.6,magicResist:31377,skin:0,favorPetId:6006,favorPower:11064},32:{id:32,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{160:130,161:130,162:130,163:130,6012:130},power:189956,star:6,runes:[43750,43750,43750,43750,43750],skins:{45:60,73:60,81:60,135:60,212:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6002,type:"hero",perks:[7,5,2,22],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2815,hp:551066,intelligence:18800,physicalAttack:50,strength:2810,armor:19040,magicPenetration:9957.6,magicPower:89495.6,magicResist:20805,skin:0,favorPetId:6002,favorPower:11064},43:{id:43,xp:3625195,level:130,color:18,slots:[0,0,0,0,0,0],skills:{215:130,216:130,217:130,218:130,6035:130},power:189593,star:6,runes:[43750,43750,43750,43750,43750],skins:{98:60,130:60,169:60,201:60,304:60},currentSkin:0,titanGiftLevel:30,titanCoinsSpent:null,artifacts:[{level:130,star:6},{level:130,star:6},{level:130,star:6}],scale:1,petId:6007,type:"hero",perks:[7,9,1,21],ascensions:{1:[0,1,2,3,4,5,6,7,8,9],2:[0,1,2,3,4,5,6,7,8,10],3:[0,1,2,3,4,5,6,7,8,9],4:[0,1,2,3,4,5,6,7,8,9],5:[0,1,2,3,4,5,6,7,8,10]},agility:2447,hp:265217,intelligence:18758,physicalAttack:50,strength:2842,armor:18637.6,magicPenetration:52439,magicPower:75465.6,magicResist:22695,skin:0,favorPetId:6007,favorPower:11064},6006:{id:6006,color:10,star:6,xp:450551,level:130,slots:[25,50,50,25,50,50],skills:{6030:130,6031:130},power:181943,type:"pet",perks:[5,9],name:null,intelligence:11064,magicPenetration:47911,strength:12360}}}];
- 
+
 		const bestPack = {
 			pack: packs[0],
 			countWin: 0,
 		}
- 
+
 		for (const pack of packs) {
 			const attackers = pack.attackers;
 			const battle = {
@@ -11460,7 +11460,7 @@ class executeBrawls {
 				defenders: [enemieHeroes],
 				type: 'brawl',
 			};
- 
+
 			let countWinBattles = 0;
 			let countTestBattle = 10;
 			for (let i = 0; i < countTestBattle; i++) {
@@ -11479,11 +11479,11 @@ class executeBrawls {
 				bestPack.pack = pack.args;
 			}
 		}
- 
+
 		console.log(bestPack);
 		return bestPack.pack;
 	}
- 
+
 	async questFarm() {
 		const calls = [this.callBrawlQuestFarm];
 		const result = await Send(JSON.stringify({ calls }));
@@ -11502,13 +11502,13 @@ class executeBrawls {
 		}));
 
 		let attempts = data.results[0].result.response.refillable.find(n => n.id == 48);
- 
+
 		const maxUpgrade = data.results[3].result.response;
 		const maxHero = Object.values(maxUpgrade.hero);
 		const maxTitan = Object.values(maxUpgrade.titan);
 		const maxPet = Object.values(maxUpgrade.pet);
 		this.maxUpgrade = [...maxHero, ...maxPet, ...maxTitan];
- 
+
 		this.info = data.results[4].result.response;
 		this.mandatoryId = lib.data.brawl.promoHero[this.info.id].promoHero;
 		return {
