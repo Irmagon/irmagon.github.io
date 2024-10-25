@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name			HeroWarsHelper
-// @name:en			HeroWarsHelper
-// @name:ru			HeroWarsHelper
-// @namespace		HeroWarsHelper
-    // @version			2.292
+// @name			HeroWarsPhone
+// @name:en			HeroWarsPhone
+// @name:ru			HeroWarsPhone
+// @namespace		HeroWarsPhone
+// @version			2.293
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -205,6 +205,7 @@ const i18nLangData = {
 		SYNC: 'Sync',
 		SYNC_TITLE: 'Partial synchronization of game data without reloading the page',
 		ARCHDEMON: 'Archdemon',
+		FURNACE_OF_SOULS: 'Furnace of souls',
 		ARCHDEMON_TITLE: 'Hitting kills and collecting rewards',
 		ESTER_EGGS: 'Easter eggs',
 		ESTER_EGGS_TITLE: 'Collect all Easter eggs or rewards',
@@ -439,8 +440,6 @@ const i18nLangData = {
 		ATTEMPT_ENDED: '<br>Attempts ended, timer started {time}',
 		EPIC_BRAWL: 'Cosmic Battle',
 		EPIC_BRAWL_TITLE: 'Spends attempts in the Cosmic Battle',
-		FURNACE: 'Furnace',
-		FURNACE_TITLE: 'Hitting kills and collecting rewards',
 		RELOAD_GAME: 'Reload game',
 		TIMER: 'Timer:',
 		SHOW_ERRORS: 'Show errors',
@@ -564,6 +563,7 @@ const i18nLangData = {
 		SYNC: 'Обновить',
 		SYNC_TITLE: 'Частичная синхронизация данных игры без перезагрузки сатраницы',
 		ARCHDEMON: 'Архидемон',
+		FURNACE_OF_SOULS: 'Горнило душ',
 		ARCHDEMON_TITLE: 'Набивает килы и собирает награду',
 		ESTER_EGGS: 'Пасхалки',
 		ESTER_EGGS_TITLE: 'Собрать все пасхалки или награды',
@@ -801,9 +801,6 @@ const i18nLangData = {
 		TIMER: 'Таймер:',
 		SHOW_ERRORS: 'Отображать ошибки',
 		SHOW_ERRORS_TITLE: 'Отображать ошибки запросов к серверу',
-		FURNACE: 'Горнило',
-		FURNACE_TITLE: 'Набивает килы и собирает награду',
-
 		ERROR_MSG: 'Ошибка: {name}<br>{description}',
 		EVENT_AUTO_BOSS:
 			'Максимальное количество боев для расчета:</br>{length} * {countTestBattle} = {maxCalcBattle}</br>Если у Вас слабый компьютер на это может потребоваться много времени, нажмите крестик для отмены.</br>Искать лучший пак из всех или первый подходящий?',
@@ -1213,11 +1210,11 @@ const buttons = {
                     title: I18N('ARCHDEMON_TITLE'),
                 },
                 {
-                    msg: I18N('FURNACE'),
+                    msg: I18N('FURNACE_OF_SOULS'),
                     result: function () {
-                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE')}?`, bossRatingEventSouls);
+                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE_OF_SOULS')}?`, bossRatingEventSouls);
                     },
-                    title: I18N('FURNACE_TITLE'),
+                    title: I18N('ARCHDEMON_TITLE'),
                 },
 				{
 					msg: I18N('REWARDS'),
@@ -1253,12 +1250,12 @@ const buttons = {
 				},
 				*/
 			];
-			popupButtons.push({ result: false, isClose: true })
+			popupButtons.push({ result: false, isClose: true });
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
 			if (typeof answer === 'function') {
 				answer();
 			}
-		}
+	},
 	},
 	doOthers: {
 		name: I18N('OTHERS'),
@@ -1352,19 +1349,19 @@ const buttons = {
 					title: I18N('CHANGE_MAP_TITLE'),
 				},
 			];
-			popupButtons.push({ result: false, isClose: true })
+			popupButtons.push({ result: false, isClose: true });
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
 			if (typeof answer === 'function') {
 				answer();
 			}
-		}
+	},
 	},
     getOutland: {
 		name: I18N('TO_DO_EVERYTHING'),
 		title: I18N('TO_DO_EVERYTHING_TITLE'),
 		func: testDoYourBest,
 	},
-}
+};
 /**
  * Display buttons
  *
