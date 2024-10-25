@@ -1238,7 +1238,7 @@ const buttons = {
                     title: I18N('ARCHDEMON_TITLE'),
                 },
                 {
-                    name: I18N('FURNACE_OF_SOULS'),
+                    msg: I18N('FURNACE_OF_SOULS'),
                     result: function () {
                         confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE_OF_SOULS')}?`, bossRatingEventSouls);
                     },
