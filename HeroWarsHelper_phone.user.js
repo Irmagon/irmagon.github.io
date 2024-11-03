@@ -3,15 +3,15 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.293
+// @version			2.296
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY
 // @license 		Copyright ZingerY
 // @homepage		https://zingery.ru/scripts/HeroWarsHelper.user.js
-// @icon			http://ilovemycomp.narod.ru/VaultBoyIco16.ico
-// @icon64			http://ilovemycomp.narod.ru/VaultBoyIco64.png
+// @icon			https://zingery.ru/scripts/VaultBoyIco16.ico
+// @icon64			https://zingery.ru/scripts/VaultBoyIco64.png
 // @match			https://www.hero-wars.com/*
 // @match			https://apps-1701433570146040.apps.fbsbx.com/*
 // @run-at			document-start
@@ -79,7 +79,49 @@ const original = {
 	send: XMLHttpRequest.prototype.send,
 	setRequestHeader: XMLHttpRequest.prototype.setRequestHeader,
 	SendWebSocket: WebSocket.prototype.send,
+	fetch: fetch,
 };
+ 
+// Sentry blocking
+// Блокировка наблюдателя
+this.fetch = function (url, options) {
+/**
+	 * Checking URL for blocking
+	 * Проверяем URL на блокировку
+	 */
+	if (url.includes('sentry.io')) {
+		console.log('%cFetch blocked', 'color: red');
+		console.log(url, options);
+		const body = {
+			id: md5(Date.now()),
+		};
+		let info = {};
+		try {
+			info = JSON.parse(options.body);
+		} catch (e) {}
+		if (info.event_id) {
+			body.id = info.event_id;
+		}
+		/**
+		 * Mock response for blocked URL
+		 * 
+		 * Мокаем ответ для заблокированного URL
+		 */
+		const mockResponse = new Response('Custom blocked response', {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' },
+			body,
+		});
+		return Promise.resolve(mockResponse);
+	} else {
+		/**
+		 * Call the original fetch function for all other URLs
+		 * Вызываем оригинальную функцию fetch для всех других URL
+		 */
+		return original.fetch.apply(this, arguments);
+	}
+};
+ 
 /**
  * Decoder for converting byte data to JSON string
  *
@@ -2047,12 +2089,15 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Saving the request to start the last battle
 			 * Сохранение запроса начала последнего боя
 			 */
-			if (call.name == 'clanWarAttack' ||
+			if (
+				call.name == 'clanWarAttack' ||
 				call.name == 'crossClanWar_startBattle' ||
 				call.name == 'adventure_turnStartBattle' ||
+				call.name == 'adventureSolo_turnStartBattle' ||
 				call.name == 'bossAttack' ||
 				call.name == 'invasion_bossStart' ||
-				call.name == 'towerStartBattle') {
+				call.name == 'towerStartBattle'
+			) {
 				nameFuncStartBattle = call.name;
 				lastBattleArg = call.args;
  
@@ -9576,21 +9621,18 @@ class dailyQuests {
 	 * Send(' {"calls":[{"name":"questGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
 	 * Send(' {"calls":[{"name":"bossGetAll","args":{},"ident":"body"}]}').then(e => console.log(e))
 	 */
-	callsList = [
-		"userGetInfo",
-		"heroGetAll",
-		"titanGetAll",
-		"inventoryGet",
-		"questGetAll",
-		"bossGetAll",
-	]
+	callsList = ['userGetInfo', 'heroGetAll', 'titanGetAll', 'inventoryGet', 'questGetAll', 'bossGetAll', 'missionGetAll'];
 
 	dataQuests = {
 		10001: {
 			description: 'Улучши умения героев 3 раза', // ++++++++++++++++
 			doItCall: () => {
 				const upgradeSkills = this.getUpgradeSkills();
-				return upgradeSkills.map(({ heroId, skill }, index) => ({ name: "heroUpgradeSkill", args: { heroId, skill }, "ident": `heroUpgradeSkill_${index}` }));
+				return upgradeSkills.map(({ heroId, skill }, index) => ({
+					name: 'heroUpgradeSkill',
+					args: { heroId, skill },
+					ident: `heroUpgradeSkill_${index}`,
+				}));
 			},
 			isWeCanDo: () => {
 				const upgradeSkills = this.getUpgradeSkills();
@@ -9609,8 +9651,27 @@ class dailyQuests {
 			isWeCanDo: () => false,
 		},
 		10003: {
-			description: 'Пройди 3 героические миссии', // --------------
-			isWeCanDo: () => false,
+			description: 'Пройди 3 героические миссии', // ++++++++++++++++
+			isWeCanDo: () => {
+				const vipPoints = +this.questInfo.userGetInfo.vipPoints;
+				const goldTicket = !!this.questInfo.inventoryGet.consumable[151];
+				return (vipPoints > 100 || goldTicket) && this.getHeroicMissionId();
+		},
+			doItCall: () => {
+				const selectedMissionId = this.getHeroicMissionId();
+				const goldTicket = !!this.questInfo.inventoryGet.consumable[151];
+				const vipPoints = +this.questInfo.userGetInfo.vipPoints;
+				// Возвращаем массив команд для рейда
+				if (vipPoints > 500 || goldTicket) {
+					return [{ name: 'missionRaid', args: { id: selectedMissionId, times: 3 }, ident: 'missionRaid_1' }];
+				} else {
+					return [
+						{ name: 'missionRaid', args: { id: selectedMissionId, times: 1 }, ident: 'missionRaid_1' },
+						{ name: 'missionRaid', args: { id: selectedMissionId, times: 1 }, ident: 'missionRaid_2' },
+						{ name: 'missionRaid', args: { id: selectedMissionId, times: 1 }, ident: 'missionRaid_3' },
+					];
+				}
+			},
 		},
 		10004: {
 			description: 'Сразись 3 раза на Арене или Гранд Арене', // --------------
@@ -9618,11 +9679,13 @@ class dailyQuests {
 		},
 		10006: {
 			description: 'Используй обмен изумрудов 1 раз', // ++++++++++++++++
-			doItCall: () => [{
-				name: "refillableAlchemyUse",
+			doItCall: () => [
+				{
+					name: 'refillableAlchemyUse',
 				args: { multi: false },
-				ident: "refillableAlchemyUse"
-			}],
+					ident: 'refillableAlchemyUse',
+				},
+			],
 			isWeCanDo: () => {
 				const starMoney = this.questInfo['userGetInfo'].starMoney;
 				return starMoney >= 20;
@@ -9630,7 +9693,7 @@ class dailyQuests {
 		},
 		10007: {
 			description: 'Соверши 1 призыв в Атриуме Душ', // ++++++++++++++++
-		doItCall: () => [{ name: "gacha_open", args: { ident: "heroGacha", free: true, pack: false }, ident: "gacha_open" }],
+			doItCall: () => [{ name: 'gacha_open', args: { ident: 'heroGacha', free: true, pack: false }, ident: 'gacha_open' }],
 			isWeCanDo: () => {
 				const soulCrystal =  this.questInfo['inventoryGet'].coin[38];
 				return soulCrystal > 0;
@@ -9638,22 +9701,24 @@ class dailyQuests {
 		},
 		10016: {
 			description: 'Отправь подарки согильдийцам', // ++++++++++++++++
-			doItCall: () => [{ name: "clanSendDailyGifts", args: {}, ident: "clanSendDailyGifts" }],
+			doItCall: () => [{ name: 'clanSendDailyGifts', args: {}, ident: 'clanSendDailyGifts' }],
 			isWeCanDo: () => true,
 		},
 		10018: {
 			description: 'Используй зелье опыта', // ++++++++++++++++
 			doItCall: () => {
 				const expHero = this.getExpHero();
-				return [{
-					name: "consumableUseHeroXp",
+				return [
+					{
+						name: 'consumableUseHeroXp',
 					args: {
 						heroId: expHero.heroId,
 						libId: expHero.libId,
-						amount: 1
+							amount: 1,
 					},
-					ident: "consumableUseHeroXp"
-				}];
+						ident: 'consumableUseHeroXp',
+			},
+				];
 			},
 			isWeCanDo: () => {
 				const expHero = this.getExpHero();
@@ -9689,9 +9754,9 @@ class dailyQuests {
 			doItCall: () => {
 				const heroId = this.getHeroIdTitanGift();
 				return [
-					{ name: "heroTitanGiftLevelUp", args: { heroId }, ident: "heroTitanGiftLevelUp" },
-					{ name: "heroTitanGiftDrop", args: { heroId }, ident: "heroTitanGiftDrop" }
-				]
+					{ name: 'heroTitanGiftLevelUp', args: { heroId }, ident: 'heroTitanGiftLevelUp' },
+					{ name: 'heroTitanGiftDrop', args: { heroId }, ident: 'heroTitanGiftDrop' },
+				];
 			},
 			isWeCanDo: () => {
 				const heroId = this.getHeroIdTitanGift();
@@ -9704,13 +9769,13 @@ class dailyQuests {
 				const upArtifact = this.getUpgradeArtifact();
 				return [
 					{
-						name: "heroArtifactLevelUp",
+						name: 'heroArtifactLevelUp',
 						args: {
 							heroId: upArtifact.heroId,
-							slotId: upArtifact.slotId
+							slotId: upArtifact.slotId,
 						},
-						ident: `heroArtifactLevelUp`
-					}
+						ident: `heroArtifactLevelUp`,
+					},
 				];
 			},
 			isWeCanDo: () => {
@@ -9739,13 +9804,13 @@ class dailyQuests {
 				const upTitanArtifact = this.getUpgradeTitanArtifact();
 				return [
 					{
-						name: "titanArtifactLevelUp",
+						name: 'titanArtifactLevelUp',
 						args: {
 							titanId: upTitanArtifact.titanId,
-							slotId: upTitanArtifact.slotId
+							slotId: upTitanArtifact.slotId,
 						},
-						ident: `titanArtifactLevelUp`
-					}
+						ident: `titanArtifactLevelUp`,
+					},
 				];
 			},
 			isWeCanDo: () => {
@@ -9755,9 +9820,9 @@ class dailyQuests {
 		},
 		10029: {
 			description: 'Открой сферу артефактов титанов', // ++++++++++++++++
-			doItCall: () => [{ name: "titanArtifactChestOpen", args: { amount: 1, free: true }, ident: "titanArtifactChestOpen" }],
+			doItCall: () => [{ name: 'titanArtifactChestOpen', args: { amount: 1, free: true }, ident: 'titanArtifactChestOpen' }],
 			isWeCanDo: () => {
-				return this.questInfo['inventoryGet']?.consumable[55] > 0
+				return this.questInfo['inventoryGet']?.consumable[55] > 0;
 			},
 		},
 		10030: {
@@ -9766,13 +9831,13 @@ class dailyQuests {
 				const upSkin = this.getUpgradeSkin();
 				return [
 					{
-						name: "heroSkinUpgrade",
+						name: 'heroSkinUpgrade',
 						args: {
 							heroId: upSkin.heroId,
-							skinId: upSkin.skinId
+							skinId: upSkin.skinId,
 						},
-						ident: `heroSkinUpgrade`
-					}
+						ident: `heroSkinUpgrade`,
+					},
 				];
 			},
 			isWeCanDo: () => {
@@ -9791,9 +9856,9 @@ class dailyQuests {
 		},
 		10044: {
 			description: 'Воспользуйся призывом питомцев 1 раз', // ++++++++++++++++
-			doItCall: () => [{ name: "pet_chestOpen", args: { amount: 1, paid: false }, ident: "pet_chestOpen" }],
+			doItCall: () => [{ name: 'pet_chestOpen', args: { amount: 1, paid: false }, ident: 'pet_chestOpen' }],
 			isWeCanDo: () => {
-				return this.questInfo['inventoryGet']?.consumable[90] > 0
+				return this.questInfo['inventoryGet']?.consumable[90] > 0;
 			},
 		},
 		10046: {
@@ -9810,16 +9875,16 @@ class dailyQuests {
 				const enchantRune = this.getEnchantRune();
 				return [
 					{
-						name: "heroEnchantRune",
+						name: 'heroEnchantRune',
 						args: {
 							heroId: enchantRune.heroId,
 							tier: enchantRune.tier,
 							items: {
-								consumable: { [enchantRune.itemId]: 1 }
-							}
+								consumable: { [enchantRune.itemId]: 1 },
 						},
-						ident: `heroEnchantRune`
-					}
+						},
+						ident: `heroEnchantRune`,
+					},
 				];
 			},
 			isWeCanDo: () => {
@@ -9843,10 +9908,12 @@ class dailyQuests {
 	async autoInit(isAuto) {
 		this.isAuto = isAuto || false;
 		const quests = {};
-		const calls = this.callsList.map(name => ({
-			name, args: {}, ident: name
-		}))
-		const result = await Send(JSON.stringify({ calls })).then(e => e.results);
+		const calls = this.callsList.map((name) => ({
+			name,
+			args: {},
+			ident: name,
+		}));
+		const result = await Send(JSON.stringify({ calls })).then((e) => e.results);
 		for (const call of result) {
 			quests[call.ident] = call.result.response;
 		}
@@ -9860,8 +9927,8 @@ class dailyQuests {
 			if (quest.id in this.dataQuests && quest.state == 1) {
 				if (!selectedActions[quest.id]) {
 					selectedActions[quest.id] = {
-						checked: false
-					}
+						checked: false,
+					};
 				}
 
 				const isWeCanDo = this.dataQuests[quest.id].isWeCanDo;
@@ -9872,7 +9939,7 @@ class dailyQuests {
 				weCanDo.push({
 					name: quest.id,
 					label: I18N(`QUEST_${quest.id}`),
-					checked: selectedActions[quest.id].checked
+					checked: selectedActions[quest.id].checked,
 				});
 			}
 		}
@@ -9887,16 +9954,20 @@ class dailyQuests {
 		if (this.isAuto) {
 			taskList = weCanDo;
 		} else {
-			const answer = await popup.confirm(`${I18N('YOU_CAN_COMPLETE') }:`, [
+			const answer = await popup.confirm(
+				`${I18N('YOU_CAN_COMPLETE')}:`,
+				[
 				{ msg: I18N('BTN_DO_IT'), result: true },
 				{ msg: I18N('BTN_CANCEL'), result: false, isCancel: true },
-			], weCanDo);
+				],
+				weCanDo
+			);
 			if (!answer) {
 				this.end('');
 				return;
 			}
 			taskList = popup.getCheckBoxes();
-			taskList.forEach(e => {
+			taskList.forEach((e) => {
 				selectedActions[e.name].checked = e.checked;
 			});
 			setSaveVal('selectedActions', selectedActions);
@@ -9907,7 +9978,7 @@ class dailyQuests {
 		for (const task of taskList) {
 			if (task.checked) {
 				countChecked++;
-				const quest = this.dataQuests[task.name]
+				const quest = this.dataQuests[task.name];
 				console.log(quest.description);
 
 				if (quest.doItCall) {
@@ -9924,7 +9995,7 @@ class dailyQuests {
 
 		const result = await Send(JSON.stringify({ calls }));
 		if (result.error) {
-			console.error(result.error, result.error.call)
+			console.error(result.error, result.error.call);
 		}
 		this.end(`${I18N('COMPLETED_QUESTS')}: ${countChecked}`);
 	}
@@ -9934,7 +10005,7 @@ class dailyQuests {
 		let errorInfo = error.toString() + '\n';
 		try {
 			const errorStack = error.stack.split('\n');
-			const endStack = errorStack.map(e => e.split('@')[0]).indexOf("testDoYourBest");
+			const endStack = errorStack.map((e) => e.split('@')[0]).indexOf('testDoYourBest');
 			errorInfo += errorStack.slice(0, endStack).join('\n');
 		} catch (e) {
 			errorInfo += error.stack;
@@ -9993,7 +10064,7 @@ class dailyQuests {
 
 		for (const hero of heroes) {
 			const heroInfo = heroLib[hero.id];
-			const level = hero.level
+			const level = hero.level;
 			if (level < 20) {
 				continue;
 			}
@@ -10042,7 +10113,7 @@ class dailyQuests {
 		const skinLib = lib.getData('skin');
 
 		for (const hero of heroes) {
-			const level = hero.level
+			const level = hero.level;
 			if (level < 20) {
 				continue;
 			}
@@ -10065,9 +10136,7 @@ class dailyQuests {
 				const costValue = +costNextLevel[costCurrency][costCurrencyId];
 
 				/** TODO: Возможно стоит искать самый высокий уровень который можно качнуть? */
-				if (level < upSkin.level &&
-					costValue < upSkin.cost &&
-					inventory[costCurrency][costCurrencyId] >= costValue) {
+				if (level < upSkin.level && costValue < upSkin.cost && inventory[costCurrency][costCurrencyId] >= costValue) {
 					upSkin.cost = costValue;
 					upSkin.level = level;
 					upSkin.heroId = hero.id;
@@ -10163,7 +10232,6 @@ class dailyQuests {
 		for (const hero of heroes) {
 			const color = hero.color;
 
-
 			for (let runeTier in hero.runes) {
 				/* Проверка на доступность руны */
 				if (color < colors[runeTier]) {
@@ -10211,30 +10279,30 @@ class dailyQuests {
 		for (let boss of bosses) {
 			if (boss.mayRaid) {
 				calls.push({
-					name: "bossRaid",
+					name: 'bossRaid',
 					args: {
-						bossId: boss.id
+						bossId: boss.id,
 					},
-					ident: "bossRaid_" + boss.id
+					ident: 'bossRaid_' + boss.id,
 				});
 				calls.push({
-					name: "bossOpenChest",
+					name: 'bossOpenChest',
 					args: {
 						bossId: boss.id,
 						amount: 1,
-						starmoney: 0
+						starmoney: 0,
 					},
-					ident: "bossOpenChest_" + boss.id
+					ident: 'bossOpenChest_' + boss.id,
 				});
 			} else if (boss.chestId == 1) {
 				calls.push({
-					name: "bossOpenChest",
+					name: 'bossOpenChest',
 					args: {
 						bossId: boss.id,
 						amount: 1,
-						starmoney: 0
+						starmoney: 0,
 					},
-					ident: "bossOpenChest_" + boss.id
+					ident: 'bossOpenChest_' + boss.id,
 				});
 			}
 		}
@@ -10287,10 +10355,7 @@ class dailyQuests {
 			}
 
 			const cost = titanGiftLib[hero.titanGiftLevel].cost;
-			if (minLevel > hero.titanGiftLevel &&
-				titanGift >= cost.consumable[24] &&
-				user.gold >= cost.gold
-			) {
+			if (minLevel > hero.titanGiftLevel && titanGift >= cost.consumable[24] && user.gold >= cost.gold) {
 				minLevel = hero.titanGiftLevel;
 				heroId = hero.id;
 			}
@@ -10299,6 +10364,48 @@ class dailyQuests {
 		return heroId;
 	}
 
+	getHeroicMissionId() {
+		// Получаем доступные миссии с 3 звездами
+		const availableMissionsToRaid = Object.values(this.questInfo.missionGetAll)
+			.filter((mission) => mission.stars === 3)
+			.map((mission) => mission.id);
+ 
+		// Получаем героев для улучшения, у которых меньше 6 звезд
+		const heroesToUpgrade = Object.values(this.questInfo.heroGetAll)
+			.filter((hero) => hero.star < 6)
+			.sort((a, b) => b.power - a.power)
+			.map((hero) => hero.id);
+ 
+		// Получаем героические миссии, которые доступны для рейдов
+		const heroicMissions = Object.values(lib.data.mission).filter((mission) => mission.isHeroic && availableMissionsToRaid.includes(mission.id));
+ 
+		// Собираем дропы из героических миссий
+		const drops = heroicMissions.map((mission) => {
+			const allRewards = mission.normalMode.waves
+				.at(-1)
+				.enemies.at(-1)
+				.drop.map((drop) => drop.reward);
+ 
+			const heroId = +Object.keys(allRewards.find((reward) => reward.fragmentHero).fragmentHero).pop();
+ 
+			return { id: mission.id, heroId };
+		});
+ 
+		// Определяем, какие дропы подходят для героев, которых нужно улучшить
+		const heroDrops = heroesToUpgrade.map((heroId) => drops.find((drop) => drop.heroId == heroId)).filter((drop) => drop);
+		const firstMission = heroDrops.at(0);
+		// Выбираем миссию для рейда
+		const selectedMissionId = firstMission ? firstMission.id : 1;
+ 
+		const stamina = this.questInfo.userGetInfo.refillable.find((x) => x.id == 1).amount;
+		const costMissions = 3 * lib.data.mission[selectedMissionId].normalMode.teamExp;
+		if (stamina < costMissions) {
+			console.log('Энергии не достаточно');
+			return 0;
+		}
+		return selectedMissionId;
+	}
+ 
 	end(status) {
 		setProgress(status, true);
 		this.resolve();
