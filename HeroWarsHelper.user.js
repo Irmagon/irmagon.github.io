@@ -3,13 +3,15 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.296
+// @version			2.297
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
 // @author			ZingerY
 // @license 			Copyright ZingerY
 // @homepage			https://zingery.ru/scripts/HeroWarsHelper.user.js
+// @downloadURL			https://irmagon.github.io/HeroWarsHelper.user.js
+// @updateURL			https://irmagon.github.io/HeroWarsHelper.user.js
 // @icon			https://zingery.ru/scripts/VaultBoyIco16.ico
 // @icon64			https://zingery.ru/scripts/VaultBoyIco64.png
 // @match			https://www.hero-wars.com/*
@@ -2391,8 +2393,10 @@ async function checkChangeResponse(response) {
 					description: respond.error.description,
 				}));
 			}
+			if (error.name != 'AccountBan') {
 			delete respond.error;
 			respond.results = [];
+		}
 		}
 		let mainReward = null;
 		const allReward = {};
@@ -3375,11 +3379,16 @@ const popup = new (function () {
 	this.buttons = [];
 	this.checkboxes = [];
 	this.dialogPromice = null;
+	this.isInit = false;
 
 	this.init = function () {
+		if (this.isInit) {
+			return;
+		} 
 		addStyle();
 		addBlocks();
 		addEventListeners();
+		this.isInit = true;
 	}
 
 	const addEventListeners = () => {
@@ -3746,6 +3755,9 @@ const popup = new (function () {
 	}
 
 	this.confirm = async (msg, buttOpt, checkBoxes = []) => {
+		if (!this.isInit) {
+			this.init();
+		}
 		this.clearButtons();
 		this.clearCheckBox();
 		return new Promise((complete, failed) => {
@@ -7302,8 +7314,8 @@ function lettersFilter(letters) {
 	const lettersIds = [];
 	for (let l in letters) {
 		letter = letters[l];
-		const reward = letter.reward;
-		if (!reward) {
+		const reward = letter?.reward;
+		if (!reward || !Object.keys(reward).length) {
 			continue;
 		}
 		/**
@@ -11719,5 +11731,6 @@ class executeBrawls {
  * Закрытие окошек по Esc +-
  * Починить работу скрипта на уровне команды ниже 10 +-
  * Написать номальную синхронизацию
- * Добавить дополнительные настройки автопокупки в "Тайном богатстве"
+ * Запрет сбора квестов и отправки экспеиций в промежуток между локальным обновлением и глобальным обновлением дня
+ * Улучшение боев
  */
