@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.297
+// @version			2.298
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -2393,7 +2393,7 @@ async function checkChangeResponse(response) {
 					description: respond.error.description,
 				}));
 			}
-			if (error.name != 'AccountBan') {
+			if (respond.error.name != 'AccountBan') {
 			delete respond.error;
 			respond.results = [];
 		}
@@ -8653,61 +8653,54 @@ function hintQuest(quest) {
 }
 
 async function farmBattlePass() {
-	const battlePasses = await Send({
+	const isFarmReward = (reward) => {
+		return !(reward?.buff || reward?.fragmentHero || reward?.bundleHeroReward);
+	};
+
+	const battlePassProcess = (pass) => {
+		if (!pass.id) {return []}
+		const levels = Object.values(lib.data.battlePass.level).filter(x => x.battlePass == pass.id)
+		const last_level = levels[levels.length - 1];
+		let actual = Math.max(...levels.filter(p => pass.exp >= p.experience).map(p => p.level))
+
+		if (pass.exp > last_level.experience) {
+			actual = last_level.level + (pass.exp - last_level.experience) / last_level.experienceByLevel;
+			}
+		const calls = [];
+		for(let i = 1; i <= actual; i++) {
+			const level = i >= last_level.level ? last_level : levels.find(l => l.level === i);
+			const reward = {free: level?.freeReward, paid:level?.paidReward};
+
+			if (!pass.rewards[i]?.free && isFarmReward(reward.free)) {
+				const args = {level: i, free:true};
+				if (!pass.gold) { args.id = pass.id }
+				calls.push({ name: 'battlePass_farmReward', args, ident: `${pass.gold ? 'body' : 'spesial'}_free_${args.id}_${i}` });
+				}
+			if (pass.ticket && !pass.rewards[i]?.paid && isFarmReward(reward.paid)) {
+				const args = {level: i, free:false};
+				if (!pass.gold) { args.id = pass.id}
+				calls.push({ name: 'battlePass_farmReward', args, ident: `${pass.gold ? 'body' : 'spesial'}_paid_${args.id}_${i}` });
+			}
+		}
+		return calls;
+	}
+
+	const passes = await Send({
 		calls: [
 			{ name: 'battlePass_getInfo', args: {}, ident: 'getInfo' },
 			{ name: 'battlePass_getSpecial', args: {}, ident: 'getSpecial' },
 		],
-	}).then((e) => [e.results[0].result.response.battlePass, ...Object.values(e.results[1].result.response)]);
-
-	const calls = [];
-	let first = true;
-	for (const battlePass of battlePasses) {
-		const id = battlePass.id;
-		const bPassExp = battlePass.exp;
-		const bPassRewardsLvls = Object.keys(battlePass.rewards);
-		const bPassLevels = Object.values(lib.data.battlePass.level).filter((e) => e.battlePass === id);
-
-		for (let lvl of bPassLevels) {
-			if (bPassExp < lvl.experience) {
-				continue;
-			}
-
-			if (bPassRewardsLvls.includes(lvl.level.toString())) {
-				continue;
-			}
-
-			const reward = lvl.freeReward;
-			/** Исключения на сбор наград */
-			const isFarmReward = !(
-				(
-					(reward?.buff ? true : false) || // ускорение набора энергии
-					(reward?.fragmentHero ? true : false) || // душы героев
-					(reward?.bundleHeroReward ? true : false) // герои
-				)
-			);
-
-			if (isFarmReward) {
-				const args = {
-					level: lvl.level,
-					free: true,
-				};
-
-				if (!first) {
-					args.id = id;
-				}
-				calls.push({
-					name: 'battlePass_farmReward',
-					args,
-					ident: 'battlePass_farmReward_' + lvl.level + '_' + id,
-				});
-			}
-		}
-		first = false;
+	}).then((e) => [{...e.results[0].result.response?.battlePass, gold: true}, ...Object.values(e.results[1].result.response)]);
+ 
+	const calls = passes.map(p => battlePassProcess(p)).flat()
+ 
+	let results = await Send({calls});
+	if (results.error) {
+		console.log(results.error);
+		setProgress(I18N('SOMETHING_WENT_WRONG'));
+	} else {
+		setProgress(I18N('SEASON_REWARD_COLLECTED', {count: results.results.length}), true);
 	}
-
-	const results = await Send(JSON.stringify({ calls })).then((e) => e.results);
-	setProgress(I18N('SEASON_REWARD_COLLECTED', {count: results.length}), true);
 }
 
 async function sellHeroSoulsForGold() {
@@ -10394,9 +10387,8 @@ class dailyQuests {
  
 		// Собираем дропы из героических миссий
 		const drops = heroicMissions.map((mission) => {
-			const allRewards = mission.normalMode.waves
-				.at(-1)
-				.enemies.at(-1)
+			const lastWave = mission.normalMode.waves[mission.normalMode.waves.length - 1];
+			const allRewards = lastWave.enemies[lastWave.enemies.length - 1]
 				.drop.map((drop) => drop.reward);
  
 			const heroId = +Object.keys(allRewards.find((reward) => reward.fragmentHero).fragmentHero).pop();
@@ -10406,7 +10398,7 @@ class dailyQuests {
  
 		// Определяем, какие дропы подходят для героев, которых нужно улучшить
 		const heroDrops = heroesToUpgrade.map((heroId) => drops.find((drop) => drop.heroId == heroId)).filter((drop) => drop);
-		const firstMission = heroDrops.at(0);
+		const firstMission = heroDrops[0];
 		// Выбираем миссию для рейда
 		const selectedMissionId = firstMission ? firstMission.id : 1;
  
