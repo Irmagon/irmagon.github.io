@@ -3,7 +3,7 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.298
+// @version			2.300
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -555,6 +555,7 @@ const i18nLangData = {
 		SELL_HERO_SOULS_TITLE: 'Exchanges all absolute star hero souls for gold',
 		GOLD_RECEIVED: 'Gold received: {gold}',
 		OPEN_ALL_EQUIP_BOXES: 'Open all Equipment Fragment Box?',
+		SERVER_NOT_ACCEPT: 'The server did not accept the result',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -912,6 +913,7 @@ const i18nLangData = {
 		SELL_HERO_SOULS_TITLE: 'Обменивает все души героев с абсолютной звездой на золото',
 		GOLD_RECEIVED: 'Получено золота: {gold}',
 		OPEN_ALL_EQUIP_BOXES: 'Открыть все ящики фрагментов экипировки?',
+		SERVER_NOT_ACCEPT: 'Сервер не принял результат',
 	},
 };
 
@@ -1050,7 +1052,7 @@ const checkboxes = {
 		default: false,
     		hide: true,
     	},
-    	tryFixIt: {
+	tryFixIt_v2: {
     		label: I18N('BTN_TRY_FIX_IT'),
     		cbox: null,
     		title: I18N('BTN_TRY_FIX_IT_TITLE'),
@@ -1910,10 +1912,55 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'brawl_endBattle' ||
 				call.name == 'towerEndBattle' ||
 				call.name == 'invasion_bossEnd' ||
+				call.name == 'titanArenaEndBattle' ||
 				call.name == 'bossEndBattle' ||
 				call.name == 'clanRaid_endNodeBattle') &&
 				isCancalBattle) {
 				nameFuncEndBattle = call.name;
+ 
+				if (isChecked('tryFixIt_v2') &&
+					!call.args.result.win &&
+					(call.name == 'brawl_endBattle' ||
+					//call.name == 'crossClanWar_endBattle' ||
+					call.name == 'epicBrawl_endBattle' ||
+					//call.name == 'clanWarEndBattle' ||
+					call.name == 'adventure_endBattle' ||
+					call.name == 'titanArenaEndBattle' ||
+					call.name == 'bossEndBattle' ||
+					call.name == 'adventureSolo_endBattle') &&
+					lastBattleInfo) {
+					const noFixWin = call.name == 'clanWarEndBattle' || call.name == 'crossClanWar_endBattle';
+					const cloneBattle = structuredClone(lastBattleInfo);
+					try {
+						const bFix = new BestOrWinFixBattle(cloneBattle);
+						bFix.setNoMakeWin(noFixWin);
+						let endTime = Date.now() + 3e4;
+						if (endTime < cloneBattle.endTime) {
+							endTime = cloneBattle.endTime;
+						}
+						const result = await bFix.start(cloneBattle.endTime, 150);
+ 
+						if (result.result.win) {
+							call.args.result = result.result;
+							call.args.progress = result.progress;
+							changeRequest = true;
+						} else if (result.value) {
+							if (
+								await popup.confirm('Поражение<br>Лучший результат: ' + result.value + '%', [
+									{ msg: 'Отмена', result: 0 },
+									{ msg: 'Принять', result: 1 },
+								])
+							) {
+								call.args.result = result.result;
+								call.args.progress = result.progress;
+								changeRequest = true;
+							}
+						}
+					} catch (error) {
+						console.error(error);
+					}
+				}
+ 
 				if (!call.args.result.win) {
 					let resultPopup = false;
 					if (call.name == 'adventure_endBattle' ||
@@ -1991,12 +2038,20 @@ async function checkChangeSend(sourceData, tempData) {
 				const bossDamage = call.args.progress[0].defenders.heroes[1].extra;
 				let maxDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
 				const lastDamage = maxDamage;
+ 
+				const testFunc = [];
+ 
+				if (testFuntions.masterFix) {
+					testFunc.push({ msg: 'masterFix', isInput: true, default: 100 });
+				}
+ 
 				const resultPopup = await popup.confirm(
 					`${I18N('MSG_YOU_APPLIED')} ${lastDamage.toLocaleString()} ${I18N('MSG_DAMAGE')}.`,
 					[
 						{ msg: I18N('BTN_OK'), result: false },
 						{ msg: I18N('BTN_AUTO_F5'), result: 1 },
 						{ msg: I18N('BTN_TRY_FIX_IT'), result: 2 },
+						...testFunc,
 					],
 					[
 						{
@@ -2013,62 +2068,51 @@ async function checkChangeSend(sourceData, tempData) {
 						const cloneBattle = structuredClone(lastBossBattle);
 						const endTime = cloneBattle.endTime - 1e4;
 						console.log('fixBossBattleStart');
-						const COUNT = 300;
-						let maxCount = 0;
-						let duration = 0;
-						let avgTime = 0;
-						for (let count = 1; count <= COUNT; count++) {
-							maxCount = count;
-							const start = Date.now();
-							const timer = randf(1.3, 10.3);
-							if ((endTime + avgTime) < start) {
-								break;
-							}
-							await new Promise((e) =>
-								setTimeout(() => {
-									const maxDmg = maxDamage.toLocaleString();
-									const avg = avgTime.toFixed(2);
-									const msg = `${I18N('LETS_FIX')} ${maxCount}/${COUNT}<br/>${maxDmg}<br/>${avg}ms`;
-									setProgress(msg, false);
-									e();
-								}, 0)
-							);
-							try {
-								resultBattle = await Calc(cloneBattle);
-							} catch (e) {
-								continue;
-							}
  
-							duration += Date.now() - start;
-							avgTime = duration / count; 
-							const extraDmg = resultBattle.progress[0].defenders.heroes[1].extra;
-							const bossDamage = extraDmg.damageTaken + extraDmg.damageTakenNextLevel;
-							console.log(count + '\t' + timer.toFixed(2) + '\t' + bossDamage.toLocaleString());
-							if (bossDamage > maxDamage) {
-								maxDamage = bossDamage;
-								call.args.result = resultBattle.result;
-								call.args.progress = resultBattle.progress;
-							}
-							cloneBattle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, timer] } }];
-						}
+						const bFix = new BossFixBattle(cloneBattle);
+						const result = await bFix.start(endTime, 300);
+						console.log(result);
+ 
 						let msgResult = I18N('DAMAGE_NO_FIXED', { 
 							lastDamage: lastDamage.toLocaleString() 
 						});
-						if (maxDamage > lastDamage) {
+						if (result.value > lastDamage) {
+							call.args.result = result.result;
+							call.args.progress = result.progress;
+							msgResult = I18N('DAMAGE_FIXED', {
+								lastDamage: lastDamage.toLocaleString(),
+								maxDamage: result.value.toLocaleString(),
+							});
+						}
+						console.log(lastDamage, '>', result.value);
+						setProgress(
+							msgResult +
+								'<br/>' +
+								I18N('COUNT_FIXED', {
+									count: result.maxCount,
+								}),
+							false,
+							hideProgress
+						);
+					} else if (resultPopup > 3) {
+						const cloneBattle = structuredClone(lastBossBattle);
+						const mFix = new masterFixBattle(cloneBattle);
+						const result = await mFix.start(cloneBattle.endTime, resultPopup);
+						console.log(result);
+						let msgResult = I18N('DAMAGE_NO_FIXED', {
+							lastDamage: lastDamage.toLocaleString(),
+						});
+						if (result.value > lastDamage) {
+							maxDamage = result.value;
+							call.args.result = result.result;
+							call.args.progress = result.progress;
 							msgResult = I18N('DAMAGE_FIXED', {
 								lastDamage: lastDamage.toLocaleString(),
 								maxDamage: maxDamage.toLocaleString(),
 							});
 						}
-						console.log(lastDamage, '>' ,maxDamage);
-						setProgress(
-							msgResult + '<br/>' +
-								I18N('COUNT_FIXED', {
-									count: maxCount,
-								}),
-							false,
-							hideProgress
-						);
+						console.log('Урон:', lastDamage, maxDamage);
+						setProgress(msgResult, false, hideProgress);
 					} else {
 					fixBattle(call.args.progress[0].attackers.heroes);
 					fixBattle(call.args.progress[0].defenders.heroes);
@@ -2533,6 +2577,7 @@ async function checkChangeResponse(response) {
 				call.ident == callsIdent['brawl_startBattle'] ||
 				call.ident == callsIdent['adventureSolo_turnStartBattle'] ||
 				call.ident == callsIdent['invasion_bossStart'] ||
+				call.ident == callsIdent['titanArenaStartBattle'] ||
 				call.ident == callsIdent['towerStartBattle'] ||
 				call.ident == callsIdent['adventure_turnStartBattle']) {
 				let battle = call.result.response.battle || call.result.response.replay;
@@ -2543,6 +2588,14 @@ async function checkChangeResponse(response) {
 					battle = call.result.response;
 				}
 				lastBattleInfo = battle;
+				if (call.ident == callsIdent['battleGetReplay'] && call.result.response.replay.type ===	"clan_raid") {
+					if (call?.result?.response?.replay?.result?.damage) {
+						const damages = Object.values(call.result.response.replay.result.damage);
+						const bossDamage = damages.reduce((a, v) => a + v, 0);
+						setProgress(I18N('BOSS_DAMAGE') + bossDamage.toLocaleString(), false, hideProgress);
+						continue;
+					}
+				}
 				if (!isChecked('preCalcBattle')) {
 					continue;
 				}
@@ -2949,6 +3002,14 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['clanDomination_getInfo']) {
 				clanDominationGetInfo = call.result.response;
 			}
+			if (call.ident == callsIdent['clanRaid_endBossBattle']) {
+				console.log(call.result.response);
+				const damage = Object.values(call.result.response.damage).reduce((a, e) => a + e);
+				if (call.result.response.result.afterInvalid) {
+					addProgress('<br>' + I18N('SERVER_NOT_ACCEPT'));
+				}
+				addProgress('<br>Server > ' + I18N('BOSS_DAMAGE') + damage.toLocaleString());
+			}
 			/*
 			if (call.ident == callsIdent['chatGetAll'] && call.args.chatType == 'clanDomination' && !callsIdent['clanDomination_mapState']) {
 				this.onReadySuccess = async function () {
@@ -3337,6 +3398,15 @@ function setProgress(text, hide, onclick) {
 }
 
 /**
+ * Progress added
+ *
+ * Дополнение прогресса
+ */
+function addProgress(text) {
+	scriptMenu.addStatus(text);
+}
+ 
+/** 
  * Returns the timer value depending on the subscription
  * 
  * Возвращает значение таймера в зависимости от подписки
@@ -3348,6 +3418,19 @@ function getTimer(time, div) {
 	}
 	return Math.max(Math.ceil(time / speedDiv + 1.5), 4);
 }
+ 
+function startSlave() {
+	const sFix = new slaveFixBattle();
+	sFix.wsStart();
+}
+ 
+this.testFuntions = {
+	hideProgress,
+	setProgress,
+	addProgress,
+	masterFix: false,
+	startSlave,
+};
  
 /** 
  * Calculates HASH MD5 from string
@@ -4047,6 +4130,7 @@ const scriptMenu = new (function () {
 	this.setStatus = (text, onclick) => {
 		if (!text) {
 			this.status.classList.add('scriptMenu_statusHide');
+			this.status.innerHTML = '';
 		} else {
 			this.status.classList.remove('scriptMenu_statusHide');
 			this.status.innerHTML = text;
@@ -4059,6 +4143,13 @@ const scriptMenu = new (function () {
 		}
 	}
 
+	this.addStatus = (text) => {
+		if (!this.status.innerHTML) {
+			this.status.classList.remove('scriptMenu_statusHide');
+		}
+		this.status.innerHTML += text;
+	}
+ 
 	/**
 	 * Adding a text element
 	 *
@@ -5257,6 +5348,10 @@ function executeTower(resolve, reject) {
 		 * Если сундук открыт и можно скипать этажи, то переходим дальше
 		 */
 		if (towerInfo.mayFullSkip && +towerInfo.teamLevel == 130) {
+			if (floorNumber == 1) {
+				fullSkipTower();
+				return;
+			}
 			if (isOpenChest) {
 				nextOpenChest(floorNumber);
 			} else {
@@ -5462,7 +5557,7 @@ function executeTower(resolve, reject) {
 			}]
 		}
 
-		if (scullCoin > 0 && reason == 'openChest 50 floor') {
+		if (scullCoin > 0) {
 			farmTowerRewardsCall.calls.push({
 				name: "tower_farmSkullReward",
 				args: {},
@@ -5507,12 +5602,29 @@ function executeTower(resolve, reject) {
 
 		let n = 0;
 		for (let i = 0; i < 15; i++) {
+			// 15 сундуков
 			fullSkipTowerCall.calls.push(nextChest(++n));
 			fullSkipTowerCall.calls.push(openChest(++n));
+			// +5 сундуков, 250 изюма // towerOpenChest
+			// if (i < 5) {
+			// 	fullSkipTowerCall.calls.push(openChest(++n, 2));
+			// }
 		}
 
+		fullSkipTowerCall.calls.push({
+			name: 'towerGetInfo',
+			args: {},
+			ident: 'group_' + ++n + '_body',
+		});
+ 
 		send(JSON.stringify(fullSkipTowerCall), data => {
-			data.results[0] = data.results[28];
+			for (const r of data.results) {
+				const towerInfo = r?.result?.response;
+				if (towerInfo && 'skullReward' in towerInfo) {
+					scullCoin += towerInfo.skullReward?.coin[7] ?? 0;
+				}
+			}
+			data.results[0] = data.results[data.results.length - 1];
 			checkDataFloor(data);
 		});
 	}
@@ -5534,10 +5646,6 @@ function executeTower(resolve, reject) {
 	function nextOpenChest(floorNumber) {
 		if (floorNumber > 49) {
 			endTower('openChest 50 floor', floorNumber);
-			return;
-		}
-		if (floorNumber == 1) {
-			fullSkipTower();
 			return;
 		}
 
@@ -9081,6 +9189,506 @@ function executeBossBattle(resolve, reject) {
 	}
 }
 
+class FixBattle {
+	constructor(battle, isTimeout = true) {
+		this.battle = structuredClone(battle);
+		this.isTimeout = isTimeout;
+	}
+ 
+	timeout(callback, timeout) {
+		if (this.isTimeout) {
+			this.worker.postMessage(timeout);
+			this.worker.onmessage = callback;
+		} else {
+			callback();
+		}
+	}
+ 
+	randTimer() {
+		const min = 1.3;
+		const max = 15.3;
+		return Math.random() * (max - min + 1) + min;
+	}
+ 
+	setAvgTime(startTime) {
+		this.fixTime += Date.now() - startTime;
+		this.avgTime = this.fixTime / this.count;
+	}
+ 
+	init() {
+		this.fixTime = 0;
+		this.lastTimer = 0;
+		this.index = 0;
+		this.lastBossDamage = 0;
+		this.bestResult = {
+			count: 0,
+			timer: 0,
+			value: 0,
+			result: null,
+			progress: null,
+		};
+		this.lastBattleResult = {
+			win: false,
+		};
+		this.worker = new Worker(
+			URL.createObjectURL(
+				new Blob([
+					`self.onmessage = function(e) {
+							const timeout = e.data;
+							setTimeout(() => {
+								self.postMessage(1);
+							}, timeout);
+						};`,
+				])
+			)
+		);
+	}
+ 
+	async start(endTime = Date.now() + 6e4, maxCount = 100) {
+		this.endTime = endTime;
+		this.maxCount = maxCount;
+		this.init();
+		return await new Promise((resolve) => {
+			this.resolve = resolve;
+			this.count = 0;
+			this.loop();
+		});
+	}
+ 
+	endFix() {
+		this.bestResult.maxCount = this.count;
+		this.worker.terminate();
+		this.resolve(this.bestResult);
+	}
+ 
+	async loop() {
+		const start = Date.now();
+		if (this.isEndLoop()) {
+			this.endFix();
+			return;
+		}
+		this.count++;
+		try {
+			this.lastResult = await Calc(this.battle);
+		} catch (e) {
+			this.updateProgressTimer(this.index++);
+			this.timeout(this.loop.bind(this), 0);
+			return;
+		}
+		const { progress, result } = this.lastResult;
+		this.lastBattleResult = result;
+		this.lastBattleProgress = progress;
+		this.setAvgTime(start);
+		this.checkResult();
+		this.showResult();
+		this.updateProgressTimer();
+		this.timeout(this.loop.bind(this), 0);
+	}
+ 
+	isEndLoop() {
+		return this.count >= this.maxCount || this.endTime < Date.now();
+	}
+ 
+	updateProgressTimer(index = 0) {
+		this.lastTimer = this.randTimer();
+		this.battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, this.lastTimer] } }];
+	}
+ 
+	showResult() {
+		console.log(
+			this.count,
+			this.avgTime.toFixed(2),
+			(this.endTime - Date.now()) / 1000,
+			this.lastTimer.toFixed(2),
+			this.lastBossDamage.toLocaleString(),
+			this.bestResult.value.toLocaleString()
+		);
+	}
+ 
+	checkResult() {
+		const { damageTaken, damageTakenNextLevel } = this.lastBattleProgress[0].defenders.heroes[1].extra;
+		this.lastBossDamage = damageTaken + damageTakenNextLevel;
+		if (this.lastBossDamage > this.bestResult.value) {
+			this.bestResult = {
+				count: this.count,
+				timer: this.lastTimer,
+				value: this.lastBossDamage,
+				result: structuredClone(this.lastBattleResult),
+				progress: structuredClone(this.lastBattleProgress),
+			};
+		}
+	}
+ 
+	stopFix() {
+		this.endTime = 0;
+	}
+}
+ 
+class WinFixBattle extends FixBattle {
+	checkResult() {
+		if (this.lastBattleResult.win) {
+			this.bestResult = {
+				count: this.count,
+				timer: this.lastTimer,
+				value: this.lastBattleResult.stars,
+				result: structuredClone(this.lastBattleResult),
+				progress: structuredClone(this.lastBattleProgress),
+				battleTimer: this.lastResult.battleTimer,
+			};
+		}
+	}
+ 
+	randTimer() {
+		const min = 1.3;
+		const max = 30.3;
+		return Math.random() * (max - min + 1) + min;
+	}
+ 
+	isEndLoop() {
+		return super.isEndLoop() || this.bestResult.result?.win;
+	}
+ 
+	showResult() {
+		console.log(
+			this.count,
+			this.avgTime.toFixed(2),
+			(this.endTime - Date.now()) / 1000,
+			this.lastResult.battleTime,
+			this.lastTimer,
+			this.bestResult.value
+		);
+		const endTime = ((this.endTime - Date.now()) / 1000).toFixed(2);
+		const avgTime = this.avgTime.toFixed(2);
+		const msg = `${I18N('LETS_FIX')} ${this.count}/${this.maxCount}<br/>${endTime}s<br/>${avgTime}ms`;
+		setProgress(msg, false, this.stopFix.bind(this));
+	}
+}
+ 
+class BestOrWinFixBattle extends WinFixBattle {
+	isNoMakeWin = false;
+ 
+	getState(result) {
+		let beforeSumFactor = 0;
+		const beforeHeroes = result.battleData.defenders[0];
+		for (let heroId in beforeHeroes) {
+			const hero = beforeHeroes[heroId];
+			const state = hero.state;
+			let factor = 1;
+			if (state) {
+				const hp = state.hp / (hero?.hp || 1);
+				const energy = state.energy / 1e3;
+				factor = hp + energy / 20;
+			}
+			beforeSumFactor += factor;
+		}
+ 
+		let afterSumFactor = 0;
+		const afterHeroes = result.progress[0].defenders.heroes;
+		for (let heroId in afterHeroes) {
+			const hero = afterHeroes[heroId];
+			const hp = hero.hp / (beforeHeroes[heroId]?.hp || 1);
+			const energy = hero.energy / 1e3;
+			const factor = hp + energy / 20;
+			afterSumFactor += factor;
+		}
+		return 100 - Math.floor((afterSumFactor / beforeSumFactor) * 1e4) / 100;
+	}
+ 
+	setNoMakeWin(value) {
+		this.isNoMakeWin = value;
+	}
+ 
+	checkResult() {
+		const state = this.getState(this.lastResult);
+		console.log(state);
+ 
+		if (state > this.bestResult.value) {
+			if (!(this.isNoMakeWin && this.lastBattleResult.win)) {
+				this.bestResult = {
+					count: this.count,
+					timer: this.lastTimer,
+					value: state,
+					result: structuredClone(this.lastBattleResult),
+					progress: structuredClone(this.lastBattleProgress),
+					battleTimer: this.lastResult.battleTimer,
+				};
+			}
+		}
+	}
+}
+ 
+class BossFixBattle extends FixBattle {
+	showResult() {
+		super.showResult();
+		//setTimeout(() => {
+			const best = this.bestResult;
+			const maxDmg = best.value.toLocaleString();
+			const avgTime = this.avgTime.toLocaleString();
+			const msg = `${I18N('LETS_FIX')} ${this.count}/${this.maxCount}<br/>${maxDmg}<br/>${avgTime}ms`;
+			setProgress(msg, false, this.stopFix.bind(this));
+		//}, 0);
+	}
+}
+ 
+class DungeonFixBattle extends FixBattle {
+	init() {
+		super.init();
+		this.isTimeout = false;
+	}
+ 
+	setState() {
+		const result = this.lastResult;
+		let beforeSumFactor = 0;
+		const beforeHeroes = result.battleData.attackers;
+		for (let heroId in beforeHeroes) {
+			const hero = beforeHeroes[heroId];
+			const state = hero.state;
+			let factor = 1;
+			if (state) {
+				const hp = state.hp / (hero?.hp || 1);
+				const energy = state.energy / 1e3;
+				factor = hp + energy / 20;
+			}
+			beforeSumFactor += factor;
+		}
+ 
+		let afterSumFactor = 0;
+		const afterHeroes = result.progress[0].attackers.heroes;
+		for (let heroId in afterHeroes) {
+			const hero = afterHeroes[heroId];
+			const hp = hero.hp / (beforeHeroes[heroId]?.hp || 1);
+			const energy = hero.energy / 1e3;
+			const factor = hp + energy / 20;
+			afterSumFactor += factor;
+		}
+		this.lastState = Math.floor((afterSumFactor / beforeSumFactor) * 1e4) / 100;
+	}
+ 
+	checkResult() {
+		this.setState();
+		if (this.lastResult.result.win && this.lastState > this.bestResult.value) {
+			this.bestResult = {
+				count: this.count,
+				timer: this.lastTimer,
+				value: this.lastState,
+				result: this.lastResult.result,
+				progress: this.lastResult.progress,
+			};
+		}
+	}
+ 
+	showResult() {
+		console.log(
+			this.count,
+			this.avgTime.toFixed(2),
+			(this.endTime - Date.now()) / 1000,
+			this.lastTimer.toFixed(2),
+			this.lastState.toLocaleString(),
+			this.bestResult.value.toLocaleString()
+		);
+	}
+}
+ 
+const masterWsMixin = {
+	wsStart() {
+		const socket = new WebSocket(this.url);
+ 
+		socket.onopen = () => {
+			console.log('Connected to server');
+ 
+			// Пример создания новой задачи
+			const newTask = {
+				type: 'newTask',
+				battle: this.battle,
+				endTime: this.endTime - 1e4,
+				maxCount: this.maxCount,
+			};
+			socket.send(JSON.stringify(newTask));
+		};
+ 
+		socket.onmessage = this.onmessage.bind(this);
+ 
+		socket.onclose = () => {
+			console.log('Disconnected from server');
+		};
+ 
+		this.ws = socket;
+	},
+ 
+	onmessage(event) {
+		const data = JSON.parse(event.data);
+		switch (data.type) {
+			case 'newTask': {
+				console.log('newTask:', data);
+				this.id = data.id;
+				this.countExecutor = data.count;
+				break;
+			}
+			case 'getSolTask': {
+				console.log('getSolTask:', data);
+				this.endFix(data.solutions);
+				break;
+			}
+			case 'resolveTask': {
+				console.log('resolveTask:', data);
+				if (data.id === this.id && data.solutions.length === this.countExecutor) {
+					this.worker.terminate();
+					this.endFix(data.solutions);
+				}
+				break;
+			}
+			default:
+				console.log('Unknown message type:', data.type);
+		}
+	},
+ 
+	getTask() {
+		this.ws.send(
+			JSON.stringify({
+				type: 'getSolTask',
+				id: this.id,
+			})
+		);
+	},
+};
+ 
+/*
+mFix = new action.masterFixBattle(battle)
+await mFix.start(Date.now() + 6e4, 1);
+*/
+class masterFixBattle extends FixBattle {
+	constructor(battle, url = 'wss://localho.st:3000') {
+		super(battle, true);
+		this.url = url;
+	}
+ 
+	async start(endTime, maxCount) {
+		this.endTime = endTime;
+		this.maxCount = maxCount;
+		this.init();
+		this.wsStart();
+		return await new Promise((resolve) => {
+			this.resolve = resolve;
+			const timeout = this.endTime - Date.now();
+			this.timeout(this.getTask.bind(this), timeout);
+		});
+	}
+ 
+	async endFix(solutions) {
+		this.ws.close();
+		let maxCount = 0;
+		for (const solution of solutions) {
+			maxCount += solution.maxCount;
+			if (solution.value > this.bestResult.value) {
+				this.bestResult = solution;
+			}
+		}
+		this.count = maxCount;
+		super.endFix();
+	}
+}
+ 
+Object.assign(masterFixBattle.prototype, masterWsMixin);
+ 
+class masterWinFixBattle extends WinFixBattle {
+	constructor(battle, url = 'wss://localho.st:3000') {
+		super(battle, true);
+		this.url = url;
+	}
+ 
+	async start(endTime, maxCount) {
+		this.endTime = endTime;
+		this.maxCount = maxCount;
+		this.init();
+		this.wsStart();
+		return await new Promise((resolve) => {
+			this.resolve = resolve;
+			const timeout = this.endTime - Date.now();
+			this.timeout(this.getTask.bind(this), timeout);
+		});
+	}
+ 
+	async endFix(solutions) {
+		this.ws.close();
+		let maxCount = 0;
+		for (const solution of solutions) {
+			maxCount += solution.maxCount;
+			if (solution.value > this.bestResult.value) {
+				this.bestResult = solution;
+			}
+		}
+		this.count = maxCount;
+		super.endFix();
+	}
+}
+ 
+Object.assign(masterWinFixBattle.prototype, masterWsMixin);
+ 
+const slaveWsMixin = {
+	wsStop() {
+		this.ws.close();
+	},
+ 
+	wsStart() {
+		const socket = new WebSocket(this.url);
+ 
+		socket.onopen = () => {
+			console.log('Connected to server');
+		};
+		socket.onmessage = this.onmessage.bind(this);
+		socket.onclose = () => {
+			console.log('Disconnected from server');
+		};
+ 
+		this.ws = socket;
+	},
+ 
+	async onmessage(event) {
+		const data = JSON.parse(event.data);
+		switch (data.type) {
+			case 'newTask': {
+				console.log('newTask:', data.task);
+				const { battle, endTime, maxCount } = data.task;
+				this.battle = battle;
+				const id = data.task.id;
+				const solution = await this.start(endTime, maxCount);
+				this.ws.send(
+					JSON.stringify({
+						type: 'resolveTask',
+						id,
+						solution,
+					})
+				);
+				break;
+			}
+			default:
+				console.log('Unknown message type:', data.type);
+		}
+	},
+};
+/*
+sFix = new action.slaveFixBattle();
+sFix.wsStart()
+*/
+class slaveFixBattle extends FixBattle {
+	constructor(url = 'wss://localho.st:3000') {
+		super(null, false);
+		this.isTimeout = false;
+		this.url = url;
+	}
+}
+ 
+Object.assign(slaveFixBattle.prototype, slaveWsMixin);
+ 
+class slaveWinFixBattle extends WinFixBattle {
+	constructor(url = 'wss://localho.st:3000') {
+		super(null, false);
+		this.isTimeout = false;
+		this.url = url;
+	}
+}
+ 
+Object.assign(slaveWinFixBattle.prototype, slaveWsMixin);
 /**
  * Auto-repeat attack
  *
@@ -9314,7 +9922,7 @@ function executeAutoBattle(resolve, reject) {
 		if (isWin) {
 			endBattle(e, false);
 			return;
-    		} else if (isChecked('tryFixIt')) {
+		} else if (isChecked('tryFixIt_v2')) {
     			const cloneBattle = structuredClone(e.battleData);
     			const bFix = new WinFixBattle(cloneBattle);
     			const endTime = Date.now() + 6e4;
@@ -9442,168 +10050,6 @@ function executeAutoBattle(resolve, reject) {
 	}
 }
 
-    class FixBattle {
-    	constructor(battle, isTimeout = true) {
-    		this.battle = structuredClone(battle);
-    		this.isTimeout = isTimeout;
-    	}
-     
-    	timeout(callback, timeout) {
-    		if (this.isTimeout) {
-    			this.worker.postMessage(timeout);
-    			this.worker.onmessage = callback;
-    		} else {
-    			callback();
-    		}
-    	}
-     
-    	randTimer() {
-    		const min = 1.3;
-    		const max = 10.3;
-    		return Math.random() * (max - min + 1) + min;
-    	}
-     
-    	setAvgTime(startTime) {
-    		this.fixTime += Date.now() - startTime;
-    		this.avgTime = this.fixTime / this.count;
-    	}
-     
-    	init() {
-    		this.fixTime = 0;
-    		this.lastTimer = 0;
-    		this.index = 0;
-    		this.lastBossDamage = 0;
-    		this.bestResult = {
-    			count: 0,
-    			timer: 0,
-    			value: 0,
-    			result: null,
-    			progress: null,
-    		};
-    		this.lastBattleResult = {
-    			win: false,
-    		};
-    		this.worker = new Worker(
-    			URL.createObjectURL(
-    				new Blob([
-    					`self.onmessage = function(e) {
-    							const timeout = e.data;
-    							setTimeout(() => {
-    								self.postMessage(1);
-    							}, timeout);
-    						};`,
-    				])
-    			)
-    		);
-    	}
-     
-    	async start(endTime = Date.now() + 6e4, maxCount = 100) {
-    		this.endTime = endTime;
-    		this.maxCount = maxCount;
-    		this.init();
-    		return await new Promise((resolve) => {
-    			this.resolve = resolve;
-    			this.count = 0;
-    			this.loop();
-    		});
-    	}
-     
-    	endFix() {
-    		this.bestResult.maxCount = this.count;
-    		this.worker.terminate();
-    		this.resolve(this.bestResult);
-    	}
-     
-    	async loop() {
-    		const start = Date.now();
-    		if (this.isEndLoop()) {
-    			this.endFix();
-    			return;
-    		}
-    		this.count++;
-    		try {
-    			this.lastResult = await Calc(this.battle);
-    		} catch (e) {
-    			this.updateProgressTimer(this.index++);
-    			this.timeout(this.loop.bind(this), 0);
-    			return;
-    		}
-    		const { progress, result } = this.lastResult;
-    		this.lastBattleResult = result;
-    		this.lastBattleProgress = progress;
-    		this.setAvgTime(start);
-    		this.checkResult();
-    		this.showResult();
-    		this.updateProgressTimer();
-    		this.timeout(this.loop.bind(this), 0);
-    	}
-     
-    	isEndLoop() {
-    		return this.count >= this.maxCount || this.endTime < Date.now();
-    	}
-     
-    	updateProgressTimer(index = 0) {
-    		this.lastTimer = this.randTimer();
-    		this.battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, this.lastTimer] } }];
-    	}
-     
-    	showResult() {
-    		console.log(
-    			this.count,
-    			this.avgTime.toFixed(2),
-    			(this.endTime - Date.now()) / 1000,
-    			this.lastTimer.toFixed(2),
-    			this.lastBossDamage.toLocaleString(),
-    			this.bestResult.value.toLocaleString()
-    		);
-    	}
-     
-    	checkResult() {
-    		const { damageTaken, damageTakenNextLevel } = this.lastBattleProgress[0].defenders.heroes[1].extra;
-    		this.lastBossDamage = damageTaken + damageTakenNextLevel;
-    		if (this.lastBossDamage > this.bestResult.value) {
-    			this.bestResult = {
-    				count: this.count,
-    				timer: this.lastTimer,
-    				value: this.lastBossDamage,
-    				result: structuredClone(this.lastBattleResult),
-    				progress: structuredClone(this.lastBattleProgress),
-    			};
-    		}
-    	}
-    }
-     
-    class WinFixBattle extends FixBattle {
-    	checkResult() {
-    		if (this.lastBattleResult.win) {
-    			this.bestResult = {
-    				count: this.count,
-    				timer: this.lastTimer,
-    				value: this.lastBattleResult.stars,
-    				result: structuredClone(this.lastBattleResult),
-    				progress: structuredClone(this.lastBattleProgress),
-    				battleTimer: this.lastResult.battleTimer,
-    			};
-    		}
-    	}
-     
-    	isEndLoop() {
-    		return super.isEndLoop() || this.lastBattleResult.win;
-    	}
-     
-    	showResult() {
-    		console.log(this.count, this.avgTime.toFixed(2), (this.endTime - Date.now()) / 1000, this.lastResult.battleTime, this.lastTimer);
-    		const endTime = ((this.endTime - Date.now()) / 1000).toFixed(2);
-    		const avgTime = this.avgTime.toFixed(2);
-    		const msg = `${this.count}/${this.maxCount}<br/>${endTime}s<br/>${avgTime}ms`;
-    		setProgress(msg, false, this.stopFix.bind(this));
-    	}
-     
-    	stopFix() {
-    		this.endTime = 0;
-    	}
-    }
-     
 function testDailyQuests() {
 	return new Promise((resolve, reject) => {
 		const quests = new dailyQuests(resolve, reject);
@@ -9665,9 +10111,9 @@ class dailyQuests {
 			doItCall: () => {
 				const selectedMissionId = this.getHeroicMissionId();
 				const goldTicket = !!this.questInfo.inventoryGet.consumable[151];
-				const vipPoints = +this.questInfo.userGetInfo.vipPoints;
+				const vipLevel = Math.max(...lib.data.level.vip.filter(l => l.vipPoints <= +this.questInfo.userGetInfo.vipPoints).map(l => l.level));
 				// Возвращаем массив команд для рейда
-				if (vipPoints > 500 || goldTicket) {
+				if (vipLevel >= 5 || goldTicket) {
 					return [{ name: 'missionRaid', args: { id: selectedMissionId, times: 3 }, ident: 'missionRaid_1' }];
 				} else {
 					return [
