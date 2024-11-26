@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.300
+// @version			2.302
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1933,6 +1933,7 @@ async function checkChangeSend(sourceData, tempData) {
 					lastBattleInfo) {
 					const noFixWin = call.name == 'clanWarEndBattle' || call.name == 'crossClanWar_endBattle';
 					const cloneBattle = structuredClone(lastBattleInfo);
+					lastBattleInfo = null;
 					try {
 						const bFix = new BestOrWinFixBattle(cloneBattle);
 						bFix.setNoMakeWin(noFixWin);
@@ -1973,7 +1974,7 @@ async function checkChangeSend(sourceData, tempData) {
 					} else if (call.name == 'clanWarEndBattle' ||
 							call.name == 'crossClanWar_endBattle') {
 						resultPopup = await showMsg(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_AUTO_F5'));
-					} else {
+					} else if (call.name !== 'epicBrawl_endBattle' && call.name !== 'titanArenaEndBattle') {
 						resultPopup = await showMsg(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_CANCEL'));
 					}
 					if (resultPopup) {
@@ -2303,9 +2304,8 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'titanUseSummonCircle') &&
 				call.args.amount > 1) {
 				const startAmount = call.args.amount;
-				call.args.amount = 1;
 				const result = await popup.confirm(I18N('MSG_SPECIFY_QUANT'), [
-					{ msg: I18N('BTN_OPEN'), isInput: true, default: call.args.amount},
+					{ msg: I18N('BTN_OPEN'), isInput: true, default: 1},
 					]);
 				if (result) {
 					const item = call.name == 'pet_chestOpen' ? { id: 90, type: 'consumable' } : { id: 13, type: 'coin' };
@@ -2331,7 +2331,7 @@ async function checkChangeSend(sourceData, tempData) {
 				artifactChestOpenCallName = call.name;
 				const startAmount = call.args.amount;
 				let result = await popup.confirm(I18N('MSG_SPECIFY_QUANT'), [
-					{ msg: I18N('BTN_OPEN'), isInput: true, default: call.args.amount },
+					{ msg: I18N('BTN_OPEN'), isInput: true, default: 1 },
 				]);
 				if (result) {
 					const openChests = result;
@@ -2748,12 +2748,12 @@ async function checkChangeResponse(response) {
 			 * АвтоПовтор открытия матрешек
 			 */
 			if (isChecked('countControl') && call.ident == callsIdent['consumableUseLootBox']) {
-				let lootBox = call.result.response;
+				let [countLootBox, lootBox] = Object.entries(call.result.response).pop();
+				countLootBox = +countLootBox;
 				let newCount = 0;
-				for (let n of lootBox) {
-					if (n?.consumable && n.consumable[lastRussianDollId]) {
-						newCount += n.consumable[lastRussianDollId]
-					}
+				if (lootBox?.consumable && lootBox.consumable[lastRussianDollId]) {
+					newCount += lootBox.consumable[lastRussianDollId];
+					delete lootBox.consumable[lastRussianDollId];
 				}
 				if (
 					newCount &&
@@ -2763,7 +2763,9 @@ async function checkChangeResponse(response) {
 					]))
 				) {
 					const recursionResult = await openRussianDolls(lastRussianDollId, newCount);
-					lootBox = [...lootBox, ...recursionResult];
+					countLootBox += +count;
+					mergeItemsObj(lootBox, recursionResult);
+					isChange = true;
 				}
 
 				if (this.massOpen) {
@@ -2788,8 +2790,16 @@ async function checkChangeResponse(response) {
 								deleteItems[libId] = -amount;
 							}
 						}
-						const result = await Send({ calls }).then((e) => e.results.map((r) => r.result.response).flat());
-						lootBox = [...lootBox, ...result];
+						const responses = await Send({ calls }).then((e) => e.results.map((r) => r.result.response).flat());
+ 
+						for (const loot of responses) {
+							const [count, result] = Object.entries(loot).pop();
+							countLootBox += +count;
+ 
+							mergeItemsObj(lootBox, result);
+						}
+						isChange = true;
+ 
 						this.onReadySuccess = () => {
 							cheats.updateInventory({ consumable: deleteItems });
 							cheats.refreshInventory();
@@ -2797,71 +2807,11 @@ async function checkChangeResponse(response) {
 					}
 				}
 
-				/** Объединение результата лутбоксов */
-				const allLootBox = {};
-				lootBox.forEach(e => {
-					for (let f in e) {
-						if (!allLootBox[f]) {
-							if (typeof e[f] == 'object') {
-								allLootBox[f] = {};
-							} else {
-								allLootBox[f] = 0;
-							}
-						}
-						if (typeof e[f] == 'object') {
-							for (let o in e[f]) {
-								if (newCount && o == lastRussianDollId) {
-									continue;
-								}
-								if (!allLootBox[f][o]) {
-									allLootBox[f][o] = e[f][o];
-								} else {
-									allLootBox[f][o] += e[f][o];
-								}
-			}
-						} else {
-							allLootBox[f] += e[f];
-						}
-					}
-				});
-				/** Разбитие результата */
-				const output = [];
-				const maxCount = 5;
-				let currentObj = {};
-				let count = 0;
-				for (let f in allLootBox) {
-					if (!currentObj[f]) {
-						if (typeof allLootBox[f] == 'object') {
-							for (let o in allLootBox[f]) {
-								currentObj[f] ||= {}
-								if (!currentObj[f][o]) {
-									currentObj[f][o] = allLootBox[f][o];
-									count++;
-									if (count === maxCount) {
-										output.push(currentObj);
-										currentObj = {};
-										count = 0;
-									}
-								}
-							}
-						} else {
-							currentObj[f] = allLootBox[f];
-							count++;
-							if (count === maxCount) {
-								output.push(currentObj);
-								currentObj = {};
-								count = 0;
-							}
-						}
-					}
+				if (isChange) {
+					call.result.response = {
+						[countLootBox]: lootBox,
+					};
 				}
-				if (count > 0) {
-					output.push(currentObj);
-				}
-
-				console.log(output);
-				call.result.response = output;
-				isChange = true;
 			}
 			/**
 			 * Dungeon recalculation (fix endless cards)
@@ -7358,31 +7308,55 @@ this.sendsMission = async function (param) {
  */
 async function openRussianDolls(libId, amount) {
 	let sum = 0;
-	let sumResult = [];
+	const sumResult = {};
+	let count = 0;
 
 	while (amount) {
 		sum += amount;
 		setProgress(`${I18N('TOTAL_OPEN')} ${sum}`);
-		const calls = [{
-			name: "consumableUseLootBox",
+		const calls = [
+			{
+				name: 'consumableUseLootBox',
 			args: { libId, amount },
-			ident: "body"
-		}];
-		const result = await Send(JSON.stringify({ calls })).then(e => e.results[0].result.response);
+				ident: 'body',
+			},
+		];
+		const response = await Send(JSON.stringify({ calls })).then((e) => e.results[0].result.response);
+		let [countLootBox, result] = Object.entries(response).pop();
+		count += +countLootBox;
 		let newCount = 0;
-		for (let n of result) {
-			if (n?.consumable && n.consumable[libId]) {
-				newCount += n.consumable[libId]
-			}
+ 
+		if (result?.consumable && result.consumable[libId]) {
+			newCount = result.consumable[libId];
+			delete result.consumable[libId];
 		}
-		sumResult = [...sumResult, ...result];
+ 
+		mergeItemsObj(sumResult, result);
 		amount = newCount;
 	}
 
 	setProgress(`${I18N('TOTAL_OPEN')} ${sum}`, 5000);
-	return sumResult;
+	return [count, sumResult];
 }
 
+function mergeItemsObj(obj1, obj2) {
+	for (const key in obj2) {
+		if (obj1[key]) {
+			if (typeof obj1[key] == 'object') {
+				for (const innerKey in obj2[key]) {
+					obj1[key][innerKey] = (obj1[key][innerKey] || 0) + obj2[key][innerKey];
+				}
+			} else {
+				obj1[key] += obj2[key] || 0;
+			}
+		} else {
+			obj1[key] = obj2[key];
+		}
+	}
+ 
+	return obj1;
+}
+ 
 /**
  * Collect all mail, except letters with energy and charges of the portal
  *
