@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.302
+// @version			2.303
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -3093,8 +3093,8 @@ function getBattleType(strBattleType) {
 		case 'titan_tower':
 			return 'get_titan';
 		case 'tower':
-			return 'get_tower';
 		case 'clan_dungeon':
+			return 'get_tower';
 		case 'pve':
 		case 'mission':
 			return 'get_pve';
