@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.306
+// @version			2.307
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1971,7 +1971,7 @@ async function checkChangeSend(sourceData, tempData) {
 				if (!call.args.result.win) {
 					let resultPopup = false;
 					if (call.name == 'adventure_endBattle' ||
-						call.name == 'invasion_bossEnd' ||
+						//call.name == 'invasion_bossEnd' ||
 						call.name == 'bossEndBattle' ||
 						call.name == 'adventureSolo_endBattle') {
 						resultPopup = await showMsgs(I18N('MSG_HAVE_BEEN_DEFEATED'), I18N('BTN_OK'), I18N('BTN_CANCEL'), I18N('BTN_AUTO'));
@@ -2164,7 +2164,6 @@ async function checkChangeSend(sourceData, tempData) {
 				lastBossBattleStart = Date.now();
 			}
 			if (call.name == 'invasion_bossEnd') {
-				/*
 				const lastBattle = lastBattleInfo;
 				if (lastBattle && call.args.result.win) {
 					lastBattle.progress = call.args.progress;
@@ -2177,7 +2176,6 @@ async function checkChangeSend(sourceData, tempData) {
 						await countdownTimer(timer);
 					}
 				}
-				*/
 			}
 			/**
 			 * Disable spending divination cards
@@ -2625,9 +2623,12 @@ async function checkChangeResponse(response) {
 					});
 				}
 				let actions = [getBattleInfo(battle, false)]
-				const countTestBattle = getInput('countTestBattle');
+				let countTestBattle = getInput('countTestBattle');
+				if (call.ident == callsIdent['invasion_bossStart'] ) {
+					countTestBattle = 0;
+				}
 				if (call.ident == callsIdent['battleGetReplay']) {
-					battle.progress = [{ attackers: { input: ["auto", 0, 0, "auto", 0, 0] } }];
+					battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', 0, 0] } }];
 				}
 				for (let i = 0; i < countTestBattle; i++) {
 					actions.push(getBattleInfo(battle, true));
@@ -2639,8 +2640,13 @@ async function checkChangeResponse(response) {
 						const timer = Math.floor(battleDuration - firstBattle.time);
 						const min = ('00' + Math.floor(timer / 60)).slice(-2);
 						const sec = ('00' + Math.floor(timer - min * 60)).slice(-2);
+						let msg = `${I18N('THIS_TIME')} ${firstBattle.win ? I18N('VICTORY') : I18N('DEFEAT')}`;
+						if (e.length) {
 						const countWin = e.reduce((w, s) => w + s.win, 0);
-						setProgress(`${I18N('THIS_TIME')} ${(firstBattle.win ? I18N('VICTORY') : I18N('DEFEAT'))} ${I18N('CHANCE_TO_WIN')}: ${Math.floor(countWin / e.length * 100)}% (${e.length}), ${min}:${sec}`, false, hideProgress)
+							msg += ` ${I18N('CHANCE_TO_WIN')}: ${Math.floor((countWin / e.length) * 100)}% (${e.length})`;
+						}
+						msg += `, ${min}:${sec}`
+						setProgress(msg, false, hideProgress)
 					});
 			}
 			/**
