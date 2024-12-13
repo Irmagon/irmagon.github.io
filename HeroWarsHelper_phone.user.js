@@ -3,7 +3,7 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.307
+// @version			2.309
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -556,6 +556,7 @@ const i18nLangData = {
 		GOLD_RECEIVED: 'Gold received: {gold}',
 		OPEN_ALL_EQUIP_BOXES: 'Open all Equipment Fragment Box?',
 		SERVER_NOT_ACCEPT: 'The server did not accept the result',
+		INVASION_BOSS_BUFF: 'For {bossLvl} boss need buff {needBuff} you have {haveBuff}}',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -914,6 +915,7 @@ const i18nLangData = {
 		GOLD_RECEIVED: 'Получено золота: {gold}',
 		OPEN_ALL_EQUIP_BOXES: 'Открыть все ящики фрагментов экипировки?',
 		SERVER_NOT_ACCEPT: 'Сервер не принял результат',
+		INVASION_BOSS_BUFF: 'Для {bossLvl} босса нужен баф {needBuff} у вас {haveBuff}',
 	},
 };
 
@@ -1063,7 +1065,7 @@ const checkboxes = {
 		label: I18N('SHOW_ERRORS'),
 		cbox: null,
 		title: I18N('SHOW_ERRORS_TITLE'),
-		default: true,
+		default: false,
 	},
 	buyForGold: {
 		label: I18N('BUY_FOR_GOLD'),
@@ -1081,7 +1083,7 @@ const checkboxes = {
 		label: I18N('FAST_SEASON'),
 		cbox: null,
 		title: I18N('FAST_SEASON_TITLE'),
-		default: false,
+		default: true,
 	},
 };
 /**
@@ -1469,6 +1471,40 @@ let lastBattleArg = {}
 let lastBossBattleStart = null;
 this.addBattleTimer = 4;
 this.invasionTimer = 2500;
+const invasionInfo = {
+	buff: 0,
+	bossLvl: 130,
+};
+const invasionDataPacks = {
+	130: { buff: 0, pet: 6004, heroes: [58, 48, 16, 65, 59], favor: { 16: 6004, 48: 6001, 58: 6002, 59: 6005, 65: 6000 } },
+	140: { buff: 0, pet: 6006, heroes: [1, 4, 13, 58, 65], favor: { 1: 6001, 4: 6006, 13: 6002, 58: 6005, 65: 6000 } },
+	150: { buff: 0, pet: 6006, heroes: [1, 12, 17, 21, 65], favor: { 1: 6001, 12: 6003, 17: 6006, 21: 6002, 65: 6000 } },
+	160: { buff: 0, pet: 6008, heroes: [12, 21, 34, 58, 65], favor: { 12: 6003, 21: 6006, 34: 6008, 58: 6002, 65: 6001 } },
+	170: { buff: 0, pet: 6005, heroes: [33, 12, 65, 21, 4], favor: { 4: 6001, 12: 6003, 21: 6006, 33: 6008, 65: 6000 } },
+	180: { buff: 20, pet: 6009, heroes: [58, 13, 5, 17, 65], favor: { 5: 6006, 13: 6003, 58: 6005 } },
+	190: { buff: 0, pet: 6006, heroes: [1, 12, 21, 36, 65], favor: { 1: 6004, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
+	200: { buff: 0, pet: 6006, heroes: [12, 1, 13, 2, 65], favor: { 2: 6001, 12: 6003, 13: 6006, 65: 6000 } },
+	210: { buff: 15, pet: 6005, heroes: [12, 21, 33, 58, 65], favor: { 12: 6003, 21: 6006, 33: 6008, 58: 6005, 65: 6001 } },
+	220: { buff: 5, pet: 6006, heroes: [58, 13, 7, 34, 65], favor: { 7: 6002, 13: 6008, 34: 6006, 58: 6005, 65: 6001 } },
+	230: { buff: 35, pet: 6005, heroes: [5, 7, 13, 58, 65], favor: { 5: 6006, 7: 6003, 13: 6002, 58: 6005, 65: 6000 } },
+	240: { buff: 0, pet: 6005, heroes: [12, 58, 1, 36, 65], favor: { 1: 6006, 12: 6003, 36: 6005, 65: 6001 } },
+	250: { buff: 15, pet: 6005, heroes: [12, 36, 4, 16, 65], favor: { 12: 6003, 16: 6004, 36: 6005, 65: 6001 } },
+	260: { buff: 15, pet: 6005, heroes: [48, 12, 36, 65, 4], favor: { 4: 6006, 12: 6003, 36: 6005, 48: 6000, 65: 6007 } },
+	270: { buff: 35, pet: 6005, heroes: [12, 58, 36, 4, 65], favor: { 4: 6006, 12: 6003, 36: 6005 } },
+	280: { buff: 80, pet: 6005, heroes: [21, 36, 48, 7, 65], favor: { 7: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6000 } },
+	290: { buff: 95, pet: 6008, heroes: [12, 21, 36, 35, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 65: 6007 } },
+	300: { buff: 25, pet: 6005, heroes: [12, 13, 4, 34, 65], favor: { 4: 6006, 12: 6003, 13: 6007, 34: 6002 } },
+	310: { buff: 45, pet: 6005, heroes: [12, 21, 58, 33, 65], favor: { 12: 6003, 21: 6006, 33: 6002, 58: 6005, 65: 6007 } },
+	320: { buff: 70, pet: 6005, heroes: [12, 48, 2, 6, 65], favor: { 6: 6005, 12: 6003 } },
+	330: { buff: 70, pet: 6005, heroes: [12, 21, 36, 5, 65], favor: { 5: 6002, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
+	340: { buff: 55, pet: 6009, heroes: [12, 36, 13, 6, 65], favor: { 6: 6005, 12: 6003, 13: 6002, 36: 6006, 65: 6000 } },
+	350: { buff: 100, pet: 6005, heroes: [12, 21, 58, 34, 65], favor: { 12: 6003, 21: 6006, 58: 6005 } },
+	360: { buff: 85, pet: 6007, heroes: [12, 21, 36, 4, 65], favor: { 4: 6006, 12: 6003, 21: 6002, 36: 6005 } },
+	370: { buff: 90, pet: 6008, heroes: [12, 21, 36, 13, 65], favor: { 12: 6003, 13: 6007, 21: 6006, 36: 6005, 65: 6001 } },
+	380: { buff: 165, pet: 6005, heroes: [12, 33, 36, 4, 65], favor: { 4: 6001, 12: 6003, 33: 6006 } },
+	390: { buff: 235, pet: 6005, heroes: [21, 58, 48, 2, 65], favor: { 2: 6005, 21: 6002 } },
+	400: { buff: 125, pet: 6006, heroes: [12, 21, 36, 48, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6007 } },
+};
 /**
  * The name of the function of the beginning of the battle
  *
@@ -2385,6 +2421,24 @@ async function checkChangeSend(sourceData, tempData) {
 						this.massOpen = call.args.libId;
 			}
 			}
+			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == 217) {
+				const pack = invasionDataPacks[invasionInfo.bossLvl];
+				if (pack.buff != invasionInfo.buff) {
+					setProgress(
+						I18N('INVASION_BOSS_BUFF', {
+							bossLvl: invasionInfo.bossLvl,
+							needBuff: pack.buff,
+							haveBuff: invasionInfo.buff,
+						}),
+						false
+					);
+				} else {
+					call.args.pet = pack.pet;
+					call.args.heroes = pack.heroes;
+					call.args.favor = pack.favor;
+					changeRequest = true;
+				}
+			}
 			/**
 			 * Changing the maximum number of raids in the campaign
 			 * Изменение максимального количества рейдов в кампании
@@ -2973,6 +3027,40 @@ async function checkChangeResponse(response) {
 					addProgress('<br>' + I18N('SERVER_NOT_ACCEPT'));
 				}
 				addProgress('<br>Server > ' + I18N('BOSS_DAMAGE') + damage.toLocaleString());
+			}
+			if (call.ident == callsIdent['invasion_getInfo']) {
+				const r = call.result.response;
+				const boss = r.actions.find((e) => e.payload.id === 217);
+				invasionInfo.buff = r.buffAmount;
+				invasionInfo.bossLvl = boss.payload.level;
+				if (isChecked('tryFixIt_v2')) {
+					const pack = invasionDataPacks[invasionInfo.bossLvl];
+					setProgress(
+						I18N('INVASION_BOSS_BUFF', { 
+							bossLvl: invasionInfo.bossLvl, 
+							needBuff: pack.buff, 
+							haveBuff: invasionInfo.buff 
+						}),
+						false
+					);
+				}
+			}
+			if (call.ident == callsIdent['workshopBuff_create']) {
+				const r = call.result.response;
+				if (r.id == 1) {
+					invasionInfo.buff = r.amount;
+					if (isChecked('tryFixIt_v2')) {
+						const pack = invasionDataPacks[invasionInfo.bossLvl];
+						setProgress(
+							I18N('INVASION_BOSS_BUFF', {
+								bossLvl: invasionInfo.bossLvl,
+								needBuff: pack.buff,
+								haveBuff: invasionInfo.buff,
+							}),
+							false
+						);
+					}
+				}
 			}
 			/*
 			if (call.ident == callsIdent['chatGetAll'] && call.args.chatType == 'clanDomination' && !callsIdent['clanDomination_mapState']) {
@@ -4788,6 +4876,9 @@ function executeDungeon(resolve, reject) {
 
 	titansStates = {};
 
+	let talentMsg = '';
+	let talentMsgReward = '';
+ 
 	callsExecuteDungeon = {
 		calls: [{
 			name: "dungeonGetInfo",
@@ -4907,8 +4998,9 @@ function executeDungeon(resolve, reject) {
 			saveProgress();
 			return;
 		}
+		checkTalent(dungeonInfo);
 		// console.log(dungeonInfo, dungeonActivity);
-		setProgress(`${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
+		setProgress(`${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity} ${talentMsg}`);
 		if (dungeonActivity >= maxDungeonActivity) {
 			endDungeon('endDungeon', 'maxActive ' + dungeonActivity + '/' + maxDungeonActivity);
 			return;
@@ -4956,6 +5048,32 @@ function executeDungeon(resolve, reject) {
 		}
 	}
 
+	async function checkTalent(dungeonInfo) {
+		const talent = dungeonInfo.talent;
+		if (!talent) {
+			return;
+		}
+		const dungeonFloor = +dungeonInfo.floorNumber;
+		const talentFloor = +talent.floorRandValue;
+		let doorsAmount = 3 - talent.conditions.doorsAmount;
+ 
+		if (dungeonFloor === talentFloor && (!doorsAmount || !talent.conditions?.farmedDoors[dungeonFloor])) {
+			const reward = await Send({
+				calls: [
+					{ name: 'heroTalent_getReward', args: { talentType: 'tmntDungeonTalent', reroll: false }, ident: 'group_0_body' },
+					{ name: 'heroTalent_farmReward', args: { talentType: 'tmntDungeonTalent' }, ident: 'group_1_body' },
+				],
+			}).then((e) => e.results[0].result.response);
+			const type = Object.keys(reward).pop();
+			const itemId = Object.keys(reward[type]).pop();
+			const count = reward[type][itemId];
+			const itemName = cheats.translate(`LIB_${type.toUpperCase()}_NAME_${itemId}`);
+			talentMsgReward += `<br> ${count} ${itemName}`;
+			doorsAmount++;
+		}
+		talentMsg = `<br>TMNT Talent: ${doorsAmount}/3 ${talentMsgReward}<br>`;
+	}
+ 
 	function processingPromises(results) {
 		let selectBattle = results[0];
 		if (results.length < 2) {
@@ -5048,7 +5166,7 @@ function executeDungeon(resolve, reject) {
 		} else {
 				const timer = getTimer(battleInfo.battleTime);
 				console.log(timer);
-				await countdownTimer(timer, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity}`);
+				await countdownTimer(timer, `${I18N('DUNGEON')}: ${I18N('TITANIT')} ${dungeonActivity}/${maxDungeonActivity} ${talentMsg}`);
 			}
 			const calls = [{
 				name: "dungeonEndBattle",
