@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.309
+// @version			2.312
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -71,6 +71,21 @@ let missionBattle = null;
  * Данные пользователя
  */
 let userInfo;
+this.isTimeBetweenNewDays = function () {
+	if (userInfo.timeZone <= 3) {
+		return false;
+	}
+	const nextDayTs = new Date(userInfo.nextDayTs * 1e3);
+	const nextServerDayTs = new Date(userInfo.nextServerDayTs * 1e3);
+	if (nextDayTs > nextServerDayTs) {
+		nextDayTs.setDate(nextDayTs.getDate() - 1);
+	}
+	const now = Date.now();
+	if (now > nextDayTs && now < nextServerDayTs) {
+		return true;
+	}
+	return false;
+};
 /**
  * Original methods for working with AJAX
  *
@@ -304,6 +319,7 @@ const i18nLangData = {
 		VALUES: 'Values',
 		EXPEDITIONS_SENT: 'Expeditions:<br>Collected: {countGet}<br>Sent: {countSend}',
 		EXPEDITIONS_NOTHING: 'Nothing to collect/send',
+		EXPEDITIONS_NOTTIME: 'It is not time for expeditions',
 		TITANIT: 'Titanit',
 		COMPLETED: 'completed',
 		FLOOR: 'Floor',
@@ -664,6 +680,7 @@ const i18nLangData = {
 		VALUES: 'Значения',
 		EXPEDITIONS_SENT: 'Экспедиции:<br>Собрано: {countGet}<br>Отправлено: {countSend}',
 		EXPEDITIONS_NOTHING: 'Нечего собирать/отправлять',
+		EXPEDITIONS_NOTTIME: 'Не время для экспедиций',
 		TITANIT: 'Титанит',
 		COMPLETED: 'завершено',
 		FLOOR: 'Этаж',
@@ -1794,7 +1811,12 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 			addBottomUrls();
 
 			if (isChecked('sendExpedition')) {
+				const isTimeBetweenDays = isTimeBetweenNewDays();
+				if (!isTimeBetweenDays) {
 				checkExpedition();
+				} else {
+					setProgress(I18N('EXPEDITIONS_NOTTIME'), true);
+				}
 			}
 
 			getAutoGifts();
@@ -2562,6 +2584,17 @@ async function checkChangeResponse(response) {
 				isChange = true;
 			}
 			/**
+			 * Hiding donation offers 4
+			 * Скрываем предложения доната 4 
+			 */
+			if (call.result?.specialOffers) {
+				const offers = call.result.specialOffers;
+				call.result.specialOffers = offers.filter(
+					(e) => !['addBilling', 'bundleCarousel'].includes(e.type) || ['idleResource', 'stagesOffer'].includes(e.offerType)
+				);
+				isChange = true;
+			}
+			/**
 			 * Copies a quiz question to the clipboard
 			 * Копирует вопрос викторины в буфер обмена и получает на него ответ если есть
 			 */
@@ -2830,7 +2863,7 @@ async function checkChangeResponse(response) {
 						{ msg: I18N('BTN_NO'), result: false, isClose: true },
 					]))
 				) {
-					const recursionResult = await openRussianDolls(lastRussianDollId, newCount);
+					const [count, recursionResult] = await openRussianDolls(lastRussianDollId, newCount);
 					countLootBox += +count;
 					mergeItemsObj(lootBox, recursionResult);
 					isChange = true;
@@ -3032,6 +3065,7 @@ async function checkChangeResponse(response) {
 			}
 			if (call.ident == callsIdent['invasion_getInfo']) {
 				const r = call.result.response;
+				if (r?.actions?.length) {
 				const boss = r.actions.find((e) => e.payload.id === 217);
 				invasionInfo.buff = r.buffAmount;
 				invasionInfo.bossLvl = boss.payload.level;
@@ -3046,6 +3080,7 @@ async function checkChangeResponse(response) {
 						false
 					);
 				}
+			}
 			}
 			if (call.ident == callsIdent['workshopBuff_create']) {
 				const r = call.result.response;
