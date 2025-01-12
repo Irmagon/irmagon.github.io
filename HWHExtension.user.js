@@ -10,8 +10,8 @@
 // @author			ZingerY
 // @license 		Copyright ZingerY
 // @homepage		https://zingery.ru/scripts/HWHExtension.user.js
-// @downloadURL		https://zingery.ru/scripts/HWHExtension.user.js
-// @updateURL		https://zingery.ru/scripts/HWHExtension.user.js
+// @downloadURL		https://irmagon.github.io/HWHExtension.user.js
+// @updateURL		https://irmagon.github.io/HWHExtension.user.js
 // @icon			https://zingery.ru/scripts/VaultBoyIco16.ico
 // @icon64			https://zingery.ru/scripts/VaultBoyIco64.png
 // @match			https://www.hero-wars.com/*
