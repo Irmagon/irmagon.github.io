@@ -3,7 +3,7 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.314
+// @version			2.321
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -295,6 +295,7 @@ const i18nLangData = {
 		DO_YOU_WANT: 'Do you really want to do this?',
 		BTN_RUN: 'Run',
 		BTN_CANCEL: 'Cancel',
+		BTN_ACCEPT: 'Accept',
 		BTN_OK: 'OK',
 		MSG_HAVE_BEEN_DEFEATED: 'You have been defeated!',
 		BTN_AUTO: 'Auto',
@@ -577,6 +578,14 @@ const i18nLangData = {
 		OPEN_ALL_EQUIP_BOXES: 'Open all Equipment Fragment Box?',
 		SERVER_NOT_ACCEPT: 'The server did not accept the result',
 		INVASION_BOSS_BUFF: 'For {bossLvl} boss need buff {needBuff} you have {haveBuff}}',
+		HERO_POWER: 'Hero Power',
+		HERO_POWER_TITLE: 'Displays the current and maximum power of heroes',
+		MAX_POWER_REACHED: 'Maximum power reached: {power}',
+		CURRENT_POWER: 'Current power: {power}',
+		POWER_TO_MAX: 'Power left to reach maximum: <span style="color:{color};">{power}</span><br>',
+		BEST_RESULT: 'Best result: {value}%',
+		GUILD_ISLAND_TITLE: 'Fast travel to Guild Island',
+		TITAN_VALLEY_TITLE: 'Fast travel to Titan Valley',
 	},
 	ru: {
 		/* Чекбоксы */
@@ -656,6 +665,7 @@ const i18nLangData = {
 		DO_YOU_WANT: 'Вы действительно хотите это сделать?',
 		BTN_RUN: 'Запускай',
 		BTN_CANCEL: 'Отмена',
+		BTN_ACCEPT: 'Принять',
 		BTN_OK: 'Ок',
 		MSG_HAVE_BEEN_DEFEATED: 'Вы потерпели поражение!',
 		BTN_AUTO: 'Авто',
@@ -937,6 +947,14 @@ const i18nLangData = {
 		OPEN_ALL_EQUIP_BOXES: 'Открыть все ящики фрагментов экипировки?',
 		SERVER_NOT_ACCEPT: 'Сервер не принял результат',
 		INVASION_BOSS_BUFF: 'Для {bossLvl} босса нужен баф {needBuff} у вас {haveBuff}',
+		HERO_POWER: 'Сила героев',
+		HERO_POWER_TITLE: 'Отображает текущую и максимальную силу героев',
+		MAX_POWER_REACHED: 'Максимальная достигнутая мощь: {power}',
+		CURRENT_POWER: 'Текущая мощь: {power}',
+		POWER_TO_MAX: 'До максимума мощи осталось: <span style="color:{color};">{power}</span><br>',
+		BEST_RESULT: 'Лучший результат: {value}%',
+		GUILD_ISLAND_TITLE: 'Перейти к Острову гильдии',
+		TITAN_VALLEY_TITLE: 'Перейти к Долине титанов',
 	},
 };
 
@@ -1417,6 +1435,29 @@ const buttons = {
 					},
 					title: I18N('CHANGE_MAP_TITLE'),
 				},
+				{
+					msg: I18N('HERO_POWER'),
+					result: async () => {
+						const calls = ['userGetInfo', 'heroGetAll'].map((name) => ({
+							name,
+							args: {},
+							ident: name,
+						}));
+						const [maxHeroSumPower, heroSumPower] = await Send({ calls }).then((e) => [
+							e.results[0].result.response.maxSumPower.heroes,
+							Object.values(e.results[1].result.response).reduce((a, e) => a + e.power, 0),
+						]);
+						const power = maxHeroSumPower - heroSumPower;
+						let msg =
+							I18N('MAX_POWER_REACHED', { power: maxHeroSumPower.toLocaleString() }) +
+							'<br>' +
+							I18N('CURRENT_POWER', { power: heroSumPower.toLocaleString() }) +
+							'<br>' +
+							I18N('POWER_TO_MAX', { power: power.toLocaleString(), color: power >= 4000 ? 'green' : 'red' });
+						await popup.confirm(msg, [{ msg: I18N('BTN_OK'), result: 0 }]);
+					},
+					title: I18N('HERO_POWER_TITLE'),
+				},
 			];
 			popupButtons.push({ result: false, isClose: true });
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1440,6 +1481,10 @@ function addControlButtons() {
 	for (let name in buttons) {
 		button = buttons[name];
 		if (button.hide) {
+			continue;
+		}
+		if (button.isCombine) {
+			button['button'] = scriptMenu.addCombinedButton(button.combineList);
 			continue;
 		}
 		button['button'] = scriptMenu.addButton(button.name, button.func, button.title);
@@ -1878,7 +1923,13 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 				if ('invasion_bossStart' in requestHistory[this.uniqid].calls) delete requestHistory[this.uniqid];
 			}
 			if (oldReady) {
+				try {
 				return oldReady.apply(this, arguments);
+				} catch(e) {
+					console.log(oldReady);
+					console.error('Error in oldReady:', e);
+			}
+ 
 			}
 		}
 	}
@@ -2018,9 +2069,9 @@ async function checkChangeSend(sourceData, tempData) {
 							changeRequest = true;
 						} else if (result.value) {
 							if (
-								await popup.confirm('Поражение<br>Лучший результат: ' + result.value + '%', [
-									{ msg: 'Отмена', result: 0 },
-									{ msg: 'Принять', result: 1 },
+								await popup.confirm(I18N('DEFEAT') + '<br>' + I18N('BEST_RESULT', { value: result.value }), [
+									{ msg: I18N('BTN_CANCEL'), result: 0 },
+									{ msg: I18N('BTN_ACCEPT'), result: 1 },
 								])
 							) {
 								call.args.result = result.result;
@@ -2683,6 +2734,7 @@ async function checkChangeResponse(response) {
 				call.ident == callsIdent['invasion_bossStart'] ||
 				call.ident == callsIdent['titanArenaStartBattle'] ||
 				call.ident == callsIdent['towerStartBattle'] ||
+				call.ident == callsIdent['epicBrawl_startBattle'] ||
 				call.ident == callsIdent['adventure_turnStartBattle']) {
 				let battle = call.result.response.battle || call.result.response.replay;
 				if (call.ident == callsIdent['brawl_startBattle'] ||
@@ -3309,6 +3361,133 @@ this.getSignature = function(headers, data) {
 	return md5(sign.signature);
 }
  
+class HotkeyManager {
+	constructor() {
+		if (HotkeyManager.instance) {
+			return HotkeyManager.instance;
+		}
+		this.hotkeys = [];
+		document.addEventListener('keydown', this.handleKeyDown.bind(this));
+		HotkeyManager.instance = this;
+	}
+ 
+	handleKeyDown(event) {
+		const key = event.key.toLowerCase();
+		const mods = {
+			ctrl: event.ctrlKey,
+			alt: event.altKey,
+			shift: event.shiftKey,
+		};
+ 
+		this.hotkeys.forEach((hotkey) => {
+			if (hotkey.key === key && hotkey.ctrl === mods.ctrl && hotkey.alt === mods.alt && hotkey.shift === mods.shift) {
+				hotkey.callback(hotkey);
+			}
+		});
+	}
+ 
+	add(key, opt = {}, callback) {
+		this.hotkeys.push({
+			key: key.toLowerCase(),
+			callback,
+			ctrl: opt.ctrl || false,
+			alt: opt.alt || false,
+			shift: opt.shift || false,
+		});
+	}
+ 
+	remove(key, opt = {}) {
+		this.hotkeys = this.hotkeys.filter((hotkey) => {
+			return !(
+				hotkey.key === key.toLowerCase() &&
+				hotkey.ctrl === (opt.ctrl || false) &&
+				hotkey.alt === (opt.alt || false) &&
+				hotkey.shift === (opt.shift || false)
+			);
+		});
+	}
+ 
+	static getInst() {
+		if (!HotkeyManager.instance) {
+			new HotkeyManager();
+		}
+		return HotkeyManager.instance;
+	}
+}
+ 
+class MouseClicker {
+	constructor(element) {
+		if (MouseClicker.instance) {
+			return MouseClicker.instance;
+		}
+		this.element = element;
+		this.mouse = {
+			bubbles: true,
+			cancelable: true,
+			clientX: 0,
+			clientY: 0,
+		};
+		this.element.addEventListener('mousemove', this.handleMouseMove.bind(this));
+		this.clickInfo = {};
+		this.nextTimeoutId = 1;
+		MouseClicker.instance = this;
+	}
+ 
+	handleMouseMove(event) {
+		this.mouse.clientX = event.clientX;
+		this.mouse.clientY = event.clientY;
+	}
+ 
+	click(options) {
+		options = options || this.mouse;
+		this.element.dispatchEvent(new MouseEvent('mousedown', options));
+		this.element.dispatchEvent(new MouseEvent('mouseup', options));
+	}
+ 
+	start(interval = 1000, clickCount = Infinity) {
+		const currentMouse = { ...this.mouse };
+		const timeoutId = this.nextTimeoutId++;
+		let count = 0;
+ 
+		const clickTimeout = () => {
+			this.click(currentMouse);
+			count++;
+			if (count < clickCount) {
+				this.clickInfo[timeoutId].timeout = setTimeout(clickTimeout, interval);
+			} else {
+				delete this.clickInfo[timeoutId];
+			}
+		};
+ 
+		this.clickInfo[timeoutId] = {
+			timeout: setTimeout(clickTimeout, interval),
+			count: clickCount,
+		};
+		return timeoutId;
+	}
+ 
+	stop(timeoutId) {
+		if (this.clickInfo[timeoutId]) {
+			clearTimeout(this.clickInfo[timeoutId].timeout);
+			delete this.clickInfo[timeoutId];
+		}
+	}
+ 
+	stopAll() {
+		for (const timeoutId in this.clickInfo) {
+			clearTimeout(this.clickInfo[timeoutId].timeout);
+		}
+		this.clickInfo = {};
+	}
+ 
+	static getInst(element) {
+		if (!MouseClicker.instance) {
+			new MouseClicker(element);
+		}
+		return MouseClicker.instance;
+	}
+}
+ 
 let extintionsList = [];
 /**
  * Creates an interface
@@ -3330,6 +3509,28 @@ function createInterface() {
 			versionHeader.title += name + ', v' + ver + ' by ' + author + '\n';
 		}
 }
+	// AutoClicker
+	const hkm = new HotkeyManager();
+	const fc = document.getElementById('flash-content') || document.getElementById('game');
+	const mc = new MouseClicker(fc);
+	function toggleClicker(self, timeout) {
+		if (self.onClick) {
+			console.log('Останавливаем клики');
+			mc.stop(self.onClick);
+			self.onClick = false;
+		} else {
+			console.log('Стартуем клики');
+			self.onClick = mc.start(timeout);
+}
+}
+	hkm.add('C', { ctrl: true, alt: true }, (self) => {
+		console.log('"Ctrl + Alt + C"');
+		toggleClicker(self, 20);
+	});
+	hkm.add('V', { ctrl: true, alt: true }, (self) => {
+		console.log('"Ctrl + Alt + V"');
+		toggleClicker(self, 100);
+	});
 }
 
 function addExtentionName(name, ver, author) {
@@ -3586,6 +3787,157 @@ this.HWHClasses = {
  */
 !function(){"use strict";function t(t){if(t)d[0]=d[16]=d[1]=d[2]=d[3]=d[4]=d[5]=d[6]=d[7]=d[8]=d[9]=d[10]=d[11]=d[12]=d[13]=d[14]=d[15]=0,this.blocks=d,this.buffer8=l;else if(a){var r=new ArrayBuffer(68);this.buffer8=new Uint8Array(r),this.blocks=new Uint32Array(r)}else this.blocks=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];this.h0=this.h1=this.h2=this.h3=this.start=this.bytes=this.hBytes=0,this.finalized=this.hashed=!1,this.first=!0}var r="input is invalid type",e="object"==typeof window,i=e?window:{};i.JS_MD5_NO_WINDOW&&(e=!1);var s=!e&&"object"==typeof self,h=!i.JS_MD5_NO_NODE_JS&&"object"==typeof process&&process.versions&&process.versions.node;h?i=global:s&&(i=self);var f=!i.JS_MD5_NO_COMMON_JS&&"object"==typeof module&&module.exports,o="function"==typeof define&&define.amd,a=!i.JS_MD5_NO_ARRAY_BUFFER&&"undefined"!=typeof ArrayBuffer,n="0123456789abcdef".split(""),u=[128,32768,8388608,-2147483648],y=[0,8,16,24],c=["hex","array","digest","buffer","arrayBuffer","base64"],p="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split(""),d=[],l;if(a){var A=new ArrayBuffer(68);l=new Uint8Array(A),d=new Uint32Array(A)}!i.JS_MD5_NO_NODE_JS&&Array.isArray||(Array.isArray=function(t){return"[object Array]"===Object.prototype.toString.call(t)}),!a||!i.JS_MD5_NO_ARRAY_BUFFER_IS_VIEW&&ArrayBuffer.isView||(ArrayBuffer.isView=function(t){return"object"==typeof t&&t.buffer&&t.buffer.constructor===ArrayBuffer});var b=function(r){return function(e){return new t(!0).update(e)[r]()}},v=function(){var r=b("hex");h&&(r=w(r)),r.create=function(){return new t},r.update=function(t){return r.create().update(t)};for(var e=0;e<c.length;++e){var i=c[e];r[i]=b(i)}return r},w=function(t){var e=eval("require('crypto')"),i=eval("require('buffer').Buffer"),s=function(s){if("string"==typeof s)return e.createHash("md5").update(s,"utf8").digest("hex");if(null===s||void 0===s)throw r;return s.constructor===ArrayBuffer&&(s=new Uint8Array(s)),Array.isArray(s)||ArrayBuffer.isView(s)||s.constructor===i?e.createHash("md5").update(new i(s)).digest("hex"):t(s)};return s};t.prototype.update=function(t){if(!this.finalized){var e,i=typeof t;if("string"!==i){if("object"!==i)throw r;if(null===t)throw r;if(a&&t.constructor===ArrayBuffer)t=new Uint8Array(t);else if(!(Array.isArray(t)||a&&ArrayBuffer.isView(t)))throw r;e=!0}for(var s,h,f=0,o=t.length,n=this.blocks,u=this.buffer8;f<o;){if(this.hashed&&(this.hashed=!1,n[0]=n[16],n[16]=n[1]=n[2]=n[3]=n[4]=n[5]=n[6]=n[7]=n[8]=n[9]=n[10]=n[11]=n[12]=n[13]=n[14]=n[15]=0),e)if(a)for(h=this.start;f<o&&h<64;++f)u[h++]=t[f];else for(h=this.start;f<o&&h<64;++f)n[h>>2]|=t[f]<<y[3&h++];else if(a)for(h=this.start;f<o&&h<64;++f)(s=t.charCodeAt(f))<128?u[h++]=s:s<2048?(u[h++]=192|s>>6,u[h++]=128|63&s):s<55296||s>=57344?(u[h++]=224|s>>12,u[h++]=128|s>>6&63,u[h++]=128|63&s):(s=65536+((1023&s)<<10|1023&t.charCodeAt(++f)),u[h++]=240|s>>18,u[h++]=128|s>>12&63,u[h++]=128|s>>6&63,u[h++]=128|63&s);else for(h=this.start;f<o&&h<64;++f)(s=t.charCodeAt(f))<128?n[h>>2]|=s<<y[3&h++]:s<2048?(n[h>>2]|=(192|s>>6)<<y[3&h++],n[h>>2]|=(128|63&s)<<y[3&h++]):s<55296||s>=57344?(n[h>>2]|=(224|s>>12)<<y[3&h++],n[h>>2]|=(128|s>>6&63)<<y[3&h++],n[h>>2]|=(128|63&s)<<y[3&h++]):(s=65536+((1023&s)<<10|1023&t.charCodeAt(++f)),n[h>>2]|=(240|s>>18)<<y[3&h++],n[h>>2]|=(128|s>>12&63)<<y[3&h++],n[h>>2]|=(128|s>>6&63)<<y[3&h++],n[h>>2]|=(128|63&s)<<y[3&h++]);this.lastByteIndex=h,this.bytes+=h-this.start,h>=64?(this.start=h-64,this.hash(),this.hashed=!0):this.start=h}return this.bytes>4294967295&&(this.hBytes+=this.bytes/4294967296<<0,this.bytes=this.bytes%4294967296),this}},t.prototype.finalize=function(){if(!this.finalized){this.finalized=!0;var t=this.blocks,r=this.lastByteIndex;t[r>>2]|=u[3&r],r>=56&&(this.hashed||this.hash(),t[0]=t[16],t[16]=t[1]=t[2]=t[3]=t[4]=t[5]=t[6]=t[7]=t[8]=t[9]=t[10]=t[11]=t[12]=t[13]=t[14]=t[15]=0),t[14]=this.bytes<<3,t[15]=this.hBytes<<3|this.bytes>>>29,this.hash()}},t.prototype.hash=function(){var t,r,e,i,s,h,f=this.blocks;this.first?r=((r=((t=((t=f[0]-680876937)<<7|t>>>25)-271733879<<0)^(e=((e=(-271733879^(i=((i=(-1732584194^2004318071&t)+f[1]-117830708)<<12|i>>>20)+t<<0)&(-271733879^t))+f[2]-1126478375)<<17|e>>>15)+i<<0)&(i^t))+f[3]-1316259209)<<22|r>>>10)+e<<0:(t=this.h0,r=this.h1,e=this.h2,r=((r+=((t=((t+=((i=this.h3)^r&(e^i))+f[0]-680876936)<<7|t>>>25)+r<<0)^(e=((e+=(r^(i=((i+=(e^t&(r^e))+f[1]-389564586)<<12|i>>>20)+t<<0)&(t^r))+f[2]+606105819)<<17|e>>>15)+i<<0)&(i^t))+f[3]-1044525330)<<22|r>>>10)+e<<0),r=((r+=((t=((t+=(i^r&(e^i))+f[4]-176418897)<<7|t>>>25)+r<<0)^(e=((e+=(r^(i=((i+=(e^t&(r^e))+f[5]+1200080426)<<12|i>>>20)+t<<0)&(t^r))+f[6]-1473231341)<<17|e>>>15)+i<<0)&(i^t))+f[7]-45705983)<<22|r>>>10)+e<<0,r=((r+=((t=((t+=(i^r&(e^i))+f[8]+1770035416)<<7|t>>>25)+r<<0)^(e=((e+=(r^(i=((i+=(e^t&(r^e))+f[9]-1958414417)<<12|i>>>20)+t<<0)&(t^r))+f[10]-42063)<<17|e>>>15)+i<<0)&(i^t))+f[11]-1990404162)<<22|r>>>10)+e<<0,r=((r+=((t=((t+=(i^r&(e^i))+f[12]+1804603682)<<7|t>>>25)+r<<0)^(e=((e+=(r^(i=((i+=(e^t&(r^e))+f[13]-40341101)<<12|i>>>20)+t<<0)&(t^r))+f[14]-1502002290)<<17|e>>>15)+i<<0)&(i^t))+f[15]+1236535329)<<22|r>>>10)+e<<0,r=((r+=((i=((i+=(r^e&((t=((t+=(e^i&(r^e))+f[1]-165796510)<<5|t>>>27)+r<<0)^r))+f[6]-1069501632)<<9|i>>>23)+t<<0)^t&((e=((e+=(t^r&(i^t))+f[11]+643717713)<<14|e>>>18)+i<<0)^i))+f[0]-373897302)<<20|r>>>12)+e<<0,r=((r+=((i=((i+=(r^e&((t=((t+=(e^i&(r^e))+f[5]-701558691)<<5|t>>>27)+r<<0)^r))+f[10]+38016083)<<9|i>>>23)+t<<0)^t&((e=((e+=(t^r&(i^t))+f[15]-660478335)<<14|e>>>18)+i<<0)^i))+f[4]-405537848)<<20|r>>>12)+e<<0,r=((r+=((i=((i+=(r^e&((t=((t+=(e^i&(r^e))+f[9]+568446438)<<5|t>>>27)+r<<0)^r))+f[14]-1019803690)<<9|i>>>23)+t<<0)^t&((e=((e+=(t^r&(i^t))+f[3]-187363961)<<14|e>>>18)+i<<0)^i))+f[8]+1163531501)<<20|r>>>12)+e<<0,r=((r+=((i=((i+=(r^e&((t=((t+=(e^i&(r^e))+f[13]-1444681467)<<5|t>>>27)+r<<0)^r))+f[2]-51403784)<<9|i>>>23)+t<<0)^t&((e=((e+=(t^r&(i^t))+f[7]+1735328473)<<14|e>>>18)+i<<0)^i))+f[12]-1926607734)<<20|r>>>12)+e<<0,r=((r+=((h=(i=((i+=((s=r^e)^(t=((t+=(s^i)+f[5]-378558)<<4|t>>>28)+r<<0))+f[8]-2022574463)<<11|i>>>21)+t<<0)^t)^(e=((e+=(h^r)+f[11]+1839030562)<<16|e>>>16)+i<<0))+f[14]-35309556)<<23|r>>>9)+e<<0,r=((r+=((h=(i=((i+=((s=r^e)^(t=((t+=(s^i)+f[1]-1530992060)<<4|t>>>28)+r<<0))+f[4]+1272893353)<<11|i>>>21)+t<<0)^t)^(e=((e+=(h^r)+f[7]-155497632)<<16|e>>>16)+i<<0))+f[10]-1094730640)<<23|r>>>9)+e<<0,r=((r+=((h=(i=((i+=((s=r^e)^(t=((t+=(s^i)+f[13]+681279174)<<4|t>>>28)+r<<0))+f[0]-358537222)<<11|i>>>21)+t<<0)^t)^(e=((e+=(h^r)+f[3]-722521979)<<16|e>>>16)+i<<0))+f[6]+76029189)<<23|r>>>9)+e<<0,r=((r+=((h=(i=((i+=((s=r^e)^(t=((t+=(s^i)+f[9]-640364487)<<4|t>>>28)+r<<0))+f[12]-421815835)<<11|i>>>21)+t<<0)^t)^(e=((e+=(h^r)+f[15]+530742520)<<16|e>>>16)+i<<0))+f[2]-995338651)<<23|r>>>9)+e<<0,r=((r+=((i=((i+=(r^((t=((t+=(e^(r|~i))+f[0]-198630844)<<6|t>>>26)+r<<0)|~e))+f[7]+1126891415)<<10|i>>>22)+t<<0)^((e=((e+=(t^(i|~r))+f[14]-1416354905)<<15|e>>>17)+i<<0)|~t))+f[5]-57434055)<<21|r>>>11)+e<<0,r=((r+=((i=((i+=(r^((t=((t+=(e^(r|~i))+f[12]+1700485571)<<6|t>>>26)+r<<0)|~e))+f[3]-1894986606)<<10|i>>>22)+t<<0)^((e=((e+=(t^(i|~r))+f[10]-1051523)<<15|e>>>17)+i<<0)|~t))+f[1]-2054922799)<<21|r>>>11)+e<<0,r=((r+=((i=((i+=(r^((t=((t+=(e^(r|~i))+f[8]+1873313359)<<6|t>>>26)+r<<0)|~e))+f[15]-30611744)<<10|i>>>22)+t<<0)^((e=((e+=(t^(i|~r))+f[6]-1560198380)<<15|e>>>17)+i<<0)|~t))+f[13]+1309151649)<<21|r>>>11)+e<<0,r=((r+=((i=((i+=(r^((t=((t+=(e^(r|~i))+f[4]-145523070)<<6|t>>>26)+r<<0)|~e))+f[11]-1120210379)<<10|i>>>22)+t<<0)^((e=((e+=(t^(i|~r))+f[2]+718787259)<<15|e>>>17)+i<<0)|~t))+f[9]-343485551)<<21|r>>>11)+e<<0,this.first?(this.h0=t+1732584193<<0,this.h1=r-271733879<<0,this.h2=e-1732584194<<0,this.h3=i+271733878<<0,this.first=!1):(this.h0=this.h0+t<<0,this.h1=this.h1+r<<0,this.h2=this.h2+e<<0,this.h3=this.h3+i<<0)},t.prototype.hex=function(){this.finalize();var t=this.h0,r=this.h1,e=this.h2,i=this.h3;return n[t>>4&15]+n[15&t]+n[t>>12&15]+n[t>>8&15]+n[t>>20&15]+n[t>>16&15]+n[t>>28&15]+n[t>>24&15]+n[r>>4&15]+n[15&r]+n[r>>12&15]+n[r>>8&15]+n[r>>20&15]+n[r>>16&15]+n[r>>28&15]+n[r>>24&15]+n[e>>4&15]+n[15&e]+n[e>>12&15]+n[e>>8&15]+n[e>>20&15]+n[e>>16&15]+n[e>>28&15]+n[e>>24&15]+n[i>>4&15]+n[15&i]+n[i>>12&15]+n[i>>8&15]+n[i>>20&15]+n[i>>16&15]+n[i>>28&15]+n[i>>24&15]},t.prototype.toString=t.prototype.hex,t.prototype.digest=function(){this.finalize();var t=this.h0,r=this.h1,e=this.h2,i=this.h3;return[255&t,t>>8&255,t>>16&255,t>>24&255,255&r,r>>8&255,r>>16&255,r>>24&255,255&e,e>>8&255,e>>16&255,e>>24&255,255&i,i>>8&255,i>>16&255,i>>24&255]},t.prototype.array=t.prototype.digest,t.prototype.arrayBuffer=function(){this.finalize();var t=new ArrayBuffer(16),r=new Uint32Array(t);return r[0]=this.h0,r[1]=this.h1,r[2]=this.h2,r[3]=this.h3,t},t.prototype.buffer=t.prototype.arrayBuffer,t.prototype.base64=function(){for(var t,r,e,i="",s=this.array(),h=0;h<15;)t=s[h++],r=s[h++],e=s[h++],i+=p[t>>>2]+p[63&(t<<4|r>>>4)]+p[63&(r<<2|e>>>6)]+p[63&e];return t=s[h],i+=p[t>>>2]+p[t<<4&63]+"=="};var _=v();f?module.exports=_:(i.md5=_,o&&define(function(){return _}))}();
 
+class Caller {
+	static globalHooks = {
+		onError: null,
+	};
+ 
+	constructor(calls = null) {
+		this.calls = [];
+		this.results = {};
+		if (calls) {
+			this.add(calls);
+		}
+	}
+ 
+	static setGlobalHook(event, callback) {
+		if (this.globalHooks[event] !== undefined) {
+			this.globalHooks[event] = callback;
+		} else {
+			throw new Error(`Unknown event: ${event}`);
+		}
+	}
+ 
+	addCall(call) {
+		const { name = call, args = {} } = typeof call === 'object' ? call : { name: call };
+		this.calls.push({ name, args });
+		return this;
+	}
+ 
+	add(name) {
+		if (Array.isArray(name)) {
+			name.forEach((call) => this.addCall(call));
+		} else {
+			this.addCall(name);
+		}
+		return this;
+	}
+ 
+	handleError(error) {
+		const errorName = error.name;
+		const errorDescription = error.description;
+ 
+		if (Caller.globalHooks.onError) {
+			const shouldThrow = Caller.globalHooks.onError(error);
+			if (shouldThrow === false) {
+				return;
+			}
+		}
+ 
+		if (error.call) {
+			const callInfo = error.call;
+			throw new Error(`${errorName} in ${callInfo.name}: ${errorDescription}\n` + `Args: ${JSON.stringify(callInfo.args)}\n`);
+		} else if (errorName === 'common\\rpc\\exception\\InvalidRequest') {
+			throw new Error(`Invalid request: ${errorDescription}`);
+		} else {
+			throw new Error(`Unknown error: ${errorName} - ${errorDescription}`);
+		}
+	}
+ 
+	async send() {
+		if (!this.calls.length) {
+			throw new Error('No calls to send.');
+		}
+ 
+		const identToNameMap = {};
+		const callsWithIdent = this.calls.map((call, index) => {
+			const ident = this.calls.length === 1 ? 'body' : `group_${index}_body`;
+			identToNameMap[ident] = call.name;
+			return { ...call, ident };
+		});
+ 
+		try {
+			const response = await Send({ calls: callsWithIdent });
+ 
+			if (response.error) {
+				this.handleError(response.error);
+			}
+ 
+			if (!response.results) {
+				throw new Error('Invalid response format: missing "results" field');
+			}
+ 
+			response.results.forEach((result) => {
+				const name = identToNameMap[result.ident];
+				if (!this.results[name]) {
+					this.results[name] = [];
+				}
+				this.results[name].push(result.result.response);
+			});
+		} catch (error) {
+			throw error;
+		}
+		return this;
+	}
+ 
+	result(name, forceArray = false) {
+		const results = name ? this.results[name] || [] : Object.values(this.results).flat();
+		return forceArray || results.length !== 1 ? results : results[0];
+	}
+ 
+	async execute(name) {
+		try {
+			await this.send();
+			return this.result(name);
+		} catch (error) {
+			throw error;
+		}
+	}
+ 
+	clear() {
+		this.calls = [];
+		this.results = {};
+		return this;
+	}
+ 
+	isEmpty() {
+		return this.calls.length === 0 && Object.keys(this.results).length === 0;
+	}
+}
+ 
+this.Caller = Caller;
+ 
+/*
+// Примеры использования
+(async () => {
+	// Короткий вызов
+	await new Caller('inventoryGet').execute();
+	// Простой вызов
+	let result = await new Caller().add('inventoryGet').execute();
+	console.log('Inventory Get Result:', result);
+ 
+	// Сложный вызов
+	let caller = new Caller();
+	await caller
+		.add([
+			{
+				name: 'inventoryGet',
+				args: {},
+			},
+			{
+				name: 'heroGetAll',
+				args: {},
+			},
+		])
+		.send();
+	console.log('Inventory Get Result:', caller.result('inventoryGet'));
+	console.log('Hero Get All Result:', caller.result('heroGetAll'));
+ 
+	// Очистка всех данных
+	caller.clear();
+})();
+*/
+ 
 /**
  * Script for beautiful dialog boxes
  *
@@ -3777,6 +4129,10 @@ const popup = new (function () {
 		filter: brightness(1.2);
 	}
 
+	.PopUp_button:active {
+		box-shadow: inset 0px 5px 10px, inset 0px 1px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
+	}
+ 
 	.PopUp_text {
 		font-size: 12px;
 		font-family: sans-serif;
@@ -4225,6 +4581,52 @@ const scriptMenu = new (function () {
 		.scriptMenu_Details {
 			align-self: left;
 		}
+	.scriptMenu_buttonGroup {
+		display: flex;
+		justify-content: center;
+		user-select: none;
+		cursor: pointer;
+		padding: 4;
+		margin: 3px 0;
+	}
+	.scriptMenu_combineButton {
+		width: 60%;
+		padding: 5px 8px 0px;
+		
+	}
+	.scriptMenu_combineButtonLeft {
+		border-top-left-radius: 5px;
+		border-bottom-left-radius: 5px;
+		margin-right: 2px;
+	}
+	.scriptMenu_combineButtonCenter {
+		border-radius: 0px;
+		margin-right: 2px;
+	}
+	.scriptMenu_combineButtonRight {
+		border-top-right-radius: 5px;
+		border-bottom-right-radius: 5px;
+		
+	}
+	.scriptMenu_combineButton:hover {
+		filter: brightness(1.2);
+	}
+	.scriptMenu_beigeButton {
+		border: 1px solid #442901;
+		background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
+		box-shadow: inset 0px 2px 4px #e9b282, inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 2px black, 0px 0px 0px 1px #ce9767;
+	}
+	.scriptMenu_beigeButton:active {
+		box-shadow: inset 0px 4px 6px #442901, inset 0px 4px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 1px #ce9767;
+	}
+	.scriptMenu_greenButton {
+		border: 1px solid #1a2f04;
+		background: radial-gradient(circle, #47a41b 0%, #1a2f04 150%);
+		box-shadow: inset 0px 2px 4px #83ce26, inset 0px -4px 6px #1a2f04, 0px 0px 2px black, 0px 0px 0px 1px #ce9767;
+	}
+	.scriptMenu_greenButton:active {
+		box-shadow: inset 0px 4px 6px #1a2f04, inset 0px 4px 6px #1a2f04, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 1px #ce9767;
+	}
 	`;
 		document.head.appendChild(style);
 	}
@@ -4268,6 +4670,17 @@ const scriptMenu = new (function () {
 		closeButton.appendChild(crossClose);
 	}
 
+	const getButtonColor = (color) => {
+		const buttonColors = {
+			green: 'scriptMenu_greenButton',
+			beige: 'scriptMenu_beigeButton',
+		};
+		if (buttonColors[color]) {
+			return buttonColors[color];
+		}
+		return buttonColors['beige'];
+	}
+ 
 	this.setStatus = (text, onclick) => {
 		if (!text) {
 			this.status.classList.add('scriptMenu_statusHide');
@@ -4324,6 +4737,7 @@ const scriptMenu = new (function () {
 		main = main || this.mainMenu;
 		const button = document.createElement('div');
 		button.classList.add('scriptMenu_button');
+		button.classList.add('scriptMenu_beigeButton');
 		button.title = title;
 		button.addEventListener('click', func);
 		main.appendChild(button);
@@ -4337,6 +4751,47 @@ const scriptMenu = new (function () {
 		return button;
 	}
 
+	/**
+	 * Adding a button
+	 *
+	 * Добавление кнопки
+	 * @param {Array} buttonList
+	 */
+	this.addCombinedButton = (buttonList, main) => {
+		main = main || this.mainMenu;
+		const buttonGroup = document.createElement('div');
+		buttonGroup.classList.add('scriptMenu_buttonGroup');
+		let count = 0;
+ 
+		for(const btn of buttonList) {
+			const { text, func, title, color } = btn;
+			const button = document.createElement('div');
+			button.classList.add('scriptMenu_combineButton');
+			if (count === 0) {
+				button.classList.add('scriptMenu_combineButtonLeft');
+			} else if (count === buttonList.length - 1) {
+				button.classList.add('scriptMenu_combineButtonRight');
+			} else {
+				button.classList.add('scriptMenu_combineButtonCenter');
+			}
+			button.classList.add(getButtonColor(color));
+			button.title = title;
+			button.addEventListener('click', func);
+			buttonGroup.appendChild(button);
+ 
+			const buttonText = document.createElement('div');
+			buttonText.classList.add('scriptMenu_buttonText');
+			buttonText.innerText = text;
+			button.appendChild(buttonText);
+			this.buttons.push(button);
+			count++;
+		}
+ 
+		main.appendChild(buttonGroup);
+ 
+		return buttonGroup;
+	};
+ 
 	/**
 	 * Adding checkbox
 	 *
@@ -4431,7 +4886,11 @@ const scriptMenu = new (function () {
 	 * @param {*} value
 	 */
 	this.saveShowDetails = (value) => {
+		try {
 		localStorage.setItem('scriptMenu_showDetails', JSON.stringify(value));
+		} catch (e) {
+			console.log("¯\\_(ツ)_/¯")
+	}
 	}
 
 	/**
@@ -4441,7 +4900,12 @@ const scriptMenu = new (function () {
 	 * @returns
 	 */
 	this.loadShowDetails = () => {
-		let showDetails = localStorage.getItem('scriptMenu_showDetails');
+		let showDetails = null;
+		try {
+			showDetails = localStorage.getItem('scriptMenu_showDetails');
+		} catch (e) {
+			console.log('¯\\_(ツ)_/¯');
+		}
 
 		if (!showDetails) {
 			return {};
@@ -4845,7 +5309,7 @@ class Expedition {
 		const heroesArr = [];
 		for (let n in dataHeroes) {
 			const hero = dataHeroes[n];
-			if (hero.xp > 0 && !dataExped.useHeroes.includes(hero.id)) {
+			if (hero.power > 0 && !dataExped.useHeroes.includes(hero.id)) {
 				let heroPower = hero.power;
 				// Лара Крофт * 3
 				if (hero.id == 63 && hero.color >= 16) {
@@ -6307,7 +6771,7 @@ function hackGame() {
 	selfGame = null;
 	bindId = 1e9;
 	this.libGame = null;
-	this.doneLibLoad = () => {}
+	this.doneLibLoad = () => {};
 
 	/**
 	 * List of correspondence of used classes to their names
@@ -6368,14 +6832,12 @@ function hackGame() {
 		 * Функция 'e'
 		 */
 		bindFunc: function (a, b) {
-			if (null == b)
-				return null;
+			if (null == b) return null;
 			null == b.__id__ && (b.__id__ = bindId++);
 			var c;
-			null == a.hx__closures__ ? a.hx__closures__ = {} :
-				c = a.hx__closures__[b.__id__];
-			null == c && (c = b.bind(a), a.hx__closures__[b.__id__] = c);
-			return c
+			null == a.hx__closures__ ? (a.hx__closures__ = {}) : (c = a.hx__closures__[b.__id__]);
+			null == c && ((c = b.bind(a)), (a.hx__closures__[b.__id__] = c));
+			return c;
 		},
 	};
 
@@ -6403,7 +6865,7 @@ function hackGame() {
 				get: function () {
 					// console.log('get ' + obj.prop, this);
 					return this[obj.prop + '_'];
-				}
+				},
 			});
 		}
 	}
@@ -6436,7 +6898,13 @@ function hackGame() {
 	this.BattleCalc = function (battleData, battleConfig, callback) {
 		// battleConfig = battleConfig || getBattleType(battleData.type)
 		if (!Game.BattlePresets) throw Error('Use connectGame');
-		battlePresets = new Game.BattlePresets(battleData.progress, !1, !0, Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](), !1);
+		battlePresets = new Game.BattlePresets(
+			battleData.progress,
+			!1,
+			!0,
+			Game.DataStorage[getFn(Game.DataStorage, 24)][getF(Game.BattleConfigStorage, battleConfig)](),
+			!1
+		);
 		let battleInstantPlay;
 		if (battleData.progress?.length > 1) {
 			battleInstantPlay = new Game.MultiBattleInstantReplay(battleData, battlePresets);
@@ -6455,7 +6923,7 @@ function hackGame() {
 				const battleLog = Game.BattleLogEncoder.read(new Game.BattleLogReader(battleResult));
 				battleLogs.push(battleLog);
 				const maxTime = Math.max(...battleLog.map((e) => (e.time < timeLimit && e.time !== 168.8 ? e.time : 0)));
-				battleTimer += getTimer(maxTime)
+				battleTimer += getTimer(maxTime);
 				battleTime += maxTime;
 			}
 			callback({
@@ -6468,7 +6936,7 @@ function hackGame() {
 		});
 		});
 		battleInstantPlay.start();
-	}
+	};
 
 	/**
 	 * Returns a function with the specified name from the class
@@ -6481,7 +6949,7 @@ function hackGame() {
 	 */
 	function getF(classF, nameF, pos) {
 		pos = pos || false;
-		let prop = Object.entries(classF.prototype.__properties__)
+		let prop = Object.entries(classF.prototype.__properties__);
 		if (!pos) {
 			return prop.filter((e) => e[1] == nameF).pop()[0];
 		} else {
@@ -6498,7 +6966,7 @@ function hackGame() {
 	 * @returns
 	 */
 	function getFnP(classF, nameF) {
-		let prop = Object.entries(classF.__properties__)
+		let prop = Object.entries(classF.__properties__);
 		return prop.filter((e) => e[1] == nameF).pop()[0];
 	}
 
@@ -6873,7 +7341,7 @@ function hackGame() {
 				console.error(error);
 			}
 		}
-	}
+	};
 
 	/**
 	 * Returns the game object
@@ -6882,7 +7350,7 @@ function hackGame() {
 	 */
 	this.getSelfGame = function () {
 		return selfGame;
-	}
+	};
 
 	/**
 	 * Updates game data
@@ -6890,11 +7358,11 @@ function hackGame() {
 	 * Обновляет данные игры
 	 */
 	this.refreshGame = function () {
-		(new Game.NextDayUpdatedManager)[getProtoFn(Game.NextDayUpdatedManager, 5)]();
+		new Game.NextDayUpdatedManager()[getProtoFn(Game.NextDayUpdatedManager, 5)]();
 		try {
 			cheats.refreshInventory();
 		} catch (e) { }
-	}
+	};
 
 	/**
 	 * Update inventory
@@ -6902,13 +7370,13 @@ function hackGame() {
 	 * Обновляет инвентарь
 	 */
 	this.refreshInventory = async function () {
-		const GM_INST = getFnP(Game.GameModel, "get_instance");
+		const GM_INST = getFnP(Game.GameModel, 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
-		const P_24 = getProtoFn(selfGame["game.model.user.Player"], 24);
+		const P_24 = getProtoFn(selfGame['game.model.user.Player'], 24);
 		const Player = Game.GameModel[GM_INST]()[GM_0];
-		Player[P_24] = new selfGame["game.model.user.inventory.PlayerInventory"]
-		Player[P_24].init(await Send({calls:[{name:"inventoryGet",args:{},ident:"body"}]}).then(e => e.results[0].result.response))
-	}
+		Player[P_24] = new selfGame['game.model.user.inventory.PlayerInventory']();
+		Player[P_24].init(await Send({ calls: [{ name: 'inventoryGet', args: {}, ident: 'body' }] }).then((e) => e.results[0].result.response));
+	};
 	this.updateInventory = function (reward) {
 		const GM_INST = getFnP(Game.GameModel, 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
@@ -6938,15 +7406,15 @@ function hackGame() {
 	 * MISSION, ARENA, GRAND, CHEST, SKILLS, SOCIAL_GIFT, CLAN, ENCHANT, TOWER, RATING, CHALLENGE, BOSS, CHAT, CLAN_DUNGEON, CLAN_CHEST, TITAN_GIFT, CLAN_RAID, ASGARD, HERO_ASCENSION, ROLE_ASCENSION, ASCENSION_CHEST, TITAN_MISSION, TITAN_ARENA, TITAN_ARTIFACT, TITAN_ARTIFACT_CHEST, TITAN_VALLEY, TITAN_SPIRITS, TITAN_ARTIFACT_MERCHANT, TITAN_ARENA_HALL_OF_FAME, CLAN_PVP, CLAN_PVP_MERCHANT, CLAN_GLOBAL_PVP, CLAN_GLOBAL_PVP_TITAN, ARTIFACT, ZEPPELIN, ARTIFACT_CHEST, ARTIFACT_MERCHANT, EXPEDITIONS, SUBSCRIPTION, NY2018_GIFTS, NY2018_TREE, NY2018_WELCOME, ADVENTURE, ADVENTURESOLO, SANCTUARY, PET_MERCHANT, PET_LIST, PET_SUMMON, BOSS_RATING_EVENT, BRAWL
 	 */
 	this.goNavigtor = function (windowName) {
-		let mechanicStorage = selfGame["game.data.storage.mechanic.MechanicStorage"];
+		let mechanicStorage = selfGame['game.data.storage.mechanic.MechanicStorage'];
 		let window = mechanicStorage[windowName];
-		let event = new selfGame["game.mediator.gui.popup.PopupStashEventParams"];
+		let event = new selfGame['game.mediator.gui.popup.PopupStashEventParams']();
 		let Game = selfGame['Game'];
-		let navigator = getF(Game, "get_navigator")
-		let navigate = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 20)
+		let navigator = getF(Game, 'get_navigator');
+		let navigate = getProtoFn(selfGame['game.screen.navigator.GameNavigator'], 20);
 		let instance = getFnP(Game, 'get_instance');
 		Game[instance]()[navigator]()[navigate](window, event);
-	}
+	};
 
 	/**
 	 * Move to the sanctuary cheats.goSanctuary()
@@ -6954,8 +7422,13 @@ function hackGame() {
 	 * Переместиться в святилище cheats.goSanctuary()
 	 */
 	this.goSanctuary = () => {
-		this.goNavigtor("SANCTUARY");
-	}
+		this.goNavigtor('SANCTUARY');
+	};
+
+	/** Перейти в Долину титанов */
+	this.goTitanValley = () => {
+		this.goNavigtor('TITAN_VALLEY');
+	};
 
 	/**
 	 * Go to Guild War
@@ -6963,29 +7436,37 @@ function hackGame() {
 	 * Перейти к Войне Гильдий
 	 */
 	this.goClanWar = function() {
-		let instance = getFnP(Game.GameModel, 'get_instance')
+		let instance = getFnP(Game.GameModel, 'get_instance');
 		let player = Game.GameModel[instance]().A;
-		let clanWarSelect = selfGame["game.mechanics.cross_clan_war.popup.selectMode.CrossClanWarSelectModeMediator"];
+		let clanWarSelect = selfGame['game.mechanics.cross_clan_war.popup.selectMode.CrossClanWarSelectModeMediator'];
 		new clanWarSelect(player).open();
-	}
+	};
 
+	/** Перейти к Острову гильдии */
+	this.goClanIsland = function () {
+		let instance = getFnP(Game.GameModel, 'get_instance');
+		let player = Game.GameModel[instance]().A;
+		let clanIslandSelect = selfGame['game.view.gui.ClanIslandPopupMediator'];
+		new clanIslandSelect(player).open();
+	};
+ 
 	/**
 	 * Go to BrawlShop
 	 *
 	 * Переместиться в BrawlShop
 	 */
 	this.goBrawlShop = () => {
-		const instance = getFnP(Game.GameModel, 'get_instance')
-		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
-		const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
-		const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
-		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+		const instance = getFnP(Game.GameModel, 'get_instance');
+		const P_36 = getProtoFn(selfGame['game.model.user.Player'], 36);
+		const PSD_0 = getProtoFn(selfGame['game.model.user.shop.PlayerShopData'], 0);
+		const IM_0 = getProtoFn(selfGame['haxe.ds.IntMap'], 0);
+		const PSDE_4 = getProtoFn(selfGame['game.model.user.shop.PlayerShopDataEntry'], 4);
 
 		const player = Game.GameModel[instance]().A;
 		const shop = player[P_36][PSD_0][IM_0][1038][PSDE_4];
-		const shopPopup = new selfGame["game.mechanics.brawl.mediator.BrawlShopPopupMediator"](player, shop)
-		shopPopup.open(new selfGame["game.mediator.gui.popup.PopupStashEventParams"])
-	}
+		const shopPopup = new selfGame['game.mechanics.brawl.mediator.BrawlShopPopupMediator'](player, shop);
+		shopPopup.open(new selfGame['game.mediator.gui.popup.PopupStashEventParams']());
+	};
 
 	/**
 	 * Returns all stores from game data
@@ -6993,14 +7474,14 @@ function hackGame() {
 	 * Возвращает все магазины из данных игры
 	 */
 	this.getShops = () => {
-		const instance = getFnP(Game.GameModel, 'get_instance')
-		const P_36 = getProtoFn(selfGame["game.model.user.Player"], 36);
-		const PSD_0 = getProtoFn(selfGame["game.model.user.shop.PlayerShopData"], 0);
-		const IM_0 = getProtoFn(selfGame["haxe.ds.IntMap"], 0);
+		const instance = getFnP(Game.GameModel, 'get_instance');
+		const P_36 = getProtoFn(selfGame['game.model.user.Player'], 36);
+		const PSD_0 = getProtoFn(selfGame['game.model.user.shop.PlayerShopData'], 0);
+		const IM_0 = getProtoFn(selfGame['haxe.ds.IntMap'], 0);
  
 		const player = Game.GameModel[instance]().A;
 		return player[P_36][PSD_0][IM_0];
-	}
+	};
  
 	/**
 	 * Returns the store from the game data by ID
@@ -7008,11 +7489,11 @@ function hackGame() {
 	 * Возвращает магазин из данных игры по идетификатору
 	 */
 	this.getShop = (id) => {
-		const PSDE_4 = getProtoFn(selfGame["game.model.user.shop.PlayerShopDataEntry"], 4);
+		const PSDE_4 = getProtoFn(selfGame['game.model.user.shop.PlayerShopDataEntry'], 4);
 		const shops = this.getShops();
 		const shop = shops[id]?.[PSDE_4];
 		return shop;
-	}
+	};
  
 	/**
 	 * Change island map
@@ -7022,15 +7503,15 @@ function hackGame() {
 	this.changeIslandMap = (mapId = 2) => {
 		const GameInst = getFnP(selfGame['Game'], 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
-		const P_59 = getProtoFn(selfGame["game.model.user.Player"], 60);
+		const P_59 = getProtoFn(selfGame['game.model.user.Player'], 60);
 		const PSAD_31 = getProtoFn(selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData'], 31);
 		const Player = Game.GameModel[GameInst]()[GM_0];
 		Player[P_59][PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
  
-		const GN_15 = getProtoFn(selfGame["game.screen.navigator.GameNavigator"], 17)
-		const navigator = getF(selfGame['Game'], "get_navigator");
-		selfGame['Game'][GameInst]()[navigator]()[GN_15](new selfGame["game.mediator.gui.popup.PopupStashEventParams"]);
-	}
+		const GN_15 = getProtoFn(selfGame['game.screen.navigator.GameNavigator'], 17);
+		const navigator = getF(selfGame['Game'], 'get_navigator');
+		selfGame['Game'][GameInst]()[navigator]()[GN_15](new selfGame['game.mediator.gui.popup.PopupStashEventParams']());
+	};
  
 	/**
 	 * Game library availability tracker
@@ -7044,7 +7525,7 @@ function hackGame() {
 			} else {
 				checkLibLoad();
 			}
-		}, 100)
+		}, 100);
 	}
 
 	/**
@@ -7062,7 +7543,7 @@ function hackGame() {
 				const levels = b.raw.seasonAdventure.level;
 				for (const id in levels) {
 					const level = levels[id];
-					level.clientData.graphics.fogged = level.clientData.graphics.visible
+					level.clientData.graphics.fogged = level.clientData.graphics.visible;
 				}
 				const adv = b.raw.seasonAdventure.list[1];
 				adv.clientData.asset = 'dialog_season_adventure_tiles';
@@ -7070,14 +7551,14 @@ function hackGame() {
 				console.warn(e);
 			}
 			originalStartFunc.call(this, a, b, c);
+		};
 		}
-	}
 
 	this.LibLoad = function() {
 		return new Promise((e) => {
 			this.doneLibLoad = e;
 		});
-	}
+	};
  
 	/**
 	 * Returns the value of a language constant
@@ -7088,7 +7569,7 @@ function hackGame() {
 	 */
 	this.translate = function (langConst) {
 		return Game.Translate.translate(langConst);
-	}
+	};
 
 	connectGame();
 	checkLibLoad();
