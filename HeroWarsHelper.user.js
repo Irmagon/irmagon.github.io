@@ -4544,7 +4544,7 @@ const scriptMenu = new (function () {
 			user-select: none;
 			border-radius: 5px;
 			cursor: pointer;
-			padding: 1px 10px 5px;
+			padding: 1px 0px 5px;
 			margin: 4px;
 			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
 			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
@@ -4597,15 +4597,14 @@ const scriptMenu = new (function () {
 	.scriptMenu_buttonGroup {
 		display: flex;
 		justify-content: center;
- 
 		user-select: none;
 		cursor: pointer;
-		padding: 0;
+		padding: 4;
 		margin: 3px 0;
 	}
 	.scriptMenu_combineButton {
-		width: 100%;
-		padding: 5px 8px 8px;
+		width: 60%;
+		padding: 5px 8px 0px;
 		
 	}
 	.scriptMenu_combineButtonLeft {
