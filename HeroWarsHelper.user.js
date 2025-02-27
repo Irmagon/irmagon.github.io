@@ -86,7 +86,7 @@ this.isTimeBetweenNewDays = function () {
 	}
 	return false;
 };
- 
+
 function getUserInfo() {
 	return userInfo;
 }
@@ -102,7 +102,7 @@ const original = {
 	SendWebSocket: WebSocket.prototype.send,
 	fetch: fetch,
 };
- 
+
 // Sentry blocking
 // Блокировка наблюдателя
 this.fetch = function (url, options) {
@@ -125,7 +125,7 @@ this.fetch = function (url, options) {
 		}
 		/**
 		 * Mock response for blocked URL
-		 * 
+		 *
 		 * Мокаем ответ для заблокированного URL
 		 */
 		const mockResponse = new Response('Custom blocked response', {
@@ -142,7 +142,7 @@ this.fetch = function (url, options) {
 		return original.fetch.apply(this, arguments);
 	}
 };
- 
+
 /**
  * Decoder for converting byte data to JSON string
  *
@@ -1235,11 +1235,30 @@ const buttons = {
 			},
 		],
 	},
-	goToSanctuary: {
-		name: I18N('SANCTUARY'),
-		title: I18N('SANCTUARY_TITLE'),
-		func: cheats.goSanctuary,
+
+	testAdventure: {
+		isCombine: true,
+		combineList: [
+			{
+				text: I18N('ADVENTURE'),
+				func: () => {
+					testAdventure();
+				},
+				title: I18N('ADVENTURE_TITLE'),
+			},
+			{
+				text: '>>',
+				func: cheats.goSanctuary,
+				title: I18N('SANCTUARY_TITLE'),
+				color: 'green',
+			},
+		],
 	},
+//    goToSanctuary: {
+//		name: I18N('SANCTUARY'),
+//		title: I18N('SANCTUARY_TITLE'),
+//		func: cheats.goSanctuary,
+//	},
 	goToClanWar: {
 		name: I18N('GUILD_WAR'),
 		title: I18N('GUILD_WAR_TITLE'),
@@ -1254,11 +1273,6 @@ const buttons = {
                     msg: I18N('EXPEDITIONS'),
                     result: checkExpedition,
                     title: I18N('EXPEDITIONS_TITLE'),
-                },
-                {
-                    msg: I18N('ADVENTURE'),
-                    result: () => {testAdventure();},
-                    title: I18N('ADVENTURE_TITLE'),
                 },
                 {
                     msg: I18N('DAILY_QUESTS'),
@@ -1556,34 +1570,24 @@ const invasionInfo = {
 	bossLvl: 130,
 };
 const invasionDataPacks = {
-	130: { buff: 0, pet: 6004, heroes: [58, 48, 16, 65, 59], favor: { 16: 6004, 48: 6001, 58: 6002, 59: 6005, 65: 6000 } },
-	140: { buff: 0, pet: 6006, heroes: [1, 4, 13, 58, 65], favor: { 1: 6001, 4: 6006, 13: 6002, 58: 6005, 65: 6000 } },
-	150: { buff: 0, pet: 6006, heroes: [1, 12, 17, 21, 65], favor: { 1: 6001, 12: 6003, 17: 6006, 21: 6002, 65: 6000 } },
-	160: { buff: 0, pet: 6008, heroes: [12, 21, 34, 58, 65], favor: { 12: 6003, 21: 6006, 34: 6008, 58: 6002, 65: 6001 } },
-	170: { buff: 0, pet: 6005, heroes: [33, 12, 65, 21, 4], favor: { 4: 6001, 12: 6003, 21: 6006, 33: 6008, 65: 6000 } },
-	180: { buff: 20, pet: 6009, heroes: [58, 13, 5, 17, 65], favor: { 5: 6006, 13: 6003, 58: 6005 } },
-	190: { buff: 0, pet: 6006, heroes: [1, 12, 21, 36, 65], favor: { 1: 6004, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
-	200: { buff: 0, pet: 6006, heroes: [12, 1, 13, 2, 65], favor: { 2: 6001, 12: 6003, 13: 6006, 65: 6000 } },
-	210: { buff: 15, pet: 6005, heroes: [12, 21, 33, 58, 65], favor: { 12: 6003, 21: 6006, 33: 6008, 58: 6005, 65: 6001 } },
-	220: { buff: 5, pet: 6006, heroes: [58, 13, 7, 34, 65], favor: { 7: 6002, 13: 6008, 34: 6006, 58: 6005, 65: 6001 } },
-	230: { buff: 35, pet: 6005, heroes: [5, 7, 13, 58, 65], favor: { 5: 6006, 7: 6003, 13: 6002, 58: 6005, 65: 6000 } },
-	240: { buff: 0, pet: 6005, heroes: [12, 58, 1, 36, 65], favor: { 1: 6006, 12: 6003, 36: 6005, 65: 6001 } },
-	250: { buff: 15, pet: 6005, heroes: [12, 36, 4, 16, 65], favor: { 12: 6003, 16: 6004, 36: 6005, 65: 6001 } },
-	260: { buff: 15, pet: 6005, heroes: [48, 12, 36, 65, 4], favor: { 4: 6006, 12: 6003, 36: 6005, 48: 6000, 65: 6007 } },
-	270: { buff: 35, pet: 6005, heroes: [12, 58, 36, 4, 65], favor: { 4: 6006, 12: 6003, 36: 6005 } },
-	280: { buff: 80, pet: 6005, heroes: [21, 36, 48, 7, 65], favor: { 7: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6000 } },
-	290: { buff: 95, pet: 6008, heroes: [12, 21, 36, 35, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 65: 6007 } },
-	300: { buff: 25, pet: 6005, heroes: [12, 13, 4, 34, 65], favor: { 4: 6006, 12: 6003, 13: 6007, 34: 6002 } },
-	310: { buff: 45, pet: 6005, heroes: [12, 21, 58, 33, 65], favor: { 12: 6003, 21: 6006, 33: 6002, 58: 6005, 65: 6007 } },
-	320: { buff: 70, pet: 6005, heroes: [12, 48, 2, 6, 65], favor: { 6: 6005, 12: 6003 } },
-	330: { buff: 70, pet: 6005, heroes: [12, 21, 36, 5, 65], favor: { 5: 6002, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
-	340: { buff: 55, pet: 6009, heroes: [12, 36, 13, 6, 65], favor: { 6: 6005, 12: 6003, 13: 6002, 36: 6006, 65: 6000 } },
-	350: { buff: 100, pet: 6005, heroes: [12, 21, 58, 34, 65], favor: { 12: 6003, 21: 6006, 58: 6005 } },
-	360: { buff: 85, pet: 6007, heroes: [12, 21, 36, 4, 65], favor: { 4: 6006, 12: 6003, 21: 6002, 36: 6005 } },
-	370: { buff: 90, pet: 6008, heroes: [12, 21, 36, 13, 65], favor: { 12: 6003, 13: 6007, 21: 6006, 36: 6005, 65: 6001 } },
-	380: { buff: 165, pet: 6005, heroes: [12, 33, 36, 4, 65], favor: { 4: 6001, 12: 6003, 33: 6006 } },
-	390: { buff: 235, pet: 6005, heroes: [21, 58, 48, 2, 65], favor: { 2: 6005, 21: 6002 } },
-	400: { buff: 125, pet: 6006, heroes: [12, 21, 36, 48, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6007 } },
+    130: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: { 9: 6006 } },
+    140: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: {} },
+    150: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: {} },
+    160: { buff: 0, pet: 6005, heroes: [64, 66, 13, 9, 4], favor: { 4: 6006, 9: 6004, 13: 6003, 64: 6005, 66: 6002 } },
+    170: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: { 1: 6006, 9: 6005, 10: 6008, 62: 6003, 66: 6002 } },
+    180: { buff: 0, pet: 6006, heroes: [62, 10, 2, 4, 66], favor: { 2: 6005, 4: 6001, 10: 6006, 62: 6003 } },
+    190: { buff: 40, pet: 6005, heroes: [9, 2, 43, 45, 66], favor: { 9: 6005, 45: 6002, 66: 6006 } },
+    200: { buff: 20, pet: 6005, heroes: [9, 62, 1, 48, 66], favor: { 9: 6007, 62: 6003 } },
+    210: { buff: 10, pet: 6008, heroes: [9, 10, 4, 32, 66], favor: { 9: 6005, 10: 6003, 32: 6007, 66: 6006 } },
+    220: { buff: 20, pet: 6004, heroes: [9, 1, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6002 } },
+    230: { buff: 65, pet: 6008, heroes: [9, 62, 10, 43, 66], favor: { 9: 6005, 43: 6006, 66: 6002 } },
+    240: { buff: 60, pet: 6008, heroes: [9, 7, 40, 48, 66], favor: { 7: 6003, 9: 6005, 40: 6004, 48: 6000, 66: 6006 } },
+    250: { buff: 75, pet: 6005, heroes: [9, 43, 56, 45, 66], favor: { 9: 6005, 43: 6006, 66: 6007 } },
+    260: { buff: 85, pet: 6004, heroes: [9, 47, 2, 43, 66], favor: { 2: 6000, 43: 6006 } },
+    270: { buff: 185, pet: 6008, heroes: [9, 1, 13, 43, 66], favor: { 13: 6003, 43: 6006 } },
+    280: { buff: 135, pet: 6005, heroes: [9, 40, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6008 } },
+    290: { buff: 60, pet: 6005, heroes: [9, 10, 43, 56, 66], favor: { 9: 6005, 10: 6002, 43: 6006 } },
+    300: { buff: 75, pet: 6006, heroes: [9, 62, 1, 45, 66], favor: { 1: 6006, 9: 6005, 45: 6002, 66: 6007 } },
 };
 /**
  * The name of the function of the beginning of the battle
@@ -1613,7 +1617,7 @@ let isCancalBattle = true;
 function setIsCancalBattle(value) {
 	isCancalBattle = value;
 }
- 
+
 /**
  * Certificator of the last open nesting doll
  *
@@ -1943,7 +1947,7 @@ XMLHttpRequest.prototype.send = async function (sourceData) {
 					console.log(oldReady);
 					console.error('Error in oldReady:', e);
 			}
- 
+
 			}
 		}
 	}
@@ -2052,7 +2056,7 @@ async function checkChangeSend(sourceData, tempData) {
 				call.name == 'clanRaid_endNodeBattle') &&
 				isCancalBattle) {
 				nameFuncEndBattle = call.name;
- 
+
 				if (isChecked('tryFixIt_v2') &&
 					!call.args.result.win &&
 					(call.name == 'brawl_endBattle' ||
@@ -2076,7 +2080,7 @@ async function checkChangeSend(sourceData, tempData) {
 							endTime = cloneBattle.endTime;
 						}
 						const result = await bFix.start(cloneBattle.endTime, 150);
- 
+
 						if (result.result.win) {
 							call.args.result = result.result;
 							call.args.progress = result.progress;
@@ -2097,7 +2101,7 @@ async function checkChangeSend(sourceData, tempData) {
 						console.error(error);
 					}
 				}
- 
+
 				if (!call.args.result.win) {
 					let resultPopup = false;
 					if (call.name == 'adventure_endBattle' ||
@@ -2175,13 +2179,13 @@ async function checkChangeSend(sourceData, tempData) {
 				const bossDamage = call.args.progress[0].defenders.heroes[1].extra;
 				let maxDamage = bossDamage.damageTaken + bossDamage.damageTakenNextLevel;
 				const lastDamage = maxDamage;
- 
+
 				const testFunc = [];
- 
+
 				if (testFuntions.masterFix) {
 					testFunc.push({ msg: 'masterFix', isInput: true, default: 100 });
 				}
- 
+
 				const resultPopup = await popup.confirm(
 					`${I18N('MSG_YOU_APPLIED')} ${lastDamage.toLocaleString()} ${I18N('MSG_DAMAGE')}.`,
 					[
@@ -2210,7 +2214,7 @@ async function checkChangeSend(sourceData, tempData) {
 						const bFix = new BossFixBattle(cloneBattle);
 						const result = await bFix.start(endTime, 300);
 						console.log(result);
- 
+
 						let msgResult = I18N('DAMAGE_NO_FIXED', {
 							lastDamage: lastDamage.toLocaleString()
 						});
@@ -2659,7 +2663,7 @@ async function checkChangeResponse(response) {
 			}
 			/**
 			 * Hiding donation offers 4
-			 * Скрываем предложения доната 4 
+			 * Скрываем предложения доната 4
 			 */
 			if (call.result?.specialOffers) {
 				const offers = call.result.specialOffers;
@@ -2968,15 +2972,15 @@ async function checkChangeResponse(response) {
 							}
 						}
 						const responses = await Send({ calls }).then((e) => e.results.map((r) => r.result.response).flat());
- 
+
 						for (const loot of responses) {
 							const [count, result] = Object.entries(loot).pop();
 							countLootBox += +count;
- 
+
 							mergeItemsObj(lootBox, result);
 						}
 						isChange = true;
- 
+
 						this.onReadySuccess = () => {
 							cheats.updateInventory({ consumable: deleteItems });
 							cheats.refreshInventory();
@@ -3142,16 +3146,16 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['invasion_getInfo']) {
 				const r = call.result.response;
 				if (r?.actions?.length) {
-				const boss = r.actions.find((e) => e.payload.id === 217);
+					const boss = r.actions.find((e) => e.payload.id === 225);
 				invasionInfo.buff = r.buffAmount;
 				invasionInfo.bossLvl = boss.payload.level;
 				if (isChecked('tryFixIt_v2')) {
 					const pack = invasionDataPacks[invasionInfo.bossLvl];
 					setProgress(
-						I18N('INVASION_BOSS_BUFF', { 
-							bossLvl: invasionInfo.bossLvl, 
-							needBuff: pack.buff, 
-							haveBuff: invasionInfo.buff 
+						I18N('INVASION_BOSS_BUFF', {
+							bossLvl: invasionInfo.bossLvl,
+							needBuff: pack.buff,
+							haveBuff: invasionInfo.buff
 						}),
 						false
 					);
@@ -3374,7 +3378,7 @@ this.getSignature = function(headers, data) {
 
 	return md5(sign.signature);
 }
- 
+
 class HotkeyManager {
 	constructor() {
 		if (HotkeyManager.instance) {
@@ -3384,7 +3388,7 @@ class HotkeyManager {
 		document.addEventListener('keydown', this.handleKeyDown.bind(this));
 		HotkeyManager.instance = this;
 	}
- 
+
 	handleKeyDown(event) {
 		const key = event.key.toLowerCase();
 		const mods = {
@@ -3392,14 +3396,14 @@ class HotkeyManager {
 			alt: event.altKey,
 			shift: event.shiftKey,
 		};
- 
+
 		this.hotkeys.forEach((hotkey) => {
 			if (hotkey.key === key && hotkey.ctrl === mods.ctrl && hotkey.alt === mods.alt && hotkey.shift === mods.shift) {
 				hotkey.callback(hotkey);
 			}
 		});
 	}
- 
+
 	add(key, opt = {}, callback) {
 		this.hotkeys.push({
 			key: key.toLowerCase(),
@@ -3409,7 +3413,7 @@ class HotkeyManager {
 			shift: opt.shift || false,
 		});
 	}
- 
+
 	remove(key, opt = {}) {
 		this.hotkeys = this.hotkeys.filter((hotkey) => {
 			return !(
@@ -3420,7 +3424,7 @@ class HotkeyManager {
 			);
 		});
 	}
- 
+
 	static getInst() {
 		if (!HotkeyManager.instance) {
 			new HotkeyManager();
@@ -3428,7 +3432,7 @@ class HotkeyManager {
 		return HotkeyManager.instance;
 	}
 }
- 
+
 class MouseClicker {
 	constructor(element) {
 		if (MouseClicker.instance) {
@@ -3446,23 +3450,23 @@ class MouseClicker {
 		this.nextTimeoutId = 1;
 		MouseClicker.instance = this;
 	}
- 
+
 	handleMouseMove(event) {
 		this.mouse.clientX = event.clientX;
 		this.mouse.clientY = event.clientY;
 	}
- 
+
 	click(options) {
 		options = options || this.mouse;
 		this.element.dispatchEvent(new MouseEvent('mousedown', options));
 		this.element.dispatchEvent(new MouseEvent('mouseup', options));
 	}
- 
+
 	start(interval = 1000, clickCount = Infinity) {
 		const currentMouse = { ...this.mouse };
 		const timeoutId = this.nextTimeoutId++;
 		let count = 0;
- 
+
 		const clickTimeout = () => {
 			this.click(currentMouse);
 			count++;
@@ -3472,28 +3476,28 @@ class MouseClicker {
 				delete this.clickInfo[timeoutId];
 			}
 		};
- 
+
 		this.clickInfo[timeoutId] = {
 			timeout: setTimeout(clickTimeout, interval),
 			count: clickCount,
 		};
 		return timeoutId;
 	}
- 
+
 	stop(timeoutId) {
 		if (this.clickInfo[timeoutId]) {
 			clearTimeout(this.clickInfo[timeoutId].timeout);
 			delete this.clickInfo[timeoutId];
 		}
 	}
- 
+
 	stopAll() {
 		for (const timeoutId in this.clickInfo) {
 			clearTimeout(this.clickInfo[timeoutId].timeout);
 		}
 		this.clickInfo = {};
 	}
- 
+
 	static getInst(element) {
 		if (!MouseClicker.instance) {
 			new MouseClicker(element);
@@ -3501,7 +3505,7 @@ class MouseClicker {
 		return MouseClicker.instance;
 	}
 }
- 
+
 let extintionsList = [];
 /**
  * Creates an interface
@@ -3554,7 +3558,7 @@ function addExtentionName(name, ver, author) {
 		author,
 	});
 }
- 
+
 function addControls() {
 	createInterface();
 	const checkboxDetails = scriptMenu.addDetails(I18N('SETTINGS'));
@@ -3737,8 +3741,8 @@ function setProgress(text, hide, onclick) {
 function addProgress(text) {
 	scriptMenu.addStatus(text);
 }
- 
-/** 
+
+/**
  * Returns the timer value depending on the subscription
  *
  * Возвращает значение таймера в зависимости от подписки
@@ -3756,7 +3760,7 @@ function startSlave() {
 	const sFix = new slaveFixBattle();
 	sFix.wsStart();
 }
- 
+
 this.testFuntions = {
 	hideProgress,
 	setProgress,
@@ -3764,7 +3768,7 @@ this.testFuntions = {
 	masterFix: false,
 	startSlave,
 };
- 
+
 this.HWHFuncs = {
 	send,
 	I18N,
@@ -3781,7 +3785,7 @@ this.HWHFuncs = {
 	setIsCancalBattle,
 	random,
 };
- 
+
 this.HWHClasses = {
 	checkChangeSend,
 	checkChangeResponse,
@@ -3805,7 +3809,7 @@ class Caller {
 	static globalHooks = {
 		onError: null,
 	};
- 
+
 	constructor(calls = null) {
 		this.calls = [];
 		this.results = {};
@@ -3813,7 +3817,7 @@ class Caller {
 			this.add(calls);
 		}
 	}
- 
+
 	static setGlobalHook(event, callback) {
 		if (this.globalHooks[event] !== undefined) {
 			this.globalHooks[event] = callback;
@@ -3821,13 +3825,13 @@ class Caller {
 			throw new Error(`Unknown event: ${event}`);
 		}
 	}
- 
+
 	addCall(call) {
 		const { name = call, args = {} } = typeof call === 'object' ? call : { name: call };
 		this.calls.push({ name, args });
 		return this;
 	}
- 
+
 	add(name) {
 		if (Array.isArray(name)) {
 			name.forEach((call) => this.addCall(call));
@@ -3836,18 +3840,18 @@ class Caller {
 		}
 		return this;
 	}
- 
+
 	handleError(error) {
 		const errorName = error.name;
 		const errorDescription = error.description;
- 
+
 		if (Caller.globalHooks.onError) {
 			const shouldThrow = Caller.globalHooks.onError(error);
 			if (shouldThrow === false) {
 				return;
 			}
 		}
- 
+
 		if (error.call) {
 			const callInfo = error.call;
 			throw new Error(`${errorName} in ${callInfo.name}: ${errorDescription}\n` + `Args: ${JSON.stringify(callInfo.args)}\n`);
@@ -3857,30 +3861,30 @@ class Caller {
 			throw new Error(`Unknown error: ${errorName} - ${errorDescription}`);
 		}
 	}
- 
+
 	async send() {
 		if (!this.calls.length) {
 			throw new Error('No calls to send.');
 		}
- 
+
 		const identToNameMap = {};
 		const callsWithIdent = this.calls.map((call, index) => {
 			const ident = this.calls.length === 1 ? 'body' : `group_${index}_body`;
 			identToNameMap[ident] = call.name;
 			return { ...call, ident };
 		});
- 
+
 		try {
 			const response = await Send({ calls: callsWithIdent });
- 
+
 			if (response.error) {
 				this.handleError(response.error);
 			}
- 
+
 			if (!response.results) {
 				throw new Error('Invalid response format: missing "results" field');
 			}
- 
+
 			response.results.forEach((result) => {
 				const name = identToNameMap[result.ident];
 				if (!this.results[name]) {
@@ -3893,12 +3897,12 @@ class Caller {
 		}
 		return this;
 	}
- 
+
 	result(name, forceArray = false) {
 		const results = name ? this.results[name] || [] : Object.values(this.results).flat();
 		return forceArray || results.length !== 1 ? results : results[0];
 	}
- 
+
 	async execute(name) {
 		try {
 			await this.send();
@@ -3907,20 +3911,20 @@ class Caller {
 			throw error;
 		}
 	}
- 
+
 	clear() {
 		this.calls = [];
 		this.results = {};
 		return this;
 	}
- 
+
 	isEmpty() {
 		return this.calls.length === 0 && Object.keys(this.results).length === 0;
 	}
 }
- 
+
 this.Caller = Caller;
- 
+
 /*
 // Примеры использования
 (async () => {
@@ -3929,7 +3933,7 @@ this.Caller = Caller;
 	// Простой вызов
 	let result = await new Caller().add('inventoryGet').execute();
 	console.log('Inventory Get Result:', result);
- 
+
 	// Сложный вызов
 	let caller = new Caller();
 	await caller
@@ -3946,12 +3950,12 @@ this.Caller = Caller;
 		.send();
 	console.log('Inventory Get Result:', caller.result('inventoryGet'));
 	console.log('Hero Get All Result:', caller.result('heroGetAll'));
- 
+
 	// Очистка всех данных
 	caller.clear();
 })();
 */
- 
+
 /**
  * Script for beautiful dialog boxes
  *
@@ -3970,7 +3974,7 @@ const popup = new (function () {
 	this.init = function () {
 		if (this.isInit) {
 			return;
-		} 
+		}
 		addStyle();
 		addBlocks();
 		addEventListeners();
@@ -4147,7 +4151,7 @@ const popup = new (function () {
 	.PopUp_button:active {
 		box-shadow: inset 0px 5px 10px, inset 0px 1px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
 	}
- 
+
 	.PopUp_text {
 		font-family: sans-serif;
 		font-stretch: condensed;
@@ -4374,7 +4378,7 @@ const popup = new (function () {
 });
 
 this.HWHFuncs.popup = popup;
- 
+
 /**
  * Script control panel
  *
@@ -4605,7 +4609,7 @@ const scriptMenu = new (function () {
 	.scriptMenu_combineButton {
 		width: 60%;
 		padding: 5px 8px 0px;
-		
+
 	}
 	.scriptMenu_combineButtonLeft {
 		border-top-left-radius: 5px;
@@ -4619,7 +4623,7 @@ const scriptMenu = new (function () {
 	.scriptMenu_combineButtonRight {
 		border-top-right-radius: 5px;
 		border-bottom-right-radius: 5px;
-		
+
 	}
 	.scriptMenu_combineButton:hover {
 		filter: brightness(1.2);
@@ -4693,7 +4697,7 @@ const scriptMenu = new (function () {
 		}
 		return buttonColors['beige'];
 	}
- 
+
 	this.setStatus = (text, onclick) => {
 		if (!text) {
 			this.status.classList.add('scriptMenu_statusHide');
@@ -4716,7 +4720,7 @@ const scriptMenu = new (function () {
 		}
 		this.status.innerHTML += text;
 	}
- 
+
 	/**
 	 * Adding a text element
 	 *
@@ -4775,7 +4779,7 @@ const scriptMenu = new (function () {
 		const buttonGroup = document.createElement('div');
 		buttonGroup.classList.add('scriptMenu_buttonGroup');
 		let count = 0;
- 
+
 		for(const btn of buttonList) {
 			const { text, func, title, color } = btn;
 			const button = document.createElement('div');
@@ -4791,7 +4795,7 @@ const scriptMenu = new (function () {
 			button.title = title;
 			button.addEventListener('click', func);
 			buttonGroup.appendChild(button);
- 
+
 			const buttonText = document.createElement('div');
 			buttonText.classList.add('scriptMenu_buttonText');
 			buttonText.innerText = text;
@@ -4799,12 +4803,12 @@ const scriptMenu = new (function () {
 			this.buttons.push(button);
 			count++;
 		}
- 
+
 		main.appendChild(buttonGroup);
- 
+
 		return buttonGroup;
 	};
- 
+
 	/**
 	 * Adding checkbox
 	 *
@@ -4980,7 +4984,7 @@ class Library {
 	getData(id) {
 		return this.data[id];
 	}
- 
+
 	setData(data) {
 		this.data = data;
 	}
@@ -5411,7 +5415,7 @@ class Expedition {
 }
 
 this.HWHClasses.Expedition = Expedition;
- 
+
 /**
  * Walkthrough of the dungeon
  *
@@ -5451,7 +5455,7 @@ function executeDungeon(resolve, reject) {
 
 	let talentMsg = '';
 	let talentMsgReward = '';
- 
+
 	callsExecuteDungeon = {
 		calls: [{
 			name: "dungeonGetInfo",
@@ -5629,7 +5633,7 @@ function executeDungeon(resolve, reject) {
 		const dungeonFloor = +dungeonInfo.floorNumber;
 		const talentFloor = +talent.floorRandValue;
 		let doorsAmount = 3 - talent.conditions.doorsAmount;
- 
+
 		if (dungeonFloor === talentFloor && (!doorsAmount || !talent.conditions?.farmedDoors[dungeonFloor])) {
 			const reward = await Send({
 				calls: [
@@ -5646,7 +5650,7 @@ function executeDungeon(resolve, reject) {
 		}
 		talentMsg = `<br>TMNT Talent: ${doorsAmount}/3 ${talentMsgReward}<br>`;
 	}
- 
+
 	function processingPromises(results) {
 		let selectBattle = results[0];
 		if (results.length < 2) {
@@ -5847,7 +5851,7 @@ function executeDungeon(resolve, reject) {
 }
 
 this.HWHClasses.executeDungeon = executeDungeon;
- 
+
 /**
  * Passing the tower
  *
@@ -6278,7 +6282,7 @@ function executeTower(resolve, reject) {
 			args: {},
 			ident: 'group_' + ++n + '_body',
 		});
- 
+
 		send(JSON.stringify(fullSkipTowerCall), data => {
 			for (const r of data.results) {
 				const towerInfo = r?.result?.response;
@@ -6338,7 +6342,7 @@ function executeTower(resolve, reject) {
 }
 
 this.HWHClasses.executeTower = executeTower;
- 
+
 /**
  * Passage of the arena of the titans
  *
@@ -6778,7 +6782,7 @@ function executeTitanArena(resolve, reject) {
 }
 
 this.HWHClasses.executeTitanArena = executeTitanArena;
- 
+
 function hackGame() {
 	const self = this;
 	selfGame = null;
@@ -7437,7 +7441,7 @@ function hackGame() {
 	this.goSanctuary = () => {
 		this.goNavigtor('SANCTUARY');
 	};
- 
+
 	/** Перейти в Долину титанов */
 	this.goTitanValley = () => {
 		this.goNavigtor('TITAN_VALLEY');
@@ -7462,7 +7466,7 @@ function hackGame() {
 		let clanIslandSelect = selfGame['game.view.gui.ClanIslandPopupMediator'];
 		new clanIslandSelect(player).open();
 	};
- 
+
 	/**
 	 * Go to BrawlShop
 	 *
@@ -7572,7 +7576,7 @@ function hackGame() {
 			this.doneLibLoad = e;
 		});
 	};
- 
+
 	/**
 	 * Returns the value of a language constant
 	 *
@@ -8066,12 +8070,12 @@ async function openRussianDolls(libId, amount) {
 		let [countLootBox, result] = Object.entries(response).pop();
 		count += +countLootBox;
 		let newCount = 0;
- 
+
 		if (result?.consumable && result.consumable[libId]) {
 			newCount = result.consumable[libId];
 			delete result.consumable[libId];
 		}
- 
+
 		mergeItemsObj(sumResult, result);
 		amount = newCount;
 	}
@@ -8094,10 +8098,10 @@ function mergeItemsObj(obj1, obj2) {
 			obj1[key] = obj2[key];
 		}
 	}
- 
+
 	return obj1;
 }
- 
+
 /**
  * Collect all mail, except letters with energy and charges of the portal
  *
@@ -8212,31 +8216,32 @@ async function justInfo() {
 		const titansLevel = +(infos[2].result.response?.tier ?? 0);
 		const titansStatus = infos[2].result.response?.status; //peace_time || battle
 
-		const sanctuaryButton = buttons['goToSanctuary'].button;
+		const sanctuaryButton = buttons['testAdventure'].button;
 		const clanWarButton = buttons['goToClanWar'].button;
 		const titansArenaButton = buttons['testTitanArena'].button;
+        const shadow = ' 0px 0px 3px 2px';
 
 		if (portalSphere.amount) {
-			sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
+			sanctuaryButton.style.boxShadow = (portalSphere.amount >= 3 ? 'red' : 'brown') + shadow;
 			sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
 		} else {
-			sanctuaryButton.style.color = '';
+			sanctuaryButton.style.boxShadow = '';
 			sanctuaryButton.title = I18N('SANCTUARY_TITLE');
 		}
 		if (clanWarMyTries && !arePointsMax) {
-			clanWarButton.style.color = 'red';
+			clanWarButton.style.filter = 'drop-shadow(red 0px 0px 2px)';
 			clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
 		} else {
-			clanWarButton.style.color = '';
+			clanWarButton.style.filter = '';
 			clanWarButton.title = I18N('GUILD_WAR_TITLE');
 		}
 
-		if (titansLevel < 7 && titansStatus == 'battle') {
+		if (titansLevel < 7 && titansStatus == 'battle') { ;
 			const partColor = Math.floor(125 * titansLevel / 7);
-			titansArenaButton.style.color = `rgb(255,${partColor},${partColor})`;
+			titansArenaButton.style.boxShadow = `rgb(255,${partColor},${partColor})` + shadow;
 			titansArenaButton.title = `${I18N('TITAN_ARENA_TITLE')}\n${titansLevel} ${I18N('LEVEL')}`;
 		} else {
-			titansArenaButton.style.color = '';
+			titansArenaButton.style.boxShadow = '';
 			titansArenaButton.title = I18N('TITAN_ARENA_TITLE');
 		}
 
@@ -9101,7 +9106,7 @@ function countdownTimer(seconds, message) {
 }
 
 this.HWHFuncs.countdownTimer = countdownTimer;
- 
+
 /** Набить килов в горниле душк */
 async function bossRatingEventSouls() {
 	const data = await Send({
@@ -9518,14 +9523,14 @@ async function farmBattlePass() {
 			{ name: 'battlePass_getSpecial', args: {}, ident: 'getSpecial' },
 		],
 	}).then((e) => [{...e.results[0].result.response?.battlePass, gold: true}, ...Object.values(e.results[1].result.response)]);
- 
+
 	const calls = passes.map(p => battlePassProcess(p)).flat()
- 
+
 	if (!calls.length) {
 		setProgress(I18N('NOTHING_TO_COLLECT'));
 		return;
 	}
- 
+
 	let results = await Send({calls});
 	if (results.error) {
 		console.log(results.error);
@@ -9835,7 +9840,7 @@ function executeRaidNodes(resolve, reject) {
 }
 
 this.HWHClasses.executeRaidNodes = executeRaidNodes;
- 
+
 /**
  * Asgard Boss Attack Replay
  *
@@ -9919,16 +9924,16 @@ function executeBossBattle(resolve, reject) {
 }
 
 this.HWHClasses.executeBossBattle = executeBossBattle;
- 
+
 class FixBattle {
 	minTimer = 1.3;
 	maxTimer = 15.3;
- 
+
 	constructor(battle, isTimeout = true) {
 		this.battle = structuredClone(battle);
 		this.isTimeout = isTimeout;
 	}
- 
+
 	timeout(callback, timeout) {
 		if (this.isTimeout) {
 			this.worker.postMessage(timeout);
@@ -9937,16 +9942,16 @@ class FixBattle {
 			callback();
 		}
 	}
- 
+
 	randTimer() {
 		return Math.random() * (this.maxTimer - this.minTimer + 1) + this.minTimer;
 	}
- 
+
 	setAvgTime(startTime) {
 		this.fixTime += Date.now() - startTime;
 		this.avgTime = this.fixTime / this.count;
 	}
- 
+
 	init() {
 		this.fixTime = 0;
 		this.lastTimer = 0;
@@ -9975,7 +9980,7 @@ class FixBattle {
 			)
 		);
 	}
- 
+
 	async start(endTime = Date.now() + 6e4, maxCount = 100) {
 		this.endTime = endTime;
 		this.maxCount = maxCount;
@@ -9986,13 +9991,13 @@ class FixBattle {
 			this.loop();
 		});
 	}
- 
+
 	endFix() {
 		this.bestResult.maxCount = this.count;
 		this.worker.terminate();
 		this.resolve(this.bestResult);
 	}
- 
+
 	async loop() {
 		const start = Date.now();
 		if (this.isEndLoop()) {
@@ -10016,16 +10021,16 @@ class FixBattle {
 		this.updateProgressTimer();
 		this.timeout(this.loop.bind(this), 0);
 	}
- 
+
 	isEndLoop() {
 		return this.count >= this.maxCount || this.endTime < Date.now();
 	}
- 
+
 	updateProgressTimer(index = 0) {
 		this.lastTimer = this.randTimer();
 		this.battle.progress = [{ attackers: { input: ['auto', 0, 0, 'auto', index, this.lastTimer] } }];
 	}
- 
+
 	showResult() {
 		console.log(
 			this.count,
@@ -10036,7 +10041,7 @@ class FixBattle {
 			this.bestResult.value.toLocaleString()
 		);
 	}
- 
+
 	checkResult() {
 		const { damageTaken, damageTakenNextLevel } = this.lastBattleProgress[0].defenders.heroes[1].extra;
 		this.lastBossDamage = damageTaken + damageTakenNextLevel;
@@ -10050,14 +10055,14 @@ class FixBattle {
 			};
 		}
 	}
- 
+
 	stopFix() {
 		this.endTime = 0;
 	}
 }
- 
+
 this.HWHClasses.FixBattle = FixBattle;
- 
+
 class WinFixBattle extends FixBattle {
 	checkResult() {
 		if (this.lastBattleResult.win) {
@@ -10071,26 +10076,26 @@ class WinFixBattle extends FixBattle {
 			};
 		}
 	}
- 
+
 	setWinTimer(value) {
 		this.winTimer = value;
 	}
- 
+
 	setMaxTimer(value) {
 		this.maxTimer = value;
 	}
- 
+
 	randTimer() {
 		if (this.winTimer) {
 			return this.winTimer;
 	}
 		return super.randTimer();
 	}
- 
+
 	isEndLoop() {
 		return super.isEndLoop() || this.bestResult.result?.win;
 	}
- 
+
 	showResult() {
 		console.log(
 			this.count,
@@ -10106,12 +10111,12 @@ class WinFixBattle extends FixBattle {
 		setProgress(msg, false, this.stopFix.bind(this));
 	}
 }
- 
+
 this.HWHClasses.WinFixBattle = WinFixBattle;
- 
+
 class BestOrWinFixBattle extends WinFixBattle {
 	isNoMakeWin = false;
- 
+
 	getState(result) {
 		let beforeSumFactor = 0;
 		const beforeHeroes = result.battleData.defenders[0];
@@ -10126,7 +10131,7 @@ class BestOrWinFixBattle extends WinFixBattle {
 			}
 			beforeSumFactor += factor;
 		}
- 
+
 		let afterSumFactor = 0;
 		const afterHeroes = result.progress[0].defenders.heroes;
 		for (let heroId in afterHeroes) {
@@ -10138,15 +10143,15 @@ class BestOrWinFixBattle extends WinFixBattle {
 		}
 		return 100 - Math.floor((afterSumFactor / beforeSumFactor) * 1e4) / 100;
 	}
- 
+
 	setNoMakeWin(value) {
 		this.isNoMakeWin = value;
 	}
- 
+
 	checkResult() {
 		const state = this.getState(this.lastResult);
 		console.log(state);
- 
+
 		if (state > this.bestResult.value) {
 			if (!(this.isNoMakeWin && this.lastBattleResult.win)) {
 				this.bestResult = {
@@ -10161,9 +10166,9 @@ class BestOrWinFixBattle extends WinFixBattle {
 		}
 	}
 }
- 
+
 this.HWHClasses.BestOrWinFixBattle = BestOrWinFixBattle;
- 
+
 class BossFixBattle extends FixBattle {
 	showResult() {
 		super.showResult();
@@ -10176,15 +10181,15 @@ class BossFixBattle extends FixBattle {
 		//}, 0);
 	}
 }
- 
+
 this.HWHClasses.BossFixBattle = BossFixBattle;
- 
+
 class DungeonFixBattle extends FixBattle {
 	init() {
 		super.init();
 		this.isTimeout = false;
 	}
- 
+
 	setState() {
 		const result = this.lastResult;
 		let beforeSumFactor = 0;
@@ -10200,7 +10205,7 @@ class DungeonFixBattle extends FixBattle {
 			}
 			beforeSumFactor += factor;
 		}
- 
+
 		let afterSumFactor = 0;
 		const afterHeroes = result.progress[0].attackers.heroes;
 		for (let heroId in afterHeroes) {
@@ -10212,7 +10217,7 @@ class DungeonFixBattle extends FixBattle {
 		}
 		this.lastState = Math.floor((afterSumFactor / beforeSumFactor) * 1e4) / 100;
 	}
- 
+
 	checkResult() {
 		this.setState();
 		if (this.lastResult.result.win && this.lastState > this.bestResult.value) {
@@ -10225,7 +10230,7 @@ class DungeonFixBattle extends FixBattle {
 			};
 		}
 	}
- 
+
 	showResult() {
 		console.log(
 			this.count,
@@ -10237,16 +10242,16 @@ class DungeonFixBattle extends FixBattle {
 		);
 	}
 }
- 
+
 this.HWHClasses.DungeonFixBattle = DungeonFixBattle;
- 
+
 const masterWsMixin = {
 	wsStart() {
 		const socket = new WebSocket(this.url);
- 
+
 		socket.onopen = () => {
 			console.log('Connected to server');
- 
+
 			// Пример создания новой задачи
 			const newTask = {
 				type: 'newTask',
@@ -10256,16 +10261,16 @@ const masterWsMixin = {
 			};
 			socket.send(JSON.stringify(newTask));
 		};
- 
+
 		socket.onmessage = this.onmessage.bind(this);
- 
+
 		socket.onclose = () => {
 			console.log('Disconnected from server');
 		};
- 
+
 		this.ws = socket;
 	},
- 
+
 	onmessage(event) {
 		const data = JSON.parse(event.data);
 		switch (data.type) {
@@ -10292,7 +10297,7 @@ const masterWsMixin = {
 				console.log('Unknown message type:', data.type);
 		}
 	},
- 
+
 	getTask() {
 		this.ws.send(
 			JSON.stringify({
@@ -10302,7 +10307,7 @@ const masterWsMixin = {
 		);
 	},
 };
- 
+
 /*
 mFix = new action.masterFixBattle(battle)
 await mFix.start(Date.now() + 6e4, 1);
@@ -10312,7 +10317,7 @@ class masterFixBattle extends FixBattle {
 		super(battle, true);
 		this.url = url;
 	}
- 
+
 	async start(endTime, maxCount) {
 		this.endTime = endTime;
 		this.maxCount = maxCount;
@@ -10324,7 +10329,7 @@ class masterFixBattle extends FixBattle {
 			this.timeout(this.getTask.bind(this), timeout);
 		});
 	}
- 
+
 	async endFix(solutions) {
 		this.ws.close();
 		let maxCount = 0;
@@ -10338,17 +10343,17 @@ class masterFixBattle extends FixBattle {
 		super.endFix();
 	}
 }
- 
+
 Object.assign(masterFixBattle.prototype, masterWsMixin);
- 
+
 this.HWHClasses.masterFixBattle = masterFixBattle;
- 
+
 class masterWinFixBattle extends WinFixBattle {
 	constructor(battle, url = 'wss://localho.st:3000') {
 		super(battle, true);
 		this.url = url;
 	}
- 
+
 	async start(endTime, maxCount) {
 		this.endTime = endTime;
 		this.maxCount = maxCount;
@@ -10360,7 +10365,7 @@ class masterWinFixBattle extends WinFixBattle {
 			this.timeout(this.getTask.bind(this), timeout);
 		});
 	}
- 
+
 	async endFix(solutions) {
 		this.ws.close();
 		let maxCount = 0;
@@ -10374,19 +10379,19 @@ class masterWinFixBattle extends WinFixBattle {
 		super.endFix();
 	}
 }
- 
+
 Object.assign(masterWinFixBattle.prototype, masterWsMixin);
- 
+
 this.HWHClasses.masterWinFixBattle = masterWinFixBattle;
- 
+
 const slaveWsMixin = {
 	wsStop() {
 		this.ws.close();
 	},
- 
+
 	wsStart() {
 		const socket = new WebSocket(this.url);
- 
+
 		socket.onopen = () => {
 			console.log('Connected to server');
 		};
@@ -10394,10 +10399,10 @@ const slaveWsMixin = {
 		socket.onclose = () => {
 			console.log('Disconnected from server');
 		};
- 
+
 		this.ws = socket;
 	},
- 
+
 	async onmessage(event) {
 		const data = JSON.parse(event.data);
 		switch (data.type) {
@@ -10432,11 +10437,11 @@ class slaveFixBattle extends FixBattle {
 		this.url = url;
 	}
 }
- 
+
 Object.assign(slaveFixBattle.prototype, slaveWsMixin);
- 
+
 this.HWHClasses.slaveFixBattle = slaveFixBattle;
- 
+
 class slaveWinFixBattle extends WinFixBattle {
 	constructor(url = 'wss://localho.st:3000') {
 		super(null, false);
@@ -10444,9 +10449,9 @@ class slaveWinFixBattle extends WinFixBattle {
 		this.url = url;
 	}
 }
- 
+
 Object.assign(slaveWinFixBattle.prototype, slaveWsMixin);
- 
+
 this.HWHClasses.slaveWinFixBattle = slaveWinFixBattle;
 /**
  * Auto-repeat attack
@@ -10473,7 +10478,7 @@ function executeAutoBattle(resolve, reject) {
 	let findCoeff = 0;
 	let dataNotEeceived = 0;
     	let stopAutoBattle = false;
- 
+
 	let isSetWinTimer = false;
 		const svgJustice = '<svg width="20" height="20" viewBox="0 0 124 125" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m54 0h-1c-7.25 6.05-17.17 6.97-25.78 10.22-8.6 3.25-23.68 1.07-23.22 12.78s-0.47 24.08 1 35 2.36 18.36 7 28c4.43-8.31-3.26-18.88-3-30 0.26-11.11-2.26-25.29-1-37 11.88-4.16 26.27-0.42 36.77-9.23s20.53 6.05 29.23-0.77c-6.65-2.98-14.08-4.96-20-9z"/></g><g><path d="m108 5c-11.05 2.96-27.82 2.2-35.08 11.92s-14.91 14.71-22.67 23.33c-7.77 8.62-14.61 15.22-22.25 23.75 7.05 11.93 14.33 2.58 20.75-4.25 6.42-6.82 12.98-13.03 19.5-19.5s12.34-13.58 19.75-18.25c2.92 7.29-8.32 12.65-13.25 18.75-4.93 6.11-12.19 11.48-17.5 17.5s-12.31 11.38-17.25 17.75c10.34 14.49 17.06-3.04 26.77-10.23s15.98-16.89 26.48-24.52c10.5-7.64 12.09-24.46 14.75-36.25z"/></g><g><path d="m60 25c-11.52-6.74-24.53 8.28-38 6 0.84 9.61-1.96 20.2 2 29 5.53-4.04-4.15-23.2 4.33-26.67 8.48-3.48 18.14-1.1 24.67-8.33 2.73 0.3 4.81 2.98 7 0z"/></g><g><path d="m100 75c3.84-11.28 5.62-25.85 3-38-4.2 5.12-3.5 13.58-4 20s-3.52 13.18 1 18z"/></g><g><path d="m55 94c15.66-5.61 33.71-20.85 29-39-3.07 8.05-4.3 16.83-10.75 23.25s-14.76 8.35-18.25 15.75z"/></g><g><path d="m0 94v7c6.05 3.66 9.48 13.3 18 11-3.54-11.78 8.07-17.05 14-25 6.66 1.52 13.43 16.26 19 5-11.12-9.62-20.84-21.33-32-31-9.35 6.63 4.76 11.99 6 19-7.88 5.84-13.24 17.59-25 14z"/></g><g><path d="m82 125h26v-19h16v-1c-11.21-8.32-18.38-21.74-30-29-8.59 10.26-19.05 19.27-27 30h15v19z"/></g><g><path d="m68 110c-7.68-1.45-15.22 4.83-21.92-1.08s-11.94-5.72-18.08-11.92c-3.03 8.84 10.66 9.88 16.92 16.08s17.09 3.47 23.08-3.08z"/></g></svg>';
 		const svgBoss = '<svg width="20" height="20" viewBox="0 0 40 41" xmlns="http://www.w3.org/2000/svg" style="fill: #fff;"><g><path d="m21 12c-2.19-3.23 5.54-10.95-0.97-10.97-6.52-0.02 1.07 7.75-1.03 10.97-2.81 0.28-5.49-0.2-8-1-0.68 3.53 0.55 6.06 4 4 0.65 7.03 1.11 10.95 1.67 18.33 0.57 7.38 6.13 7.2 6.55-0.11 0.42-7.3 1.35-11.22 1.78-18.22 3.53 1.9 4.73-0.42 4-4-2.61 0.73-5.14 1.35-8 1m-1 17c-1.59-3.6-1.71-10.47 0-14 1.59 3.6 1.71 10.47 0 14z"/></g><g><path d="m6 19c-1.24-4.15 2.69-8.87 1-12-3.67 4.93-6.52 10.57-6 17 5.64-0.15 8.82 4.98 13 8 1.3-6.54-0.67-12.84-8-13z"/></g><g><path d="m33 7c0.38 5.57 2.86 14.79-7 15v10c4.13-2.88 7.55-7.97 13-8 0.48-6.46-2.29-12.06-6-17z"/></g></svg>';
@@ -10840,7 +10845,7 @@ function executeAutoBattle(resolve, reject) {
 }
 
 this.HWHClasses.executeAutoBattle = executeAutoBattle;
- 
+
 function testDailyQuests() {
 	const { dailyQuests } = HWHClasses;
 	return new Promise((resolve, reject) => {
@@ -11612,33 +11617,33 @@ class dailyQuests {
 		const availableMissionsToRaid = Object.values(this.questInfo.missionGetAll)
 			.filter((mission) => mission.stars === 3)
 			.map((mission) => mission.id);
- 
+
 		// Получаем героев для улучшения, у которых меньше 6 звезд
 		const heroesToUpgrade = Object.values(this.questInfo.heroGetAll)
 			.filter((hero) => hero.star < 6)
 			.sort((a, b) => b.power - a.power)
 			.map((hero) => hero.id);
- 
+
 		// Получаем героические миссии, которые доступны для рейдов
 		const heroicMissions = Object.values(lib.data.mission).filter((mission) => mission.isHeroic && availableMissionsToRaid.includes(mission.id));
- 
+
 		// Собираем дропы из героических миссий
 		const drops = heroicMissions.map((mission) => {
 			const lastWave = mission.normalMode.waves[mission.normalMode.waves.length - 1];
 			const allRewards = lastWave.enemies[lastWave.enemies.length - 1]
 				.drop.map((drop) => drop.reward);
- 
+
 			const heroId = +Object.keys(allRewards.find((reward) => reward.fragmentHero).fragmentHero).pop();
- 
+
 			return { id: mission.id, heroId };
 		});
- 
+
 		// Определяем, какие дропы подходят для героев, которых нужно улучшить
 		const heroDrops = heroesToUpgrade.map((heroId) => drops.find((drop) => drop.heroId == heroId)).filter((drop) => drop);
 		const firstMission = heroDrops[0];
 		// Выбираем миссию для рейда
 		const selectedMissionId = firstMission ? firstMission.id : 1;
- 
+
 		const stamina = this.questInfo.userGetInfo.refillable.find((x) => x.id == 1).amount;
 		const costMissions = 3 * lib.data.mission[selectedMissionId].normalMode.teamExp;
 		if (stamina < costMissions) {
@@ -11647,7 +11652,7 @@ class dailyQuests {
 		}
 		return selectedMissionId;
 	}
- 
+
 	end(status) {
 		setProgress(status, true);
 		this.resolve();
@@ -11844,7 +11849,7 @@ class doYourBest {
 }
 
 this.HWHClasses.doYourBest = doYourBest;
- 
+
 /**
  * Passing the adventure along the specified route
  *
@@ -12279,7 +12284,7 @@ class executeAdventure {
 }
 
 this.HWHClasses.executeAdventure = executeAdventure;
- 
+
 /**
  * Passage of brawls
  *
@@ -12960,7 +12965,7 @@ class executeBrawls {
 }
 
 this.HWHClasses.executeBrawls = executeBrawls;
- 
+
 })();
 
 /**
