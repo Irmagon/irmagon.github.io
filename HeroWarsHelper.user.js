@@ -1235,29 +1235,22 @@ const buttons = {
 			},
 		],
 	},
-	testAdventure: {
+	goToSanctuary: {
 		isCombine: true,
 		combineList: [
 			{
-				text: I18N('ADVENTURE'),
-				func: () => {
-					testAdventure();
-				},
-				title: I18N('ADVENTURE_TITLE'),
-			},
-			{
-				text: '>>',
+				name: I18N('SANCTUARY'),
 				func: cheats.goSanctuary,
 				title: I18N('SANCTUARY_TITLE'),
+			},
+			{
+				name: '>>',
+				func: () => {testAdventure();},
+				title: I18N('ADVENTURE_TITLE'),
 				color: 'green',
 			},
 		],
 	},
-//	goToSanctuary: {
-//		name: I18N('SANCTUARY'),
-//		title: I18N('SANCTUARY_TITLE'),
-//		func: cheats.goSanctuary,
-//	},
 	goToClanWar: {
 		name: I18N('GUILD_WAR'),
 		title: I18N('GUILD_WAR_TITLE'),
