@@ -1236,20 +1236,9 @@ const buttons = {
 		],
 	},
 	goToSanctuary: {
-		isCombine: true,
-		combineList: [
-			{
-				name: I18N('SANCTUARY'),
-				func: cheats.goSanctuary,
-				title: I18N('SANCTUARY_TITLE'),
-			},
-			{
-				name: '>>',
-				func: () => {testAdventure();},
-				title: I18N('ADVENTURE_TITLE'),
-				color: 'green',
-			},
-		],
+		name: I18N('SANCTUARY'),
+		title: I18N('SANCTUARY_TITLE'),
+		func: cheats.goSanctuary,
 	},
 	goToClanWar: {
 		name: I18N('GUILD_WAR'),
