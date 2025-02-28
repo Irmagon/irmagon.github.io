@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.322
+// @version			2.323
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1566,6 +1566,7 @@ let lastBossBattleStart = null;
 this.addBattleTimer = 4;
 this.invasionTimer = 2500;
 const invasionInfo = {
+	id: 225,
 	buff: 0,
 	bossLvl: 130,
 };
@@ -2523,8 +2524,9 @@ async function checkChangeSend(sourceData, tempData) {
 						this.massOpen = call.args.libId;
 				}
 			}
-			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == 217) {
+			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == invasionInfo.id) {
 				const pack = invasionDataPacks[invasionInfo.bossLvl];
+				if (pack) {
 				if (pack.buff != invasionInfo.buff) {
 					setProgress(
 						I18N('INVASION_BOSS_BUFF', {
@@ -2540,6 +2542,7 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.favor = pack.favor;
 					changeRequest = true;
 				}
+			}
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -3146,21 +3149,25 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['invasion_getInfo']) {
 				const r = call.result.response;
 				if (r?.actions?.length) {
-					const boss = r.actions.find((e) => e.payload.id === 225);
+					const boss = r.actions.find((e) => e.payload.id === invasionInfo.id);
+					if (boss) {
 				invasionInfo.buff = r.buffAmount;
 				invasionInfo.bossLvl = boss.payload.level;
 				if (isChecked('tryFixIt_v2')) {
 					const pack = invasionDataPacks[invasionInfo.bossLvl];
+							if (pack) {
 					setProgress(
 						I18N('INVASION_BOSS_BUFF', {
 							bossLvl: invasionInfo.bossLvl,
 							needBuff: pack.buff,
-							haveBuff: invasionInfo.buff
+										haveBuff: invasionInfo.buff,
 						}),
 						false
 					);
 				}
 			}
+			}
+				}
 			}
 			if (call.ident == callsIdent['workshopBuff_create']) {
 				const r = call.result.response;
@@ -3168,6 +3175,7 @@ async function checkChangeResponse(response) {
 					invasionInfo.buff = r.amount;
 					if (isChecked('tryFixIt_v2')) {
 						const pack = invasionDataPacks[invasionInfo.bossLvl];
+						if (pack) {
 						setProgress(
 							I18N('INVASION_BOSS_BUFF', {
 								bossLvl: invasionInfo.bossLvl,
@@ -3178,6 +3186,7 @@ async function checkChangeResponse(response) {
 						);
 					}
 				}
+			}
 			}
 			/*
 			if (call.ident == callsIdent['chatGetAll'] && call.args.chatType == 'clanDomination' && !callsIdent['clanDomination_mapState']) {
@@ -4601,6 +4610,7 @@ const scriptMenu = new (function () {
 	.scriptMenu_buttonGroup {
 		display: flex;
 		justify-content: center;
+ 
 		user-select: none;
 		cursor: pointer;
 		padding: 4;
