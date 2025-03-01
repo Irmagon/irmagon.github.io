@@ -3,7 +3,7 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.321
+// @version			2.323
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -1538,38 +1538,29 @@ let lastBossBattleStart = null;
 this.addBattleTimer = 4;
 this.invasionTimer = 2500;
 const invasionInfo = {
+	id: 225,
 	buff: 0,
 	bossLvl: 130,
 };
 const invasionDataPacks = {
-	130: { buff: 0, pet: 6004, heroes: [58, 48, 16, 65, 59], favor: { 16: 6004, 48: 6001, 58: 6002, 59: 6005, 65: 6000 } },
-	140: { buff: 0, pet: 6006, heroes: [1, 4, 13, 58, 65], favor: { 1: 6001, 4: 6006, 13: 6002, 58: 6005, 65: 6000 } },
-	150: { buff: 0, pet: 6006, heroes: [1, 12, 17, 21, 65], favor: { 1: 6001, 12: 6003, 17: 6006, 21: 6002, 65: 6000 } },
-	160: { buff: 0, pet: 6008, heroes: [12, 21, 34, 58, 65], favor: { 12: 6003, 21: 6006, 34: 6008, 58: 6002, 65: 6001 } },
-	170: { buff: 0, pet: 6005, heroes: [33, 12, 65, 21, 4], favor: { 4: 6001, 12: 6003, 21: 6006, 33: 6008, 65: 6000 } },
-	180: { buff: 20, pet: 6009, heroes: [58, 13, 5, 17, 65], favor: { 5: 6006, 13: 6003, 58: 6005 } },
-	190: { buff: 0, pet: 6006, heroes: [1, 12, 21, 36, 65], favor: { 1: 6004, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
-	200: { buff: 0, pet: 6006, heroes: [12, 1, 13, 2, 65], favor: { 2: 6001, 12: 6003, 13: 6006, 65: 6000 } },
-	210: { buff: 15, pet: 6005, heroes: [12, 21, 33, 58, 65], favor: { 12: 6003, 21: 6006, 33: 6008, 58: 6005, 65: 6001 } },
-	220: { buff: 5, pet: 6006, heroes: [58, 13, 7, 34, 65], favor: { 7: 6002, 13: 6008, 34: 6006, 58: 6005, 65: 6001 } },
-	230: { buff: 35, pet: 6005, heroes: [5, 7, 13, 58, 65], favor: { 5: 6006, 7: 6003, 13: 6002, 58: 6005, 65: 6000 } },
-	240: { buff: 0, pet: 6005, heroes: [12, 58, 1, 36, 65], favor: { 1: 6006, 12: 6003, 36: 6005, 65: 6001 } },
-	250: { buff: 15, pet: 6005, heroes: [12, 36, 4, 16, 65], favor: { 12: 6003, 16: 6004, 36: 6005, 65: 6001 } },
-	260: { buff: 15, pet: 6005, heroes: [48, 12, 36, 65, 4], favor: { 4: 6006, 12: 6003, 36: 6005, 48: 6000, 65: 6007 } },
-	270: { buff: 35, pet: 6005, heroes: [12, 58, 36, 4, 65], favor: { 4: 6006, 12: 6003, 36: 6005 } },
-	280: { buff: 80, pet: 6005, heroes: [21, 36, 48, 7, 65], favor: { 7: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6000 } },
-	290: { buff: 95, pet: 6008, heroes: [12, 21, 36, 35, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 65: 6007 } },
-	300: { buff: 25, pet: 6005, heroes: [12, 13, 4, 34, 65], favor: { 4: 6006, 12: 6003, 13: 6007, 34: 6002 } },
-	310: { buff: 45, pet: 6005, heroes: [12, 21, 58, 33, 65], favor: { 12: 6003, 21: 6006, 33: 6002, 58: 6005, 65: 6007 } },
-	320: { buff: 70, pet: 6005, heroes: [12, 48, 2, 6, 65], favor: { 6: 6005, 12: 6003 } },
-	330: { buff: 70, pet: 6005, heroes: [12, 21, 36, 5, 65], favor: { 5: 6002, 12: 6003, 21: 6006, 36: 6005, 65: 6000 } },
-	340: { buff: 55, pet: 6009, heroes: [12, 36, 13, 6, 65], favor: { 6: 6005, 12: 6003, 13: 6002, 36: 6006, 65: 6000 } },
-	350: { buff: 100, pet: 6005, heroes: [12, 21, 58, 34, 65], favor: { 12: 6003, 21: 6006, 58: 6005 } },
-	360: { buff: 85, pet: 6007, heroes: [12, 21, 36, 4, 65], favor: { 4: 6006, 12: 6003, 21: 6002, 36: 6005 } },
-	370: { buff: 90, pet: 6008, heroes: [12, 21, 36, 13, 65], favor: { 12: 6003, 13: 6007, 21: 6006, 36: 6005, 65: 6001 } },
-	380: { buff: 165, pet: 6005, heroes: [12, 33, 36, 4, 65], favor: { 4: 6001, 12: 6003, 33: 6006 } },
-	390: { buff: 235, pet: 6005, heroes: [21, 58, 48, 2, 65], favor: { 2: 6005, 21: 6002 } },
-	400: { buff: 125, pet: 6006, heroes: [12, 21, 36, 48, 65], favor: { 12: 6003, 21: 6006, 36: 6005, 48: 6001, 65: 6007 } },
+    130: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: { 9: 6006 } },
+    140: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: {} },
+    150: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: {} },
+    160: { buff: 0, pet: 6005, heroes: [64, 66, 13, 9, 4], favor: { 4: 6006, 9: 6004, 13: 6003, 64: 6005, 66: 6002 } },
+    170: { buff: 0, pet: 6005, heroes: [9, 62, 10, 1, 66], favor: { 1: 6006, 9: 6005, 10: 6008, 62: 6003, 66: 6002 } },
+    180: { buff: 0, pet: 6006, heroes: [62, 10, 2, 4, 66], favor: { 2: 6005, 4: 6001, 10: 6006, 62: 6003 } },
+    190: { buff: 40, pet: 6005, heroes: [9, 2, 43, 45, 66], favor: { 9: 6005, 45: 6002, 66: 6006 } },
+    200: { buff: 20, pet: 6005, heroes: [9, 62, 1, 48, 66], favor: { 9: 6007, 62: 6003 } },
+    210: { buff: 10, pet: 6008, heroes: [9, 10, 4, 32, 66], favor: { 9: 6005, 10: 6003, 32: 6007, 66: 6006 } },
+    220: { buff: 20, pet: 6004, heroes: [9, 1, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6002 } },
+    230: { buff: 65, pet: 6008, heroes: [9, 62, 10, 43, 66], favor: { 9: 6005, 43: 6006, 66: 6002 } },
+    240: { buff: 60, pet: 6008, heroes: [9, 7, 40, 48, 66], favor: { 7: 6003, 9: 6005, 40: 6004, 48: 6000, 66: 6006 } },
+    250: { buff: 75, pet: 6005, heroes: [9, 43, 56, 45, 66], favor: { 9: 6005, 43: 6006, 66: 6007 } },
+    260: { buff: 85, pet: 6004, heroes: [9, 47, 2, 43, 66], favor: { 2: 6000, 43: 6006 } },
+    270: { buff: 185, pet: 6008, heroes: [9, 1, 13, 43, 66], favor: { 13: 6003, 43: 6006 } },
+    280: { buff: 135, pet: 6005, heroes: [9, 40, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6008 } },
+    290: { buff: 60, pet: 6005, heroes: [9, 10, 43, 56, 66], favor: { 9: 6005, 10: 6002, 43: 6006 } },
+    300: { buff: 75, pet: 6006, heroes: [9, 62, 1, 45, 66], favor: { 1: 6006, 9: 6005, 45: 6002, 66: 6007 } },
 };
 /**
  * The name of the function of the beginning of the battle
@@ -2505,8 +2496,9 @@ async function checkChangeSend(sourceData, tempData) {
 						this.massOpen = call.args.libId;
 			}
 			}
-			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == 217) {
+			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == invasionInfo.id) {
 				const pack = invasionDataPacks[invasionInfo.bossLvl];
+				if (pack) {
 				if (pack.buff != invasionInfo.buff) {
 					setProgress(
 						I18N('INVASION_BOSS_BUFF', {
@@ -2522,6 +2514,7 @@ async function checkChangeSend(sourceData, tempData) {
 					call.args.favor = pack.favor;
 					changeRequest = true;
 				}
+			}
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
@@ -3128,21 +3121,25 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['invasion_getInfo']) {
 				const r = call.result.response;
 				if (r?.actions?.length) {
-				const boss = r.actions.find((e) => e.payload.id === 217);
+					const boss = r.actions.find((e) => e.payload.id === invasionInfo.id);
+					if (boss) {
 				invasionInfo.buff = r.buffAmount;
 				invasionInfo.bossLvl = boss.payload.level;
 				if (isChecked('tryFixIt_v2')) {
 					const pack = invasionDataPacks[invasionInfo.bossLvl];
+							if (pack) {
 					setProgress(
 						I18N('INVASION_BOSS_BUFF', { 
 							bossLvl: invasionInfo.bossLvl, 
 							needBuff: pack.buff, 
-							haveBuff: invasionInfo.buff 
+										haveBuff: invasionInfo.buff,
 						}),
 						false
 					);
 				}
 			}
+			}
+				}
 			}
 			if (call.ident == callsIdent['workshopBuff_create']) {
 				const r = call.result.response;
@@ -3150,6 +3147,7 @@ async function checkChangeResponse(response) {
 					invasionInfo.buff = r.amount;
 					if (isChecked('tryFixIt_v2')) {
 						const pack = invasionDataPacks[invasionInfo.bossLvl];
+						if (pack) {
 						setProgress(
 							I18N('INVASION_BOSS_BUFF', {
 								bossLvl: invasionInfo.bossLvl,
@@ -3160,6 +3158,7 @@ async function checkChangeResponse(response) {
 						);
 					}
 				}
+			}
 			}
 			/*
 			if (call.ident == callsIdent['chatGetAll'] && call.args.chatType == 'clanDomination' && !callsIdent['clanDomination_mapState']) {
@@ -4584,6 +4583,7 @@ const scriptMenu = new (function () {
 	.scriptMenu_buttonGroup {
 		display: flex;
 		justify-content: center;
+ 
 		user-select: none;
 		cursor: pointer;
 		padding: 4;
@@ -8199,31 +8199,32 @@ async function justInfo() {
 		const titansLevel = +(infos[2].result.response?.tier ?? 0);
 		const titansStatus = infos[2].result.response?.status; //peace_time || battle
 
-		const sanctuaryButton = buttons['goToSanctuary'].button;
+		const sanctuaryButton = buttons['testAdventure'].button;
 		const clanWarButton = buttons['goToClanWar'].button;
 		const titansArenaButton = buttons['testTitanArena'].button;
+        const shadow = ' 0px 0px 3px 2px';
 
 		if (portalSphere.amount) {
-			sanctuaryButton.style.color = portalSphere.amount >= 3 ? 'red' : 'brown';
+			sanctuaryButton.style.boxShadow = (portalSphere.amount >= 3 ? 'red' : 'brown') + shadow;
 			sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
 		} else {
-			sanctuaryButton.style.color = '';
+			sanctuaryButton.style.boxShadow = '';
 			sanctuaryButton.title = I18N('SANCTUARY_TITLE');
 		}
 		if (clanWarMyTries && !arePointsMax) {
-			clanWarButton.style.color = 'red';
+			clanWarButton.style.filter = 'drop-shadow(red 0px 0px 2px)';
 			clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
 		} else {
-			clanWarButton.style.color = '';
+			clanWarButton.style.filter = '';
 			clanWarButton.title = I18N('GUILD_WAR_TITLE');
 		}
 
-		if (titansLevel < 7 && titansStatus == 'battle') {
+		if (titansLevel < 7 && titansStatus == 'battle') { ;
 			const partColor = Math.floor(125 * titansLevel / 7);
-			titansArenaButton.style.color = `rgb(255,${partColor},${partColor})`;
+			titansArenaButton.style.boxShadow = `rgb(255,${partColor},${partColor})` + shadow;
 			titansArenaButton.title = `${I18N('TITAN_ARENA_TITLE')}\n${titansLevel} ${I18N('LEVEL')}`;
 		} else {
-			titansArenaButton.style.color = '';
+			titansArenaButton.style.boxShadow = '';
 			titansArenaButton.title = I18N('TITAN_ARENA_TITLE');
 		}
 
