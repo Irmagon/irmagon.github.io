@@ -1236,29 +1236,29 @@ const buttons = {
 		],
 	},
 
-	testAdventure: {
-		isCombine: true,
-		combineList: [
-			{
-				text: I18N('ADVENTURE'),
-				func: () => {
-					testAdventure();
-				},
-				title: I18N('ADVENTURE_TITLE'),
-			},
-			{
-				text: '>>',
-				func: cheats.goSanctuary,
-				title: I18N('SANCTUARY_TITLE'),
-				color: 'green',
-			},
-		],
+// 	testAdventure: {
+// 		isCombine: true,
+// 		combineList: [
+// 			{
+// 				text: I18N('ADVENTURE'),
+// 				func: () => {
+// 					testAdventure();
+// 				},
+// 				title: I18N('ADVENTURE_TITLE'),
+// 			},
+// 			{
+// 				text: '>>',
+// 				func: cheats.goSanctuary,
+// 				title: I18N('SANCTUARY_TITLE'),
+// 				color: 'green',
+// 			},
+// 		],
+// 	},
+    goToSanctuary: {
+		name: I18N('SANCTUARY'),
+		title: I18N('SANCTUARY_TITLE'),
+		func: cheats.goSanctuary,
 	},
-//    goToSanctuary: {
-//		name: I18N('SANCTUARY'),
-//		title: I18N('SANCTUARY_TITLE'),
-//		func: cheats.goSanctuary,
-//	},
 	goToClanWar: {
 		name: I18N('GUILD_WAR'),
 		title: I18N('GUILD_WAR_TITLE'),
@@ -4574,7 +4574,7 @@ const scriptMenu = new (function () {
 			user-select: none;
 			border-radius: 5px;
 			cursor: pointer;
-			padding: 1px 0px 5px;
+			padding: 2px 0px 2px;
 			margin: 4px;
 			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
 			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
@@ -4627,11 +4627,10 @@ const scriptMenu = new (function () {
 	.scriptMenu_buttonGroup {
 		display: flex;
 		justify-content: center;
- 
+
 		user-select: none;
 		cursor: pointer;
-		padding: 4;
-		margin: 3px 0;
+		padding: 4px;
 	}
 	.scriptMenu_combineButton {
 		width: 60%;
