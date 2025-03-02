@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.323
+// @version			2.324
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -1581,12 +1581,12 @@ const invasionDataPacks = {
     200: { buff: 20, pet: 6005, heroes: [9, 62, 1, 48, 66], favor: { 9: 6007, 62: 6003 } },
     210: { buff: 10, pet: 6008, heroes: [9, 10, 4, 32, 66], favor: { 9: 6005, 10: 6003, 32: 6007, 66: 6006 } },
     220: { buff: 20, pet: 6004, heroes: [9, 1, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6002 } },
-    230: { buff: 65, pet: 6008, heroes: [9, 62, 10, 43, 66], favor: { 9: 6005, 43: 6006, 66: 6002 } },
-    240: { buff: 60, pet: 6008, heroes: [9, 7, 40, 48, 66], favor: { 7: 6003, 9: 6005, 40: 6004, 48: 6000, 66: 6006 } },
-    250: { buff: 75, pet: 6005, heroes: [9, 43, 56, 45, 66], favor: { 9: 6005, 43: 6006, 66: 6007 } },
-    260: { buff: 85, pet: 6004, heroes: [9, 47, 2, 43, 66], favor: { 2: 6000, 43: 6006 } },
-    270: { buff: 185, pet: 6008, heroes: [9, 1, 13, 43, 66], favor: { 13: 6003, 43: 6006 } },
-    280: { buff: 135, pet: 6005, heroes: [9, 40, 48, 43, 66], favor: { 9: 6005, 43: 6006, 48: 6000, 66: 6008 } },
+	230: { buff: 45, pet: 6001, heroes: [9, 7, 40, 43, 66], favor: { 7: 6006, 9: 6005, 40: 6004, 43: 6006, 66: 6006 } },
+	240: { buff: 50, pet: 6009, heroes: [9, 40, 43, 51, 66], favor: { 9: 6005, 40: 6004, 43: 6002, 66: 6007 } },
+	250: { buff: 70, pet: 6005, heroes: [9, 10, 13, 43, 66], favor: { 9: 6005, 10: 6002, 13: 6002, 43: 6006, 66: 6006 } },
+	260: { buff: 80, pet: 6008, heroes: [9, 40, 43, 4, 66], favor: { 4: 6001, 9: 6006, 43: 6006 } },
+	270: { buff: 115, pet: 6001, heroes: [9, 13, 43, 51, 66], favor: { 9: 6006, 43: 6006, 51: 6001 } },
+	280: { buff: 80, pet: 6008, heroes: [9, 13, 43, 56, 66], favor: { 9: 6004, 13: 6006, 43: 6006, 66: 6006 } },
     290: { buff: 60, pet: 6005, heroes: [9, 10, 43, 56, 66], favor: { 9: 6005, 10: 6002, 43: 6006 } },
     300: { buff: 75, pet: 6006, heroes: [9, 62, 1, 45, 66], favor: { 1: 6006, 9: 6005, 45: 6002, 66: 6007 } },
 };
@@ -2543,6 +2543,23 @@ async function checkChangeSend(sourceData, tempData) {
 					changeRequest = true;
 				}
 			}
+			}
+			if (call.name == 'workshopBuff_create') {
+				const pack = invasionDataPacks[invasionInfo.bossLvl];
+				if (pack) {
+					const addBuff = call.args.amount * 5;
+					if (pack.buff < addBuff + invasionInfo.buff) {
+						this.errorRequest = true;
+					}
+					setProgress(
+						I18N('INVASION_BOSS_BUFF', {
+							bossLvl: invasionInfo.bossLvl,
+							needBuff: pack.buff,
+							haveBuff: invasionInfo.buff,
+						}),
+						false
+					);
+				}
 			}
 			/**
 			 * Changing the maximum number of raids in the campaign
