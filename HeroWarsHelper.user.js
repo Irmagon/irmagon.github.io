@@ -1296,7 +1296,12 @@ const buttons = {
 					result: testRaidNodes,
 					title: I18N('MINIONS_TITLE'),
 				},
-				{
+                {
+                    msg: I18N('ADVENTURE'),
+                    result: testAdventure,
+                    title: I18N('ADVENTURE_TITLE'),
+                },
+                {
 					msg: I18N('SEER'),
 					result: rollAscension,
 					title: I18N('SEER_TITLE'),
@@ -2080,7 +2085,7 @@ async function checkChangeSend(sourceData, tempData) {
 						if (endTime < cloneBattle.endTime) {
 							endTime = cloneBattle.endTime;
 						}
-						const result = await bFix.start(cloneBattle.endTime, 150);
+						const result = await bFix.start(cloneBattle.endTime, 1500);
 
 						if (result.result.win) {
 							call.args.result = result.result;
