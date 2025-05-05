@@ -3,7 +3,7 @@
 // @name:en			HeroWarsHelper
 // @name:ru			HeroWarsHelper
 // @namespace			HeroWarsHelper
-// @version			2.324
+// @version			2.340
 // @description			Automation of actions for the game Hero Wars
 // @description:en		Automation of actions for the game Hero Wars
 // @description:ru		Автоматизация действий для игры Хроники Хаоса
@@ -278,7 +278,7 @@ const i18nLangData = {
 		MAIL_TITLE: 'Collect all mail, except letters with energy and charges of the portal',
 		MINIONS: 'Minions',
 		MINIONS_TITLE: 'Attack minions with saved packs',
-		ADVENTURE: 'Adventure',
+		ADVENTURE: 'Adv.',
 		ADVENTURE_TITLE: 'Passes the adventure along the specified route',
 		STORM: 'Storm',
 		STORM_TITLE: 'Passes the Storm along the specified route',
@@ -486,7 +486,7 @@ const i18nLangData = {
 		BUY_OUTLAND: 'Buy Outland',
 		BUY_OUTLAND_TITLE: 'Buy 9 chests in Outland for 540 emeralds',
 		RAID: 'Raid',
-		AUTO_RAID_ADVENTURE: 'Raid adventure',
+		AUTO_RAID_ADVENTURE: 'Raid',
 		AUTO_RAID_ADVENTURE_TITLE: 'Raid adventure set number of times',
 		CLAN_STAT: 'Clan statistics',
 		CLAN_STAT_TITLE: 'Copies clan statistics to the clipboard',
@@ -648,7 +648,7 @@ const i18nLangData = {
 		MAIL_TITLE: 'Собрать всю почту, кроме писем с энергией и зарядами портала',
 		MINIONS: 'Прислужники',
 		MINIONS_TITLE: 'Атакует прислужников сохраннеными пачками',
-		ADVENTURE: 'Приключение',
+		ADVENTURE: 'Прикл',
 		ADVENTURE_TITLE: 'Проходит приключение по указанному маршруту',
 		STORM: 'Буря',
 		STORM_TITLE: 'Проходит бурю по указанному маршруту',
@@ -855,7 +855,7 @@ const i18nLangData = {
 		BUY_OUTLAND: 'Купить Запределье',
 		BUY_OUTLAND_TITLE: 'Купить 9 сундуков в Запределье за 540 изумрудов',
 		RAID: 'Рейд',
-		AUTO_RAID_ADVENTURE: 'Рейд приключения',
+		AUTO_RAID_ADVENTURE: 'Рейд',
 		AUTO_RAID_ADVENTURE_TITLE: 'Рейд приключения заданное количество раз',
 		CLAN_STAT: 'Клановая статистика',
 		CLAN_STAT_TITLE: 'Копирует клановую статистику в буфер обмена',
@@ -966,15 +966,25 @@ function getLang() {
 	if (!lang) {
 		lang = (navigator.language || navigator.userLanguage).substr(0, 2);
 }
-	if (lang == 'ru') {
+	const { i18nLangData } = HWHData;
+	if (i18nLangData[lang]) {
 		return lang;
 	}
 	return 'en';
 }
 
 this.I18N = function (constant, replace) {
+	const { i18nLangData } = HWHData;
 	const selectLang = getLang();
 	if (constant && constant in i18nLangData[selectLang]) {
+		const result = i18nLangData[selectLang][constant];
+		if (replace) {
+			return result.sprintf(replace);
+		}
+		return result;
+	}
+	console.warn('Language constant not found', {constant, replace});
+	if (i18nLangData['en'][constant]) {
 		const result = i18nLangData[selectLang][constant];
 		if (replace) {
 			return result.sprintf(replace);
@@ -1010,45 +1020,45 @@ String.prototype.sprintf = String.prototype.sprintf ||
  */
 const checkboxes = {
 	passBattle: {
-		label: I18N('SKIP_FIGHTS'),
+		get label() { return I18N('SKIP_FIGHTS'); },
 		cbox: null,
-		title: I18N('SKIP_FIGHTS_TITLE'),
-		default: true,
+		get title() { return I18N('SKIP_FIGHTS_TITLE'); },
+		default: false,
 	},
 	sendExpedition: {
-		label: I18N('AUTO_EXPEDITION'),
+		get label() { return I18N('AUTO_EXPEDITION'); },
 		cbox: null,
-		title: I18N('AUTO_EXPEDITION_TITLE'),
-		default: true,
+		get title() { return I18N('AUTO_EXPEDITION_TITLE'); },
+		default: false,
 	},
 	cancelBattle: {
-		label: I18N('CANCEL_FIGHT'),
+		get label() { return I18N('CANCEL_FIGHT'); },
 		cbox: null,
-		title: I18N('CANCEL_FIGHT_TITLE'),
-		default: true,
+		get title() { return I18N('CANCEL_FIGHT_TITLE'); },
+		default: false,
 	},
 	preCalcBattle: {
-		label: I18N('BATTLE_RECALCULATION'),
+		get label() { return I18N('BATTLE_RECALCULATION'); },
 		cbox: null,
-		title: I18N('BATTLE_RECALCULATION_TITLE'),
-		default: true,
+		get title() { return I18N('BATTLE_RECALCULATION_TITLE'); },
+		default: false,
 	},
 	countControl: {
-		label: I18N('QUANTITY_CONTROL'),
+		get label() { return I18N('QUANTITY_CONTROL'); },
 		cbox: null,
-		title: I18N('QUANTITY_CONTROL_TITLE'),
+		get title() { return I18N('QUANTITY_CONTROL_TITLE'); },
 		default: true,
 	},
 	repeatMission: {
-		label: I18N('REPEAT_CAMPAIGN'),
+		get label() { return I18N('REPEAT_CAMPAIGN'); },
 		cbox: null,
-		title: I18N('REPEAT_CAMPAIGN_TITLE'),
+		get title() { return I18N('REPEAT_CAMPAIGN_TITLE'); },
 		default: false,
 	},
 	noOfferDonat: {
-		label: I18N('DISABLE_DONAT'),
+		get label() { return I18N('DISABLE_DONAT'); },
 		cbox: null,
-		title: I18N('DISABLE_DONAT_TITLE'),
+		get title() { return I18N('DISABLE_DONAT_TITLE'); },
 		/**
 		 * A crutch to get the field before getting the character id
 		 *
@@ -1065,16 +1075,16 @@ const checkboxes = {
 		})(),
 	},
 	dailyQuests: {
-		label: I18N('DAILY_QUESTS'),
+		get label() { return I18N('DAILY_QUESTS'); },
 		cbox: null,
-		title: I18N('DAILY_QUESTS_TITLE'),
+		get title() { return I18N('DAILY_QUESTS_TITLE'); },
 		default: false,
 	},
 	// Потасовки
 	autoBrawls: {
-		label: I18N('BRAWLS'),
+		get label() { return I18N('BRAWLS'); },
 		cbox: null,
-		title: I18N('BRAWLS_TITLE'),
+		get title() { return I18N('BRAWLS_TITLE'); },
 		default: (() => {
 			$result = false;
 			try {
@@ -1087,42 +1097,42 @@ const checkboxes = {
 		hide: false,
 	},
 	getAnswer: {
-		label: I18N('AUTO_QUIZ'),
+		get label() { return I18N('AUTO_QUIZ'); },
 		cbox: null,
-		title: I18N('AUTO_QUIZ_TITLE'),
+		get title() { return I18N('AUTO_QUIZ_TITLE'); },
 		default: false,
-    		hide: true,
+		hide: false,
     	},
 	tryFixIt_v2: {
-    		label: I18N('BTN_TRY_FIX_IT'),
+		get label() { return I18N('BTN_TRY_FIX_IT'); },
     		cbox: null,
-    		title: I18N('BTN_TRY_FIX_IT_TITLE'),
-    		default: true,
+		get title() { return I18N('BTN_TRY_FIX_IT_TITLE'); },
+		default: false,
 		hide: false,
 	},
 	showErrors: {
-		label: I18N('SHOW_ERRORS'),
+		get label() { return I18N('SHOW_ERRORS'); },
 		cbox: null,
-		title: I18N('SHOW_ERRORS_TITLE'),
-		default: false,
+		get title() { return I18N('SHOW_ERRORS_TITLE'); },
+		default: true,
 	},
 	buyForGold: {
-		label: I18N('BUY_FOR_GOLD'),
+		get label() { return I18N('BUY_FOR_GOLD'); },
 		cbox: null,
-		title: I18N('BUY_FOR_GOLD_TITLE'),
+		get title() { return I18N('BUY_FOR_GOLD_TITLE'); },
 		default: false,
 	},
 	hideServers: {
-		label: I18N('HIDE_SERVERS'),
+		get label() { return I18N('HIDE_SERVERS'); },
 		cbox: null,
-		title: I18N('HIDE_SERVERS_TITLE'),
-		default: true,
+		get title() { return I18N('HIDE_SERVERS_TITLE'); },
+		default: false,
 	},
 	fastSeason: {
-		label: I18N('FAST_SEASON'),
+		get label() { return I18N('FAST_SEASON'); },
 		cbox: null,
-		title: I18N('FAST_SEASON_TITLE'),
-		default: true,
+		get title() { return I18N('FAST_SEASON_TITLE'); },
+		default: false,
 	},
 };
 /**
@@ -1131,6 +1141,7 @@ const checkboxes = {
  * Получить состояние чекбокса
  */
 function isChecked(checkBox) {
+	const { checkboxes } = HWHData;
 	if (!(checkBox in checkboxes)) {
 		return false;
 	}
@@ -1144,22 +1155,22 @@ function isChecked(checkBox) {
 const inputs = {
 	countTitanit: {
 		input: null,
-		title: I18N('HOW_MUCH_TITANITE'),
+		get title() { return I18N('HOW_MUCH_TITANITE'); },
 		default: 300,
 	},
 	speedBattle: {
 		input: null,
-		title: I18N('COMBAT_SPEED'),
+		get title() { return I18N('COMBAT_SPEED'); },
 		default: 5,
 	},
 	countTestBattle: {
 		input: null,
-		title: I18N('NUMBER_OF_TEST'),
+		get title() { return I18N('NUMBER_OF_TEST'); },
 		default: 10,
 	},
 	countAutoBattle: {
 		input: null,
-		title: I18N('NUMBER_OF_AUTO_BATTLE'),
+		get title() { return I18N('NUMBER_OF_AUTO_BATTLE'); },
 		default: 10,
 	},
 	FPS: {
@@ -1174,6 +1185,7 @@ const inputs = {
  * Поплучить данные поля ввода
  */
 function getInput(inputName) {
+	const { inputs } = HWHData;
 	return inputs[inputName]?.input?.value;
 }
 
@@ -1195,180 +1207,84 @@ this.requestAnimationFrame = async function (e) {
 	oldRequestAnimationFrame(e);
 };
 /**
- * Скрываем кнопку титанов в субботу и воскресенье
- */
-function titanhide() {
-    if (new Date().getDay() != 0 && new Date().getDay() != 6) {return false;} else {return true;}
-}
-
-/**
  * Button List
  *
  * Список кнопочек
  */
 const buttons = {
-	newDay: {
-		name: I18N('SYNC'),
-		title: I18N('SYNC_TITLE'),
-		func: cheats.refreshGame
-	},
-	rewardsAndMailFarm: {
-		name: I18N('REWARDS_AND_MAIL'),
-		title: I18N('REWARDS_AND_MAIL_TITLE'),
-		func: rewardsAndMailFarm
-	},
-	testTitanArena: {
-		isCombine: true,
-		combineList: [
-			{
-				text: I18N('TITAN_ARENA'),
-				title: I18N('TITAN_ARENA_TITLE'),
-				func: function () {
-					confShow(`${I18N('RUN_SCRIPT')} ${I18N('TITAN_ARENA')}?`, testTitanArena);
-				},
-			},
-			{
-				text: '>>',
-				func: cheats.goTitanValley,
-				title: I18N('TITAN_VALLEY_TITLE'),
-				color: 'green',
-			},
-		],
-	},
-
-// 	testAdventure: {
-// 		isCombine: true,
-// 		combineList: [
-// 			{
-// 				text: I18N('ADVENTURE'),
-// 				func: () => {
-// 					testAdventure();
-// 				},
-// 				title: I18N('ADVENTURE_TITLE'),
-// 			},
-// 			{
-// 				text: '>>',
-// 				func: cheats.goSanctuary,
-// 				title: I18N('SANCTUARY_TITLE'),
-// 				color: 'green',
-// 			},
-// 		],
-// 	},
-    goToSanctuary: {
-		name: I18N('SANCTUARY'),
-		title: I18N('SANCTUARY_TITLE'),
-		func: cheats.goSanctuary,
-	},
-	goToClanWar: {
-		name: I18N('GUILD_WAR'),
-		title: I18N('GUILD_WAR_TITLE'),
-		func: cheats.goClanWar,
+	getOutland: {
+		get name() { return I18N('TO_DO_EVERYTHING'); },
+		get title() { return I18N('TO_DO_EVERYTHING_TITLE'); },
+		onClick: testDoYourBest,
 	},
 	doActions: {
-		name: I18N('ACTIONS'),
-		title: I18N('ACTIONS_TITLE'),
-		func: async function () {
+		get name() { return I18N('ACTIONS'); },
+		get title() { return I18N('ACTIONS_TITLE'); },
+		onClick: async function () {
 			const popupButtons = [
-                {
-                    msg: I18N('EXPEDITIONS'),
-                    result: checkExpedition,
-                    title: I18N('EXPEDITIONS_TITLE'),
-                },
-                {
-                    msg: I18N('DAILY_QUESTS'),
-                    title: I18N('DAILY_QUESTS_TITLE'),
-                    result: async function () {
-                  const quests = new dailyQuests(
-                      () => {},
-                      () => {}
-                  );
-                        await quests.autoInit();
-                        quests.start();
-                    },
-                },
-                {
-                    msg: I18N('DUNGEON'),
-                    result: testDungeon,
-                    title: I18N('DUNGEON_TITLE'),
-                },
-				{
-					msg: I18N('MINIONS'),
-					result: testRaidNodes,
-					title: I18N('MINIONS_TITLE'),
-				},
-                {
-                    msg: I18N('ADVENTURE'),
-                    result: testAdventure,
-                    title: I18N('ADVENTURE_TITLE'),
-                },
-                {
-					msg: I18N('SEER'),
-					result: rollAscension,
-					title: I18N('SEER_TITLE'),
-				},
-                {
-					msg: I18N('REWARDS'),
-					result: questAllFarm,
-					title: I18N('REWARDS_TITLE'),
-				},
-				{
-					msg: I18N('MAIL'),
-					result: mailGetAll,
-					title: I18N('MAIL_TITLE'),
-				},
-                {
-					msg: I18N('TOWER'),
-					result: testTower,
-					title: I18N('TOWER_TITLE'),
-				},
-                {
+          {
 					msg: I18N('OUTLAND'),
 					result: getOutland,
-					title: I18N('OUTLAND_TITLE'),
-				},
-                {
+					get title() { return I18N('OUTLAND_TITLE'); },
+          },
+          {
+					msg: I18N('TOWER'),
+					result: testTower,
+					get title() { return I18N('TOWER_TITLE'); },
+          },
+          {
+					msg: I18N('EXPEDITIONS'),
+					result: checkExpedition,
+					get title() { return I18N('EXPEDITIONS_TITLE'); },
+          },
+				  {
+					msg: I18N('MINIONS'),
+					result: testRaidNodes,
+					get title() { return I18N('MINIONS_TITLE'); },
+				  },
+          {
 					msg: I18N('ESTER_EGGS'),
 					result: offerFarmAllReward,
-					title: I18N('ESTER_EGGS_TITLE'),
-				},
-                {
-                    msg: I18N('EPIC_BRAWL'),
-                    result: async function () {
-                            confShow(`${I18N('RUN_SCRIPT')} ${I18N('EPIC_BRAWL')}?`, () => {
-                                const brawl = new epicBrawl;
-                                brawl.start();
-                            });
-                        },
-                    title: I18N('EPIC_BRAWL_TITLE'),
-                },
-                {
+					get title() { return I18N('ESTER_EGGS_TITLE'); },
+          },
+          {
 					msg: I18N('STORM'),
+					result: function () {testAdventure('solo');},
+					get title() { return I18N('STORM_TITLE'); },
+				  },
+          {
+					msg: I18N('REWARDS'),
+          result: questAllFarm,
+					get title() { return I18N('REWARDS_TITLE'); },
+          },
+          {
+					msg: I18N('MAIL'),
+          result: mailGetAll,
+					get title() { return I18N('MAIL_TITLE'); },
+				  },
+				  {
+					msg: I18N('SEER'),
 					result: function () {
-							testAdventure('solo');
+						confShow(`${I18N('RUN_SCRIPT')} ${I18N('SEER')}?`, rollAscension);
 					},
-					title: I18N('STORM_TITLE'),
-				},
-                {
-                    msg: I18N('ARCHDEMON'),
-                    result: function () {
-                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
-                    },
-                    title: I18N('ARCHDEMON_TITLE'),
-                },
-                {
-                    msg: I18N('FURNACE_OF_SOULS'),
-                    result: function () {
-                        confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE_OF_SOULS')}?`, bossRatingEventSouls);
-                    },
-                    title: I18N('ARCHDEMON_TITLE'),
-                },
+					get title() { return I18N('SEER_TITLE'); },
+          },
 				/*
-                				{
+          {
 					msg: I18N('NY_GIFTS'),
 					result: getGiftNewYear,
-					title: I18N('NY_GIFTS_TITLE'),
-				},
+					get title() { return I18N('NY_GIFTS_TITLE'); },
+				  },
 				*/
+          {
+		      msg: I18N('DAILY_QUESTS'),
+		  		result: async function () {
+			      const quests = new dailyQuests(() => {},() => {});
+		    	  await quests.autoInit();
+			      quests.start();
+		        },
+          get title() { return I18N('DAILY_QUESTS_TITLE'); },
+	        },
 			];
 			popupButtons.push({ result: false, isClose: true });
 			const answer = await popup.confirm(`${I18N('CHOOSE_ACTION')}:`, popupButtons);
@@ -1378,48 +1294,43 @@ const buttons = {
 	},
 	},
 	doOthers: {
-		name: I18N('OTHERS'),
-		title: I18N('OTHERS_TITLE'),
-		func: async function () {
+		get name() { return I18N('OTHERS'); },
+		get title() { return I18N('OTHERS_TITLE'); },
+		onClick: async function () {
 			const popupButtons = [
 				{
 					msg: I18N('GET_ENERGY'),
 					result: farmStamina,
-					title: I18N('GET_ENERGY_TITLE'),
+					get title() { return I18N('GET_ENERGY_TITLE'); },
 				},
 				{
 					msg: I18N('ITEM_EXCHANGE'),
 					result: fillActive,
-					title: I18N('ITEM_EXCHANGE_TITLE'),
+					get title() { return I18N('ITEM_EXCHANGE_TITLE'); },
 				},
 				{
 					msg: I18N('BUY_SOULS'),
 					result: function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('BUY_SOULS')}?`, buyHeroFragments);
 					},
-					title: I18N('BUY_SOULS_TITLE'),
+					get title() { return I18N('BUY_SOULS_TITLE'); },
 				},
 				{
 					msg: I18N('BUY_FOR_GOLD'),
 					result: function () {
 						confShow(`${I18N('RUN_SCRIPT')} ${I18N('BUY_FOR_GOLD')}?`, buyInStoreForGold);
 					},
-					title: I18N('BUY_FOR_GOLD_TITLE'),
+					get title() { return I18N('BUY_FOR_GOLD_TITLE'); },
 				},
 				{
 					msg: I18N('BUY_OUTLAND'),
 					result: bossOpenChestPay,
-					title: I18N('BUY_OUTLAND_TITLE'),
-				},
-				{
-					msg: I18N('AUTO_RAID_ADVENTURE'),
-					result: autoRaidAdventure,
-					title: I18N('AUTO_RAID_ADVENTURE_TITLE'),
+					get title() { return I18N('BUY_OUTLAND_TITLE'); },
 				},
 				{
 					msg: I18N('CLAN_STAT'),
 					result: clanStatistic,
-					title: I18N('CLAN_STAT_TITLE'),
+					get title() { return I18N('CLAN_STAT_TITLE'); },
 				},
                 {
 					msg: I18N('EPIC_BRAWL'),
@@ -1429,27 +1340,27 @@ const buttons = {
 							brawl.start();
 						});
 					},
-					title: I18N('EPIC_BRAWL_TITLE'),
+					get title() { return I18N('EPIC_BRAWL_TITLE'); },
 				},
                 {
 					msg: I18N('ARTIFACTS_UPGRADE'),
 					result: updateArtifacts,
-					title: I18N('ARTIFACTS_UPGRADE_TITLE'),
+					get title() { return I18N('ARTIFACTS_UPGRADE_TITLE'); },
 				},
 				{
 					msg: I18N('SKINS_UPGRADE'),
 					result: updateSkins,
-					title: I18N('SKINS_UPGRADE_TITLE'),
+					get title() { return I18N('SKINS_UPGRADE_TITLE'); },
 				},
 				{
 					msg: I18N('SEASON_REWARD'),
 					result: farmBattlePass,
-					title: I18N('SEASON_REWARD_TITLE'),
+					get title() { return I18N('SEASON_REWARD_TITLE'); },
 				},
 				{
 					msg: I18N('SELL_HERO_SOULS'),
 					result: sellHeroSoulsForGold,
-					title: I18N('SELL_HERO_SOULS_TITLE'),
+					get title() { return I18N('SELL_HERO_SOULS_TITLE'); },
 				},
 				{
 					msg: I18N('CHANGE_MAP'),
@@ -1466,7 +1377,7 @@ const buttons = {
 							cheats.changeIslandMap(result);
 						}
 					},
-					title: I18N('CHANGE_MAP_TITLE'),
+					get title() { return I18N('CHANGE_MAP_TITLE'); },
 				},
 				{
 					msg: I18N('HERO_POWER'),
@@ -1489,7 +1400,7 @@ const buttons = {
 							I18N('POWER_TO_MAX', { power: power.toLocaleString(), color: power >= 4000 ? 'green' : 'red' });
 						await popup.confirm(msg, [{ msg: I18N('BTN_OK'), result: 0 }]);
 					},
-					title: I18N('HERO_POWER_TITLE'),
+					get title() { return I18N('HERO_POWER_TITLE'); },
 				},
 			];
 			popupButtons.push({ result: false, isClose: true });
@@ -1499,10 +1410,98 @@ const buttons = {
 			}
 		},
 	},
-    getOutland: {
-		name: I18N('TO_DO_EVERYTHING'),
-		title: I18N('TO_DO_EVERYTHING_TITLE'),
-		func: testDoYourBest,
+	testTitanArena: {
+		isCombine: true,
+		combineList: [
+			{
+				get name() { return I18N('TITAN_ARENA'); },
+				get title() { return I18N('TITAN_ARENA_TITLE'); },
+				onClick: testTitanArena,
+			},
+			{
+				name: '>>',
+				onClick: cheats.goTitanValley,
+				get title() { return I18N('TITAN_VALLEY_TITLE'); },
+				color: 'green',
+			},
+		],
+	},
+	testDungeon: {
+		isCombine: true,
+		combineList: [
+			{
+				get name() { return I18N('DUNGEON'); },
+				onClick: function () {
+					confShow(`${I18N('RUN_SCRIPT')} ${I18N('DUNGEON')}?`, testDungeon);
+				},
+				get title() { return I18N('DUNGEON_TITLE'); },
+			},
+			{
+				name: '>>',
+				onClick: cheats.goClanIsland,
+				get title() { return I18N('GUILD_ISLAND_TITLE'); },
+				color: 'green',
+			},
+		],
+	},
+	testAdventure: {
+		isCombine: true,
+		combineList: [
+			{
+				get name() { return I18N('ADVENTURE'); },
+				onClick: () => {
+					testAdventure();
+				},
+				get title() { return I18N('ADVENTURE_TITLE'); },
+			},
+			{
+				get name() { return I18N('AUTO_RAID_ADVENTURE'); },
+				onClick: autoRaidAdventure,
+				get title() { return I18N('AUTO_RAID_ADVENTURE_TITLE'); },
+			},
+			{
+				name: '>>',
+				onClick: cheats.goSanctuary,
+				get title() { return I18N('SANCTUARY_TITLE'); },
+				color: 'green',
+			},
+		],
+	},
+	rewardsAndMailFarm: {
+		get name() { return I18N('REWARDS_AND_MAIL'); },
+		get title() { return I18N('REWARDS_AND_MAIL_TITLE'); },
+		onClick: rewardsAndMailFarm,
+	},
+	goToClanWar: {
+		get name() { return I18N('GUILD_WAR'); },
+		get title() { return I18N('GUILD_WAR_TITLE'); },
+		onClick: cheats.goClanWar,
+		dot: true,
+	},
+	newDay: {
+		get name() { return I18N('SYNC'); },
+		get title() { return I18N('SYNC_TITLE'); },
+		onClick: cheats.refreshGame,
+	},
+	// Архидемон
+	bossRatingEventDemon: {
+		get name() { return I18N('ARCHDEMON'); },
+		get title() { return I18N('ARCHDEMON_TITLE'); },
+		onClick: function () {
+			confShow(`${I18N('RUN_SCRIPT')} ${I18N('ARCHDEMON')}?`, bossRatingEvent);
+		},
+		hide: true,
+		color: 'red',
+	},
+	// Горнило душ
+	bossRatingEventSouls: {
+		get name() { return I18N('FURNACE_OF_SOULS'); },
+		get title() { return I18N('ARCHDEMON_TITLE'); },
+		onClick: function () {
+			confShow(`${I18N('RUN_SCRIPT')} ${I18N('FURNACE_OF_SOULS')}?`, bossRatingEventSouls);
+		},
+		hide: true,
+		color: 'red',
 	},
 };
 /**
@@ -1511,6 +1510,9 @@ const buttons = {
  * Вывести кнопочки
  */
 function addControlButtons() {
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
+	const { buttons } = HWHData;
 	for (let name in buttons) {
 		button = buttons[name];
 		if (button.hide) {
@@ -1520,7 +1522,7 @@ function addControlButtons() {
 			button['button'] = scriptMenu.addCombinedButton(button.combineList);
 			continue;
 		}
-		button['button'] = scriptMenu.addButton(button.name, button.func, button.title);
+		button['button'] = scriptMenu.addButton(button);
 	}
 }
 /**
@@ -1529,6 +1531,8 @@ function addControlButtons() {
  * Добавляет ссылки
  */
 function addBottomUrls() {
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
 	scriptMenu.addHeader(I18N('BOTTOM_URLS'));
 }
 /**
@@ -1840,17 +1844,15 @@ XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
 XMLHttpRequest.prototype.setRequestHeader = function (name, value, check) {
 	if (this.uniqid in requestHistory) {
 		requestHistory[this.uniqid].headers[name] = value;
-	} else {
-		check = true;
-	}
-
 	if (name == 'X-Auth-Signature') {
 		requestHistory[this.uniqid].signature.push(value);
 		if (!check) {
 			return;
 		}
 	}
-
+	} else {
+		check = true;
+	}
 	return original.setRequestHeader.call(this, name, value);
 };
 /**
@@ -2085,7 +2087,7 @@ async function checkChangeSend(sourceData, tempData) {
 						if (endTime < cloneBattle.endTime) {
 							endTime = cloneBattle.endTime;
 						}
-						const result = await bFix.start(cloneBattle.endTime, 1500);
+						const result = await bFix.start(cloneBattle.endTime, 150);
 
 						if (result.result.win) {
 							call.args.result = result.result;
@@ -2165,7 +2167,7 @@ async function checkChangeSend(sourceData, tempData) {
 						[
 							{
 								name: 'isAuto',
-								label: I18N('BRAWL_AUTO_PACK'),
+								get label() { return I18N('BRAWL_AUTO_PACK'); },
 								checked: false,
 							},
 						]
@@ -2203,7 +2205,7 @@ async function checkChangeSend(sourceData, tempData) {
 					[
 						{
 							name: 'isStat',
-							label: I18N('CALC_STAT'),
+							get label() { return I18N('CALC_STAT'); },
 							checked: false,
 						},
 					]
@@ -2364,7 +2366,7 @@ async function checkChangeSend(sourceData, tempData) {
 			 * Quiz Answer
 			 * Ответ на викторину
 			 */
-			if (call.name == 'quizAnswer') {
+			if (call.name == 'quiz_answer') {
 				/**
 				 * Automatically changes the answer to the correct one if there is one.
 				 * Автоматически меняет ответ на правильный если он есть
@@ -2529,7 +2531,9 @@ async function checkChangeSend(sourceData, tempData) {
 						this.massOpen = call.args.libId;
 				}
 			}
-			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2') && call.args.id == invasionInfo.id) {
+			if (call.name == 'invasion_bossStart' && isChecked('tryFixIt_v2')) {
+				const { invasionInfo, invasionDataPacks } = HWHData;
+				if (call.args.id == invasionInfo.id) {
 				const pack = invasionDataPacks[invasionInfo.bossLvl];
 				if (pack) {
 				if (pack.buff != invasionInfo.buff) {
@@ -2548,8 +2552,10 @@ async function checkChangeSend(sourceData, tempData) {
 					changeRequest = true;
 				}
 			}
+				}
 			}
 			if (call.name == 'workshopBuff_create') {
+				const { invasionInfo, invasionDataPacks } = HWHData;
 				const pack = invasionDataPacks[invasionInfo.bossLvl];
 				if (pack) {
 					const addBuff = call.args.amount * 5;
@@ -2701,7 +2707,7 @@ async function checkChangeResponse(response) {
 			 * Copies a quiz question to the clipboard
 			 * Копирует вопрос викторины в буфер обмена и получает на него ответ если есть
 			 */
-			if (call.ident == callsIdent['quizGetNewQuestion']) {
+			if (call.ident == callsIdent['quiz_getNewQuestion']) {
 				let quest = call.result.response;
 				console.log(quest.question);
 				copyText(quest.question);
@@ -2736,14 +2742,14 @@ async function checkChangeResponse(response) {
 			 * Submits a question with an answer to the database
 			 * Отправляет вопрос с ответом в базу данных
 			 */
-			if (call.ident == callsIdent['quizAnswer']) {
+			if (call.ident == callsIdent['quiz_answer']) {
 				const answer = call.result.response;
 				if (lastQuestion) {
 					const answerInfo = {
 						answer,
 						question: lastQuestion,
 						lang: null,
-					}
+					};
 					if (typeof NXFlashVars !== 'undefined') {
 						answerInfo.lang = NXFlashVars.interface_lang;
 					}
@@ -3171,6 +3177,7 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['invasion_getInfo']) {
 				const r = call.result.response;
 				if (r?.actions?.length) {
+					const { invasionInfo, invasionDataPacks } = HWHData;
 					const boss = r.actions.find((e) => e.payload.id === invasionInfo.id);
 					if (boss) {
 				invasionInfo.buff = r.buffAmount;
@@ -3194,6 +3201,7 @@ async function checkChangeResponse(response) {
 			if (call.ident == callsIdent['workshopBuff_create']) {
 				const r = call.result.response;
 				if (r.id == 1) {
+					const { invasionInfo, invasionDataPacks } = HWHData;
 					invasionInfo.buff = r.amount;
 					if (isChecked('tryFixIt_v2')) {
 						const pack = invasionDataPacks[invasionInfo.bossLvl];
@@ -3545,10 +3553,10 @@ let extintionsList = [];
  */
 function createInterface() {
 	popup.init();
-	scriptMenu.init({
-		showMenu: true
-	});
-	scriptMenu.addHeader('HWH', justInfo);
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
+	scriptMenu.init();
+	scriptMenu.addHeader(GM_info.script.name, justInfo);
 	const versionHeader = scriptMenu.addHeader('v' + GM_info.script.version);
 	if (extintionsList.length) {
 		versionHeader.title = '';
@@ -3592,7 +3600,10 @@ function addExtentionName(name, ver, author) {
 
 function addControls() {
 	createInterface();
-	const checkboxDetails = scriptMenu.addDetails(I18N('SETTINGS'));
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
+	const checkboxDetails = scriptMenu.addDetails(I18N('SETTINGS'), 'settings');
+	const { checkboxes } = HWHData;
 	for (let name in checkboxes) {
 		if (checkboxes[name].hide) {
 			continue;
@@ -3632,7 +3643,8 @@ function addControls() {
 		})
 	}
 
-	const inputDetails = scriptMenu.addDetails(I18N('VALUES'));
+	const inputDetails = scriptMenu.addDetails(I18N('VALUES'), 'values');
+	const { inputs } = HWHData;
 	for (let name in inputs) {
 		inputs[name].input = scriptMenu.addInputText(inputs[name].title, false, inputDetails);
 		/**
@@ -3745,6 +3757,8 @@ let hideTimeoutProgress = 0;
  * Скрыть прогресс
  */
 function hideProgress(timeout) {
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
 	timeout = timeout || 0;
 	clearTimeout(hideTimeoutProgress);
 	hideTimeoutProgress = setTimeout(function () {
@@ -3757,6 +3771,8 @@ function hideProgress(timeout) {
  * Отображение прогресса
  */
 function setProgress(text, hide, onclick) {
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
 	scriptMenu.setStatus(text, onclick);
 	hide = hide || false;
 	if (hide) {
@@ -3770,6 +3786,8 @@ function setProgress(text, hide, onclick) {
  * Дополнение прогресса
  */
 function addProgress(text) {
+	const { ScriptMenu } = HWHClasses;
+	const scriptMenu = ScriptMenu.getInst();
 	scriptMenu.addStatus(text);
 }
 
@@ -3821,6 +3839,16 @@ this.HWHClasses = {
 	checkChangeSend,
 	checkChangeResponse,
 };
+
+this.HWHData = {
+	i18nLangData,
+	checkboxes,
+	inputs,
+	buttons,
+	invasionInfo,
+	invasionDataPacks,
+};
+
 /**
  * Calculates HASH MD5 from string
  *
@@ -3952,6 +3980,10 @@ class Caller {
 	isEmpty() {
 		return this.calls.length === 0 && Object.keys(this.results).length === 0;
 	}
+
+	static async send(calls) {
+		return new Caller(calls).execute();
+	}
 }
 
 this.Caller = Caller;
@@ -4029,14 +4061,15 @@ const popup = new (function () {
 		let style = document.createElement('style');
 		style.innerText = `
 	.PopUp_ {
-		position: absolute;
+ 		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
 		min-width: 300px;
-		max-width: 500px;
-		max-height: 400px;
+		max-width: 80%;
+		max-height: 80%;
 		background-color: #190e08e6;
 		z-index: 10001;
-		top: 169px;
-		left: 345px;
 		border: 3px #ce9767 solid;
 		border-radius: 10px;
 		display: flex;
@@ -4104,7 +4137,7 @@ const popup = new (function () {
 
 	.PopUp_button {
 		background-color: #52A81C;
-		border-radius: 10px;
+		border-radius: 5px;
 		box-shadow: inset 0px -4px 10px, inset 0px 3px 2px #99fe20, 0px 0px 4px, 0px -3px 1px #d7b275, 0px 0px 0px 3px #ce9767;
 		cursor: pointer;
 		padding: 1px 10px 1px;
@@ -4249,8 +4282,6 @@ const popup = new (function () {
 		}
 		this.showBack();
 		this.popUp.classList.remove('PopUp_hideBlock');
-		this.popUp.style.left = (window.innerWidth - this.popUp.offsetWidth) / 2 + 'px';
-		this.popUp.style.top = (window.innerHeight - this.popUp.offsetHeight) / 3 + 'px';
 	}
 
 	this.hide = function () {
@@ -4411,34 +4442,157 @@ const popup = new (function () {
 this.HWHFuncs.popup = popup;
 
 /**
+ * Миксин EventEmitter
+ * @param {Class} BaseClass Базовый класс (по умолчанию Object)
+ * @returns {Class} Класс с методами EventEmitter
+ */
+const EventEmitterMixin = (BaseClass = Object) =>
+	class EventEmitter extends BaseClass {
+		constructor(...args) {
+			super(...args);
+			this._events = new Map();
+		}
+
+		/**
+		 * Подписаться на событие
+		 * @param {string} event Имя события
+		 * @param {function} listener Функция-обработчик
+		 * @returns {this} Возвращает экземпляр для чейнинга
+		 */
+		on(event, listener) {
+			if (typeof listener !== 'function') {
+				throw new TypeError('Listener must be a function');
+			}
+
+			if (!this._events.has(event)) {
+				this._events.set(event, new Set());
+			}
+			this._events.get(event).add(listener);
+			return this;
+		}
+
+		/**
+		 * Отписаться от события
+		 * @param {string} event Имя события
+		 * @param {function} listener Функция-обработчик
+		 * @returns {this} Возвращает экземпляр для чейнинга
+		 */
+		off(event, listener) {
+			if (this._events.has(event)) {
+				const listeners = this._events.get(event);
+				listeners.delete(listener);
+				if (listeners.size === 0) {
+					this._events.delete(event);
+				}
+			}
+			return this;
+		}
+
+		/**
+		 * Вызвать событие
+		 * @param {string} event Имя события
+		 * @param {...any} args Аргументы для обработчиков
+		 * @returns {boolean} Было ли событие обработано
+		 */
+		emit(event, ...args) {
+			if (!this._events.has(event)) return false;
+			const listeners = new Set(this._events.get(event));
+			listeners.forEach((listener) => {
+				try {
+					listener.apply(this, args);
+				} catch (e) {
+					console.error(`Error in event handler for "${event}":`, e);
+				}
+			});
+
+			return true;
+		}
+
+		/**
+		 * Подписаться на событие один раз
+		 * @param {string} event Имя события
+		 * @param {function} listener Функция-обработчик
+		 * @returns {this} Возвращает экземпляр для чейнинга
+		 */
+		once(event, listener) {
+			const onceWrapper = (...args) => {
+				this.off(event, onceWrapper);
+				listener.apply(this, args);
+			};
+			return this.on(event, onceWrapper);
+		}
+
+		/**
+		 * Удалить все обработчики для события
+		 * @param {string} [event] Имя события (если не указано - очистить все)
+		 * @returns {this} Возвращает экземпляр для чейнинга
+		 */
+		removeAllListeners(event) {
+			if (event) {
+				this._events.delete(event);
+			} else {
+				this._events.clear();
+			}
+			return this;
+		}
+
+		/**
+		 * Получить количество обработчиков для события
+		 * @param {string} event Имя события
+		 * @returns {number} Количество обработчиков
+		 */
+		listenerCount(event) {
+			return this._events.has(event) ? this._events.get(event).size : 0;
+		}
+	};
+
+this.HWHFuncs.EventEmitterMixin = EventEmitterMixin;
+
+/**
  * Script control panel
  *
  * Панель управления скриптом
  */
-const scriptMenu = new (function () {
-
-	this.mainMenu,
-	this.buttons = [],
+class ScriptMenu extends EventEmitterMixin() {
+	constructor() {
+		if (ScriptMenu.instance) {
+			return ScriptMenu.instance;
+		}
+		super();
+		this.mainMenu = null;
+		this.buttons = [];
 	this.checkboxes = [];
 	this.option = {
-		showMenu: false,
-		showDetails: {}
+			showMenu: true,
+			showDetails: {},
 	};
-
-	this.init = function (option = {}) {
-		this.option = Object.assign(this.option, option);
-		this.option.showDetails = this.loadShowDetails();
-		addStyle();
-		addBlocks();
+		ScriptMenu.instance = this;
+		return this;
 	}
 
-		const addStyle = () => {
-			style = document.createElement('style');
+	static getInst() {
+		if (!ScriptMenu.instance) {
+			new ScriptMenu();
+		}
+		return ScriptMenu.instance;
+	}
+
+	init(option = {}) {
+		this.emit('beforeInit', option);
+		this.option = Object.assign(this.option, option);
+		const saveOption = this.loadSaveOption();
+		this.option = Object.assign(this.option, saveOption);
+		this.addStyle();
+		this.addBlocks();
+		this.emit('afterInit', option);
+	}
+
+	addStyle() {
+		const style = document.createElement('style');
 			style.innerText = `
 		.scriptMenu_status {
 			position: absolute;
 			z-index: 10001;
-			/* max-height: 30px; */
 			top: -1px;
 			left: 30%;
 			cursor: pointer;
@@ -4499,7 +4653,6 @@ const scriptMenu = new (function () {
 			border: 1px #ce9767 solid;
 			border-radius: 0px 10px 10px 0px;
 			border-left: none;
-			padding: 5px 5px 5px 5px;
 			box-sizing: border-box;
 			font-family: sans-serif;
 			font-stretch: condensed;
@@ -4507,9 +4660,19 @@ const scriptMenu = new (function () {
 			color: #fce1ac;
 			text-shadow: 0px 0px 1px;
 			transition: 1s;
+			}
+			.scriptMenu_conteiner {
+				max-height: 80vh;
+				overflow: scroll;
+				scrollbar-width: none; /* Для Firefox */
+				-ms-overflow-style: none; /* Для Internet Explorer и Edge */
 			display: flex;
 			flex-direction: column;
 			flex-wrap: nowrap;
+				padding: 5px 10px 5px 5px;
+			}
+			.scriptMenu_conteiner::-webkit-scrollbar {
+				display: none; /* Для Chrome, Safari и Opera */
 		}
 		.scriptMenu_showMenu {
 			display: none;
@@ -4577,19 +4740,13 @@ const scriptMenu = new (function () {
 		}
 		.scriptMenu_button {
 			user-select: none;
-			border-radius: 5px;
 			cursor: pointer;
 			padding: 2px 0px 2px;
 			margin: 4px;
-			background: radial-gradient(circle, rgba(165,120,56,1) 80%, rgba(0,0,0,1) 110%);
-			box-shadow: inset 0px -4px 6px #442901, inset 0px 1px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
 		}
 		.scriptMenu_button:hover {
 			filter: brightness(1.2);
 		}
-	.scriptMenu_button:active {
-		box-shadow: inset 0px 4px 6px #442901, inset 0px 4px 6px #442901, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 2px #ce9767;
-	}
 		.scriptMenu_buttonText {
 			color: #fce5b7;
 			text-shadow: 0px 1px 2px black;
@@ -4632,15 +4789,17 @@ const scriptMenu = new (function () {
 	.scriptMenu_buttonGroup {
 		display: flex;
 		justify-content: center;
-
 		user-select: none;
 		cursor: pointer;
 		padding: 4px;
 	}
-	.scriptMenu_combineButton {
-		width: 60%;
-		padding: 5px 8px 0px;
-
+			.scriptMenu_buttonGroup .scriptMenu_button {
+				width: 100%;
+				padding: 5px 8px 8px;
+			}
+			.scriptMenu_mainButton {
+				border-radius: 5px;
+				margin: 3px 0;
 	}
 	.scriptMenu_combineButtonLeft {
 		border-top-left-radius: 5px;
@@ -4654,10 +4813,6 @@ const scriptMenu = new (function () {
 	.scriptMenu_combineButtonRight {
 		border-top-right-radius: 5px;
 		border-bottom-right-radius: 5px;
-
-	}
-	.scriptMenu_combineButton:hover {
-		filter: brightness(1.2);
 	}
 	.scriptMenu_beigeButton {
 		border: 1px solid #442901;
@@ -4675,11 +4830,45 @@ const scriptMenu = new (function () {
 	.scriptMenu_greenButton:active {
 		box-shadow: inset 0px 4px 6px #1a2f04, inset 0px 4px 6px #1a2f04, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 1px #ce9767;
 	}
+			.scriptMenu_redButton {
+				border: 1px solid #440101;
+				background: radial-gradient(circle, rgb(198, 34, 34) 80%, rgb(0, 0, 0) 110%);
+				box-shadow: inset 0px 2px 4px #e98282, inset 0px -4px 6px #440101, inset 0px 1px 6px #440101, inset 0px 0px 6px, 0px 0px 2px black, 0px 0px 0px 1px #ce9767;
+			}
+			.scriptMenu_redButton:active {
+				box-shadow: inset 0px 4px 6px #440101, inset 0px 4px 6px #440101, inset 0px 0px 6px, 0px 0px 4px, 0px 0px 0px 1px #ce9767;
+			}
+			.scriptMenu_attention {
+				position: relative;
+			}
+			.scriptMenu_attention .scriptMenu_dot {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+			.scriptMenu_dot {
+				position: absolute;
+				top: -7px;
+				right: -7px;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				border: 1px solid #c18550;
+				background: radial-gradient(circle, #f000 25%, black 100%);
+				box-shadow: 0px 0px 2px black;
+				background-position: 0px -1px;
+				font-size: 10px;
+				text-align: center;
+				color: white;
+				text-shadow: 1px 1px 1px black;
+				box-sizing: border-box;
+				display: none;
+			}
 	`;
 		document.head.appendChild(style);
 	}
 
-	const addBlocks = () => {
+	addBlocks() {
 		const main = document.createElement('div');
 		document.body.appendChild(main);
 
@@ -4702,11 +4891,19 @@ const scriptMenu = new (function () {
 		checkbox.id = 'checkbox_showMenu';
 		checkbox.checked = this.option.showMenu;
 		checkbox.classList.add('scriptMenu_showMenu');
+		checkbox.addEventListener('change', () => {
+			this.option.showMenu = checkbox.checked;
+			this.saveSaveOption();
+		});
 		main.appendChild(checkbox);
 
+		const mainMenu = document.createElement('div');
+		mainMenu.classList.add('scriptMenu_main');
+		main.appendChild(mainMenu);
+
 		this.mainMenu = document.createElement('div');
-		this.mainMenu.classList.add('scriptMenu_main');
-		main.appendChild(this.mainMenu);
+		this.mainMenu.classList.add('scriptMenu_conteiner');
+		mainMenu.appendChild(this.mainMenu);
 
 		const closeButton = document.createElement('label');
 		closeButton.classList.add('scriptMenu_close');
@@ -4718,18 +4915,21 @@ const scriptMenu = new (function () {
 		closeButton.appendChild(crossClose);
 	}
 
-	const getButtonColor = (color) => {
+	getButtonColor(color) {
 		const buttonColors = {
 			green: 'scriptMenu_greenButton',
+			red: 'scriptMenu_redButton',
 			beige: 'scriptMenu_beigeButton',
 		};
-		if (buttonColors[color]) {
-			return buttonColors[color];
+		return buttonColors[color] || buttonColors['beige'];
 		}
-		return buttonColors['beige'];
-	}
 
-	this.setStatus = (text, onclick) => {
+	setStatus(text, onclick) {
+		if (this._currentStatusClickHandler) {
+			this.status.removeEventListener('click', this._currentStatusClickHandler);
+			this._currentStatusClickHandler = null;
+		}
+
 		if (!text) {
 			this.status.classList.add('scriptMenu_statusHide');
 			this.status.innerHTML = '';
@@ -4738,119 +4938,92 @@ const scriptMenu = new (function () {
 			this.status.innerHTML = text;
 		}
 
-		if (typeof onclick == 'function') {
-			this.status.addEventListener("click", onclick, {
-				once: true
-			});
+		if (typeof onclick === 'function') {
+			this.status.addEventListener('click', onclick, { once: true });
+			this._currentStatusClickHandler = onclick;
 		}
 	}
 
-	this.addStatus = (text) => {
+	addStatus(text) {
 		if (!this.status.innerHTML) {
 			this.status.classList.remove('scriptMenu_statusHide');
 		}
 		this.status.innerHTML += text;
 	}
 
-	/**
-	 * Adding a text element
-	 *
-	 * Добавление текстового элемента
-	 * @param {String} text text // текст
-	 * @param {Function} func Click function // функция по клику
-	 * @param {HTMLDivElement} main parent // родитель
-	 */
-	this.addHeader = (text, func, main) => {
-		main = main || this.mainMenu;
+	addHeader(text, onClick, main = this.mainMenu) {
+		this.emit('beforeAddHeader', text, onClick, main);
 		const header = document.createElement('div');
 		header.classList.add('scriptMenu_header');
 		header.innerHTML = text;
-		if (typeof func == 'function') {
-			header.addEventListener('click', func);
+		if (typeof onClick === 'function') {
+			header.addEventListener('click', onClick);
 		}
 		main.appendChild(header);
+		this.emit('afterAddHeader', text, onClick, main);
 		return header;
 	}
 
-	/**
-	 * Adding a button
-	 *
-	 * Добавление кнопки
-	 * @param {String} text
-	 * @param {Function} func
-	 * @param {String} title
-	 * @param {HTMLDivElement} main parent // родитель
-	 */
-	this.addButton = (text, func, title, main) => {
-		main = main || this.mainMenu;
+	addButton(btn, main = this.mainMenu) {
+		this.emit('beforeAddButton', btn, main);
+		const { name, onClick, title, color, dot, classes = [], isCombine } = btn;
 		const button = document.createElement('div');
-		button.classList.add('scriptMenu_button');
-		button.classList.add('scriptMenu_beigeButton');
+		if (!isCombine) {
+			classes.push('scriptMenu_mainButton');
+		}
+		button.classList.add('scriptMenu_button', this.getButtonColor(color), ...classes);
 		button.title = title;
-		button.addEventListener('click', func);
+		button.addEventListener('click', onClick);
 		main.appendChild(button);
 
 		const buttonText = document.createElement('div');
 		buttonText.classList.add('scriptMenu_buttonText');
-		buttonText.innerText = text;
+		buttonText.innerText = name;
 		button.appendChild(buttonText);
-		this.buttons.push(button);
 
+		if (dot) {
+			const dotAtention = document.createElement('div');
+			dotAtention.classList.add('scriptMenu_dot');
+			dotAtention.title = dot;
+			button.appendChild(dotAtention);
+		}
+
+		this.buttons.push(button);
+		this.emit('afterAddButton', button, btn);
 		return button;
 	}
 
-	/**
-	 * Adding a button
-	 *
-	 * Добавление кнопки
-	 * @param {Array} buttonList
-	 */
-	this.addCombinedButton = (buttonList, main) => {
-		main = main || this.mainMenu;
+	addCombinedButton(buttonList, main = this.mainMenu) {
+		this.emit('beforeAddCombinedButton', buttonList, main);
 		const buttonGroup = document.createElement('div');
 		buttonGroup.classList.add('scriptMenu_buttonGroup');
 		let count = 0;
 
 		for(const btn of buttonList) {
-			const { text, func, title, color } = btn;
-			const button = document.createElement('div');
-			button.classList.add('scriptMenu_combineButton');
+			btn.isCombine = true;
+			btn.classes ??= [];
 			if (count === 0) {
-				button.classList.add('scriptMenu_combineButtonLeft');
+				btn.classes.push('scriptMenu_combineButtonLeft');
 			} else if (count === buttonList.length - 1) {
-				button.classList.add('scriptMenu_combineButtonRight');
+				btn.classes.push('scriptMenu_combineButtonRight');
 			} else {
-				button.classList.add('scriptMenu_combineButtonCenter');
+				btn.classes.push('scriptMenu_combineButtonCenter');
 			}
-			button.classList.add(getButtonColor(color));
-			button.title = title;
-			button.addEventListener('click', func);
-			buttonGroup.appendChild(button);
-
-			const buttonText = document.createElement('div');
-			buttonText.classList.add('scriptMenu_buttonText');
-			buttonText.innerText = text;
-			button.appendChild(buttonText);
-			this.buttons.push(button);
+			this.addButton(btn, buttonGroup);
 			count++;
 		}
 
+		const dotAtention = document.createElement('div');
+		dotAtention.classList.add('scriptMenu_dot');
+		buttonGroup.appendChild(dotAtention);
+
 		main.appendChild(buttonGroup);
-
+		this.emit('afterAddCombinedButton', buttonGroup, buttonList);
 		return buttonGroup;
-	};
+	}
 
-	/**
-	 * Adding checkbox
-	 *
-	 * Добавление чекбокса
-	 * @param {String} label
-	 * @param {String} title
-	 * @param {HTMLDivElement} main parent // родитель
-	 * @returns
-	 */
-	this.addCheckbox = (label, title, main) => {
-		main = main || this.mainMenu;
+	addCheckbox(label, title, main = this.mainMenu) {
+		this.emit('beforeAddCheckbox', label, title, main);
 		const divCheckbox = document.createElement('div');
 		divCheckbox.classList.add('scriptMenu_divInput');
 		divCheckbox.title = title;
@@ -4860,7 +5033,7 @@ const scriptMenu = new (function () {
 		checkbox.type = 'checkbox';
 		checkbox.id = 'scriptMenuCheckbox' + this.checkboxes.length;
 		checkbox.classList.add('scriptMenu_checkbox');
-		divCheckbox.appendChild(checkbox)
+		divCheckbox.appendChild(checkbox);
 
 		const checkboxLabel = document.createElement('label');
 		checkboxLabel.innerText = label;
@@ -4868,20 +5041,12 @@ const scriptMenu = new (function () {
 		divCheckbox.appendChild(checkboxLabel);
 
 		this.checkboxes.push(checkbox);
+		this.emit('afterAddCheckbox', label, title, main);
 		return checkbox;
 	}
 
-	/**
-	 * Adding input field
-	 *
-	 * Добавление поля ввода
-	 * @param {String} title
-	 * @param {String} placeholder
-	 * @param {HTMLDivElement} main parent // родитель
-	 * @returns
-	 */
-	this.addInputText = (title, placeholder, main) => {
-		main = main || this.mainMenu;
+	addInputText(title, placeholder, main = this.mainMenu) {
+		this.emit('beforeAddCheckbox', title, placeholder, main);
 		const divInputText = document.createElement('div');
 		divInputText.classList.add('scriptMenu_divInputText');
 		divInputText.title = title;
@@ -4893,19 +5058,13 @@ const scriptMenu = new (function () {
 			newInputText.placeholder = placeholder;
 		}
 		newInputText.classList.add('scriptMenu_InputText');
-		divInputText.appendChild(newInputText)
+		divInputText.appendChild(newInputText);
+		this.emit('afterAddCheckbox', title, placeholder, main);
 		return newInputText;
 	}
 
-	/**
-	 * Adds a dropdown block
-	 *
-	 * Добавляет раскрывающийся блок
-	 * @param {String} summary
-	 * @param {String} name
-	 * @returns
-	 */
-	this.addDetails = (summaryText, name = null) => {
+	addDetails(summaryText, name = null) {
+		this.emit('beforeAddDetails', summaryText, name);
 		const details = document.createElement('details');
 		details.classList.add('scriptMenu_Details');
 		this.mainMenu.appendChild(details);
@@ -4914,69 +5073,85 @@ const scriptMenu = new (function () {
 		summary.classList.add('scriptMenu_Summary');
 		summary.innerText = summaryText;
 		if (name) {
-			const self = this;
-			details.open = this.option.showDetails[name];
+			details.open = this.option.showDetails[name] ?? false;
 			details.dataset.name = name;
-			summary.addEventListener('click', () => {
-				self.option.showDetails[details.dataset.name] = !details.open;
-				self.saveShowDetails(self.option.showDetails);
+			details.addEventListener('toggle', () => {
+				this.option.showDetails[details.dataset.name] = details.open;
+				this.saveSaveOption();
 			});
 		}
-		details.appendChild(summary);
 
+		details.appendChild(summary);
+		this.emit('afterAddDetails', summaryText, name);
 		return details;
 	}
 
-	/**
-	 * Saving the expanded state of the details blocks
-	 *
-	 * Сохранение состояния развенутости блоков details
-	 * @param {*} value
-	 */
-	this.saveShowDetails = (value) => {
+	saveSaveOption() {
 		try {
-		localStorage.setItem('scriptMenu_showDetails', JSON.stringify(value));
+			localStorage.setItem('scriptMenu_saveOption', JSON.stringify(this.option));
 		} catch (e) {
-			console.log("¯\\_(ツ)_/¯")
+			console.log('¯\\_(ツ)_/¯');
 	}
 	}
 
-	/**
-	 * Loading the state of expanded blocks details
-	 *
-	 * Загрузка состояния развенутости блоков details
-	 * @returns
-	 */
-	this.loadShowDetails = () => {
-		let showDetails = null;
+	loadSaveOption() {
+		let saveOption = null;
 		try {
-			showDetails = localStorage.getItem('scriptMenu_showDetails');
+			saveOption = localStorage.getItem('scriptMenu_saveOption');
 		} catch (e) {
 			console.log('¯\\_(ツ)_/¯');
 		}
 
-		if (!showDetails) {
+		if (!saveOption) {
 			return {};
 		}
 
 		try {
-			showDetails = JSON.parse(showDetails);
+			saveOption = JSON.parse(saveOption);
 		} catch (e) {
 			return {};
 		}
 
-		return showDetails;
+		return saveOption;
 	}
-});
+}
+
+this.HWHClasses.ScriptMenu = ScriptMenu;
+
+//const scriptMenu = ScriptMenu.getInst();
 
 /**
  * Пример использования
+const scriptMenu = ScriptMenu.getInst();
 scriptMenu.init();
 scriptMenu.addHeader('v1.508');
 scriptMenu.addCheckbox('testHack', 'Тестовый взлом игры!');
-scriptMenu.addButton('Запуск!', () => console.log('click'), 'подсказака');
+scriptMenu.addButton({
+	text: 'Запуск!',
+	onClick: () => console.log('click'),
+	title: 'подсказака',
+});
 scriptMenu.addInputText('input подсказака');
+scriptMenu.on('beforeInit', (option) => {
+	console.log('beforeInit', option);
+})
+scriptMenu.on('beforeAddHeader', (text, onClick, main) => {
+	console.log('beforeAddHeader', text, onClick, main);
+});
+scriptMenu.on('beforeAddButton', (btn, main) => {
+	console.log('beforeAddButton', btn, main);
+});
+scriptMenu.on('beforeAddCombinedButton', (buttonList, main) => {
+	console.log('beforeAddCombinedButton', buttonList, main);
+});
+scriptMenu.on('beforeAddCheckbox', (label, title, main) => {
+	console.log('beforeAddCheckbox', label, title, main);
+});
+scriptMenu.on('beforeAddDetails', (summaryText, name) => {
+	console.log('beforeAddDetails', summaryText, name);
+});
  */
+
 /**
  * Game Library
  *
@@ -5145,11 +5320,15 @@ const storage = {
 	 *
 	 * Значения по умолчанию
 	 */
-	values: [
-		...Object.entries(checkboxes).map(e => ({ [e[0]]: e[1].default })),
-		...Object.entries(inputs).map(e => ({ [e[0]]: e[1].default })),
-	].reduce((acc, obj) => ({ ...acc, ...obj }), {}),
+	values: {},
 	name: GM_info.script.name,
+	init: function () {
+		const { checkboxes, inputs } = HWHData;
+		this.values = [
+			...Object.entries(checkboxes).map((e) => ({ [e[0]]: e[1].default })),
+			...Object.entries(inputs).map((e) => ({ [e[0]]: e[1].default })),
+		].reduce((acc, obj) => ({ ...acc, ...obj }), {});
+	},
 	get: function (key, def) {
 		if (key in this.values) {
 			return this.values[key];
@@ -5158,17 +5337,15 @@ const storage = {
 	},
 	set: function (key, value) {
 		this.values[key] = value;
-		db.set(this.userId, this.values).catch(
-			e => null
-		);
+		db.set(this.userId, this.values).catch((e) => null);
 		localStorage[this.name + ':' + key] = value;
 	},
 	delete: function (key) {
 		delete this.values[key];
 		db.set(this.userId, this.values);
 		delete localStorage[this.name + ':' + key];
-	}
-}
+	},
+};
 
 /**
  * Returns all keys from localStorage that start with prefix (for migration)
@@ -5194,6 +5371,7 @@ function getAllValuesStartingWith(prefix) {
  * Открывает или мигрирует в базу данных
  */
 async function openOrMigrateDatabase(userId) {
+	storage.init();
 	storage.userId = userId;
 	try {
 		await db.open();
@@ -7043,6 +7221,12 @@ function hackGame() {
 		let prop = Object.keys(classF.prototype);
 		return prop[nF];
 	}
+
+	function findInstanceOf(obj, targetClass) {
+		const prototypeKeys = Object.keys(Object.getPrototypeOf(obj));
+		const matchingKey = prototypeKeys.find((key) => obj[key] instanceof targetClass);
+		return matchingKey ? obj[matchingKey] : null;
+	}
 	/**
 	 * Description of replaced functions
 	 *
@@ -7080,12 +7264,12 @@ function hackGame() {
 			Game.PlayerMissionData.prototype.P$h = function (a) {
 				let GM_2 = getFn(Game.GameModel, 2);
 				let GM_P2 = getProtoFn(Game.GameModel, 2);
-				let CM_20 = getProtoFn(Game.CommandManager, 20);
+				let CM_21 = getProtoFn(Game.CommandManager, 21);
 				let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
 				let MBR_15 = getF(Game.MultiBattleResult, 'get_result');
-				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
-				let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
-				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]));
+				let RPCCB_17 = getProtoFn(Game.RPCCommandBase, 17);
+				let PMD_34 = getProtoFn(Game.PlayerMissionData, 34);
+				Game.GameModel[GM_2]()[GM_P2][CM_21][MCL_2](a[MBR_15]())[RPCCB_17](Game.bindFunc(this, this[PMD_34]));
 			};
 		},
 		/*
@@ -7551,10 +7735,10 @@ function hackGame() {
 	this.changeIslandMap = (mapId = 2) => {
 		const GameInst = getFnP(selfGame['Game'], 'get_instance');
 		const GM_0 = getProtoFn(Game.GameModel, 0);
-		const P_59 = getProtoFn(selfGame['game.model.user.Player'], 60);
 		const PSAD_31 = getProtoFn(selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData'], 31);
 		const Player = Game.GameModel[GameInst]()[GM_0];
-		Player[P_59][PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
+		const PlayerSeasonAdventureData = findInstanceOf(Player, selfGame['game.mechanics.season_adventure.model.PlayerSeasonAdventureData']);
+		PlayerSeasonAdventureData[PSAD_31]({ id: mapId, seasonAdventure: { id: mapId, startDate: 1701914400, endDate: 1709690400, closed: false } });
 
 		const GN_15 = getProtoFn(selfGame['game.screen.navigator.GameNavigator'], 17);
 		const navigator = getF(selfGame['Game'], 'get_navigator');
@@ -7741,9 +7925,9 @@ async function bossRatingEvent() {
 	}
 	if (args.heroes.length) {
 		calls.push({
-			name: "bossRatingEvent_startBattle",
+			name: 'bossRating_startBattle',
 			args,
-			ident: "body_0"
+			ident: 'body_0',
 		});
 	}
 	/**
@@ -7760,12 +7944,12 @@ async function bossRatingEvent() {
 		heroes.push(heroId);
 		if (heroes.length == 5) {
 			calls.push({
-				name: "bossRatingEvent_startBattle",
+				name: 'bossRating_startBattle',
 				args: {
 					heroes: [...heroes],
-					pet: availablePets[Math.floor(Math.random() * availablePets.length)]
+					pet: availablePets[Math.floor(Math.random() * availablePets.length)],
 				},
-				ident: "body_" + count
+				ident: 'body_' + count,
 			});
 			heroes = [];
 			count++;
@@ -7814,11 +7998,11 @@ function rewardBossRatingEvent() {
 				break;
 			}
 			getRewardCall.calls.push({
-				name: "bossRatingEvent_getReward",
+				name: 'bossRating_getReward',
 				args: {
-					rewardId: i
+					rewardId: i,
 				},
-				ident: "body_" + i
+				ident: 'body_' + i,
 			});
 			count++;
 		}
@@ -7981,7 +8165,7 @@ function questAllFarm() {
  * isSendsMission = true;
  **/
 this.sendsMission = async function (param) {
-	if (isStopSendMission) {
+	async function stopMission() {
 		isSendsMission = false;
 		console.log(I18N('STOPPED'));
 		setProgress('');
@@ -7989,6 +8173,9 @@ this.sendsMission = async function (param) {
 			msg: 'Ok',
 			result: true
 		}, ])
+	}
+	if (isStopSendMission) {
+		stopMission();
 		return;
 	}
 	lastMissionBattleStart = Date.now();
@@ -8026,7 +8213,13 @@ this.sendsMission = async function (param) {
 			const period = Math.ceil((Date.now() - lastMissionBattleStart) / 1000);
 			if (period < timer) {
 				timer = timer - period;
-				await countdownTimer(timer, `${I18N('MISSIONS_PASSED')}: ${param.count}`);
+				const isSuccess = await countdownTimer(timer, `${I18N('MISSIONS_PASSED')}: ${param.count}`, () => {
+					isStopSendMission = true;
+				});
+				if (!isSuccess) {
+					stopMission();
+					return;
+				}
 			}
 
 			let missionEndCall = {
@@ -8224,21 +8417,28 @@ function lettersFilter(letters) {
  */
 async function justInfo() {
 	return new Promise(async (resolve, reject) => {
-		const calls = [{
-			name: "userGetInfo",
+		const calls = [
+			{
+				name: 'userGetInfo',
 			args: {},
-			ident: "userGetInfo"
+				ident: 'userGetInfo',
 		},
 		{
-			name: "clanWarGetInfo",
+				name: 'clanWarGetInfo',
 			args: {},
-			ident: "clanWarGetInfo"
+				ident: 'clanWarGetInfo',
 		},
 		{
-			name: "titanArenaGetStatus",
+				name: 'titanArenaGetStatus',
 			args: {},
-			ident: "titanArenaGetStatus"
-		}];
+				ident: 'titanArenaGetStatus',
+			},
+			{
+				name: 'quest_completeEasterEggQuest',
+				args: {},
+				ident: 'quest_completeEasterEggQuest',
+			},
+		];
 		const result = await Send(JSON.stringify({ calls }));
 		const infos = result.results;
 		const portalSphere = infos[0].result.response.refillable.find(n => n.id == 45);
@@ -8247,33 +8447,38 @@ async function justInfo() {
 		const titansLevel = +(infos[2].result.response?.tier ?? 0);
 		const titansStatus = infos[2].result.response?.status; //peace_time || battle
 
+		const { buttons } = HWHData;
 		const sanctuaryButton = buttons['testAdventure'].button;
+		const sanctuaryDot = sanctuaryButton.querySelector('.scriptMenu_dot');
 		const clanWarButton = buttons['goToClanWar'].button;
+		const clanWarDot = clanWarButton.querySelector('.scriptMenu_dot');
 		const titansArenaButton = buttons['testTitanArena'].button;
-        const shadow = ' 0px 0px 3px 2px';
+		const titansArenaDot = titansArenaButton.querySelector('.scriptMenu_dot');
 
 		if (portalSphere.amount) {
-			sanctuaryButton.style.boxShadow = (portalSphere.amount >= 3 ? 'red' : 'brown') + shadow;
-			sanctuaryButton.title = `${I18N('SANCTUARY_TITLE')}\n${portalSphere.amount} ${I18N('PORTALS')}`;
+			sanctuaryButton.classList.add('scriptMenu_attention');
+			sanctuaryDot.title = `${portalSphere.amount} ${I18N('PORTALS')}`;
+			sanctuaryDot.innerText = portalSphere.amount;
+			sanctuaryDot.style.backgroundColor = 'red';
 		} else {
-			sanctuaryButton.style.boxShadow = '';
-			sanctuaryButton.title = I18N('SANCTUARY_TITLE');
+			sanctuaryButton.classList.remove('scriptMenu_attention');
 		}
 		if (clanWarMyTries && !arePointsMax) {
-			clanWarButton.style.filter = 'drop-shadow(red 0px 0px 2px)';
-			clanWarButton.title = `${I18N('GUILD_WAR_TITLE')}\n${clanWarMyTries}${I18N('ATTEMPTS')}`;
+			clanWarButton.classList.add('scriptMenu_attention');
+			clanWarDot.title = `${clanWarMyTries} ${I18N('ATTEMPTS')}`;
+			clanWarDot.innerText = clanWarMyTries;
+			clanWarDot.style.backgroundColor = 'red';
 		} else {
-			clanWarButton.style.filter = '';
-			clanWarButton.title = I18N('GUILD_WAR_TITLE');
+			clanWarButton.classList.remove('scriptMenu_attention');
 		}
 
 		if (titansLevel < 7 && titansStatus == 'battle') { ;
-			const partColor = Math.floor(125 * titansLevel / 7);
-			titansArenaButton.style.boxShadow = `rgb(255,${partColor},${partColor})` + shadow;
-			titansArenaButton.title = `${I18N('TITAN_ARENA_TITLE')}\n${titansLevel} ${I18N('LEVEL')}`;
+			titansArenaButton.classList.add('scriptMenu_attention');
+			titansArenaDot.title = `${titansLevel} ${I18N('LEVEL')}`;
+			titansArenaDot.innerText = titansLevel;
+			titansArenaDot.style.backgroundColor = 'red';
 		} else {
-			titansArenaButton.style.boxShadow = '';
-			titansArenaButton.title = I18N('TITAN_ARENA_TITLE');
+			titansArenaButton.classList.remove('scriptMenu_attention');
 		}
 
 		const imgPortal =
@@ -9120,17 +9325,28 @@ class epicBrawl {
 	}
 }
 
-function countdownTimer(seconds, message) {
+function countdownTimer(seconds, message, onClick = null) {
 	message = message || I18N('TIMER');
-	const stopTimer = Date.now() + seconds * 1e3
-	return new Promise(resolve => {
+	const stopTimer = Date.now() + seconds * 1e3;
+	const isOnClick = typeof onClick === 'function';
+	return new Promise((resolve) => {
 		const interval = setInterval(async () => {
 			const now = Date.now();
-			setProgress(`${message} ${((stopTimer - now) / 1000).toFixed(2)}`, false);
+			const remaining = (stopTimer - now) / 1000;
+			const clickHandler = isOnClick
+				? () => {
+						onClick();
+						clearInterval(interval);
+						setProgress('', true);
+						resolve(false);
+					}
+				: undefined;
+
+			setProgress(`${message} ${remaining.toFixed(2)}`, false, clickHandler);
 			if (now > stopTimer) {
 				clearInterval(interval);
-				setProgress('', 1);
-				resolve();
+				setProgress('', true);
+				resolve(true);
 			}
 		}, 100);
 	});
@@ -10219,39 +10435,53 @@ class DungeonFixBattle extends FixBattle {
 	init() {
 		super.init();
 		this.isTimeout = false;
+		this.bestResult = {
+			count: 0,
+			timer: 0,
+			value: {
+				hp: -Infinity,
+				energy: -Infinity,
+			},
+			result: null,
+			progress: null,
+		};
 	}
 
 	setState() {
 		const result = this.lastResult;
-		let beforeSumFactor = 0;
-		const beforeHeroes = result.battleData.attackers;
-		for (let heroId in beforeHeroes) {
-			const hero = beforeHeroes[heroId];
-			const state = hero.state;
-			let factor = 1;
+		let beforeHP = 0;
+		let beforeEnergy = 0;
+		const beforeTitans = result.battleData.attackers;
+		for (let titanId in beforeTitans) {
+			const titan = beforeTitans[titanId];
+			const state = titan.state;
 			if (state) {
-				const hp = state.hp / (hero?.hp || 1);
-				const energy = state.energy / 1e3;
-				factor = hp + energy / 20;
+				beforeHP += state.hp / titan.hp;
+				beforeEnergy += state.energy / 1e3;
 			}
-			beforeSumFactor += factor;
 		}
 
-		let afterSumFactor = 0;
-		const afterHeroes = result.progress[0].attackers.heroes;
-		for (let heroId in afterHeroes) {
-			const hero = afterHeroes[heroId];
-			const hp = hero.hp / (beforeHeroes[heroId]?.hp || 1);
-			const energy = hero.energy / 1e3;
-			const factor = hp + energy / 20;
-			afterSumFactor += factor;
+		let afterHP = 0;
+		let afterEnergy = 0;
+		const afterTitans = result.progress[0].attackers.heroes;
+		for (let titanId in afterTitans) {
+			const titan = afterTitans[titanId];
+			afterHP += titan.hp / beforeTitans[titanId].hp;
+			afterEnergy += titan.energy / 1e3;
 		}
-		this.lastState = Math.floor((afterSumFactor / beforeSumFactor) * 1e4) / 100;
+
+		this.lastState = {
+			hp: afterHP - beforeHP,
+			energy: afterEnergy - beforeEnergy,
+		};
 	}
 
 	checkResult() {
 		this.setState();
-		if (this.lastResult.result.win && this.lastState > this.bestResult.value) {
+		if (
+			this.lastState.hp > this.bestResult.value.hp ||
+			(this.lastState.hp === this.bestResult.value.hp && this.lastState.energy > this.bestResult.value.energy)
+		) {
 			this.bestResult = {
 				count: this.count,
 				timer: this.lastTimer,
@@ -10263,14 +10493,9 @@ class DungeonFixBattle extends FixBattle {
 	}
 
 	showResult() {
-		console.log(
-			this.count,
-			this.avgTime.toFixed(2),
-			(this.endTime - Date.now()) / 1000,
-			this.lastTimer.toFixed(2),
-			this.lastState.toLocaleString(),
-			this.bestResult.value.toLocaleString()
-		);
+		if (this.isShowResult) {
+			console.log(this.count, this.lastTimer.toFixed(2), JSON.stringify(this.lastState), JSON.stringify(this.bestResult.value));
+		}
 	}
 }
 
@@ -12997,6 +13222,145 @@ class executeBrawls {
 
 this.HWHClasses.executeBrawls = executeBrawls;
 
+/**
+ * Runs missions from the company on a specified list
+ * Выполняет миссии из компании по списку
+ * @param {Array} missions [{id: 25, times: 3}, {id: 45, times: 30}]
+ * @param {Boolean} isRaids выполнять миссии рейдом
+ * @returns
+ */
+function testCompany(missions, isRaids = false) {
+	const { ExecuteCompany } = HWHClasses;
+	return new Promise((resolve, reject) => {
+		const tower = new ExecuteCompany(resolve, reject);
+		tower.start(missions, isRaids);
+	});
+}
+
+/**
+ * Fulfilling company missions
+ * Выполнение миссий компании
+ */
+class ExecuteCompany {
+	constructor(resolve, reject) {
+		this.resolve = resolve;
+		this.reject = reject;
+		this.missionsIds = [];
+		this.currentNum = 0;
+		this.isRaid = false;
+		this.currentTimes = 0;
+
+		this.argsMission = {
+			id: 0,
+			heroes: [],
+			favor: {},
+		};
+	}
+
+	async start(missionIds, isRaids) {
+		this.missionsIds = missionIds;
+		this.isRaid = isRaids;
+		const data = await Caller.send(['teamGetAll', 'teamGetFavor']);
+		this.startCompany(data);
+	}
+
+	startCompany(data) {
+		const [teamGetAll, teamGetFavor] = data;
+
+		this.argsMission.heroes = teamGetAll.mission.filter((id) => id < 6000);
+		this.argsMission.favor = teamGetFavor.mission;
+
+		const pet = teamGetAll.mission.filter((id) => id >= 6000).pop();
+		if (pet) {
+			this.argsMission.pet = pet;
+		}
+
+		this.checkStat();
+	}
+
+	checkStat() {
+		if (!this.missionsIds[this.currentNum].times) {
+			this.currentNum++;
+		}
+
+		if (this.currentNum === this.missionsIds.length) {
+			this.endCompany('EndCompany');
+			return;
+		}
+
+		this.argsMission.id = this.missionsIds[this.currentNum].id;
+		this.currentTimes = this.missionsIds[this.currentNum].times;
+		setProgress('Сompany: ' + this.argsMission.id + ' - ' + this.currentTimes, false);
+		if (this.isRaid) {
+			this.missionRaid();
+		} else {
+			this.missionStart();
+		}
+	}
+
+	async missionRaid() {
+		try {
+			await Caller.send({
+				name: 'missionRaid',
+				args: {
+					id: this.argsMission.id,
+					times: this.currentTimes,
+				},
+			});
+		} catch (error) {
+			console.warn(error);
+		}
+
+		this.missionsIds[this.currentNum].times = 0;
+		this.checkStat();
+	}
+
+	async missionStart() {
+		this.lastMissionBattleStart = Date.now();
+		let result = null;
+		try {
+			result = await Caller.send({
+				name: 'missionStart',
+				args: this.argsMission,
+			});
+		} catch (error) {
+			console.warn(error);
+			this.endCompany('missionStartError', error['error']);
+			return;
+		}
+		this.missionEnd(await Calc(result));
+	}
+
+	async missionEnd(r) {
+		const timer = r.battleTimer;
+		await countdownTimer(timer, 'Сompany: ' + this.argsMission.id + ' - ' + this.currentTimes);
+
+		try {
+			await Caller.send({
+				name: 'missionEnd',
+				args: {
+					id: this.argsMission.id,
+					result: r.result,
+					progress: r.progress,
+				},
+			});
+		} catch (error) {
+			this.endCompany('missionEndError', error);
+			return;
+		}
+
+		this.missionsIds[this.currentNum].times--;
+		this.checkStat();
+	}
+
+	endCompany(reason, info) {
+		setProgress('Сompany completed!', true);
+		console.log(reason, info);
+		this.resolve();
+	}
+}
+
+this.HWHClasses.ExecuteCompany = ExecuteCompany;
 })();
 
 /**
