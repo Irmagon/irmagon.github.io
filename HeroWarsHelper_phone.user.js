@@ -3,7 +3,7 @@
 // @name:en			HeroWarsPhone
 // @name:ru			HeroWarsPhone
 // @namespace		HeroWarsPhone
-// @version			2.324
+// @version			2.325
 // @description		Automation of actions for the game Hero Wars
 // @description:en	Automation of actions for the game Hero Wars
 // @description:ru	Автоматизация действий для игры Хроники Хаоса
@@ -5127,9 +5127,7 @@ const storage = {
 	},
 	set: function (key, value) {
 		this.values[key] = value;
-		db.set(this.userId, this.values).catch(
-			e => null
-		);
+		db.set(this.userId, this.values).catch((e) => null);
 		localStorage[this.name + ':' + key] = value;
 	},
 	delete: function (key) {
@@ -7049,12 +7047,12 @@ function hackGame() {
 			Game.PlayerMissionData.prototype.P$h = function (a) {
 				let GM_2 = getFn(Game.GameModel, 2);
 				let GM_P2 = getProtoFn(Game.GameModel, 2);
-				let CM_20 = getProtoFn(Game.CommandManager, 20);
+				let CM_21 = getProtoFn(Game.CommandManager, 21);
 				let MCL_2 = getProtoFn(Game.MissionCommandList, 2);
 				let MBR_15 = getF(Game.MultiBattleResult, 'get_result');
-				let RPCCB_15 = getProtoFn(Game.RPCCommandBase, 16);
-				let PMD_32 = getProtoFn(Game.PlayerMissionData, 32);
-				Game.GameModel[GM_2]()[GM_P2][CM_20][MCL_2](a[MBR_15]())[RPCCB_15](Game.bindFunc(this, this[PMD_32]));
+				let RPCCB_17 = getProtoFn(Game.RPCCommandBase, 17);
+				let PMD_34 = getProtoFn(Game.PlayerMissionData, 34);
+				Game.GameModel[GM_2]()[GM_P2][CM_21][MCL_2](a[MBR_15]())[RPCCB_17](Game.bindFunc(this, this[PMD_34]));
 			};
 		},
 		/*
